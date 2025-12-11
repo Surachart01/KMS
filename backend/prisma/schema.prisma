@@ -1,0 +1,36 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Users {
+  id          String @id @default(uuid())
+  user_no     String @unique
+  prefix      String 
+  firstname   String
+  lastname    String
+  email       String @unique
+  password    String 
+  year_study  String // สำหรับนักศึกษา
+  position    PositionUser @default(Student)
+  status      StatusUser @default(Active)
+  is_reset_password Boolean @default(false)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+}
+
+enum PositionUser {
+  Student
+  Teacher
+  Admin
+}
+enum StatusUser {
+  Active
+  Inactive
+}
+
+

@@ -1,0 +1,41 @@
+version: '3.8'
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: SKMS-postgresdb
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}        # ชื่อ User
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD} # รหัสผ่าน
+      POSTGRES_DB: ${POSTGRES_DB}    # ชื่อ Database
+    ports:
+      - "34669:5432"                # Map port จาก container มาที่เครื่องเรา
+    volumes:
+      - postgres_data:/var/lib/postgresql/data # เก็บข้อมูลถาวร (ปิด container ข้อมูลไม่หาย)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: SKMS-pgadmin
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}       # อีเมลสำหรับเข้าใช้งาน pgAdmin4
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}   # รหัสผ่านสำหรับเข้าใช้งาน pgAdmin4
+    ports:
+      - "8080:80"                  # Map port จาก container มาที่เครื่องเรา
+    depends_on:
+      - postgres                   # รอให้บริการ Postgres พร้อมก่อนค่อยเริ่ม pgAdmin4
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin # เก็บข้อมูลถาวร (ปิด container ข้อมูลไม่หาย)
+
+  redis:
+    image: redis:alpine
+    container_name: SKMS-redis
+    restart: always
+    ports:
+      - "63797:6379"
+    command: redis-server --requirepass "${REDIS_PASSWORD}"
+    volumes:
+      - redis_data:/data
+volumes:
+  postgres_data:
+  pgadmin_data:
+  redis_data:
