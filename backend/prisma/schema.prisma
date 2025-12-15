@@ -7,6 +7,16 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+
+model Major {
+  id             String @id @default(uuid())
+  major_name     String 
+  section        String
+  level          String
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+}
+
 model Users {
   id          String @id @default(uuid())
   user_no     String @unique
@@ -19,6 +29,39 @@ model Users {
   position    PositionUser @default(Student)
   status      StatusUser @default(Active)
   is_reset_password Boolean @default(false)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+}
+
+model Rooms {
+  id          String @id @default(uuid())
+  status      StatusRoom @default(Available)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+  subject     Subjects[]
+}
+
+model Subjects {
+  id          String @id @default(uuid())
+  subject_no  String @unique
+  user_no     String
+  user        Users @relation(fields: [user_no], references: [user_no])
+  room_no     String
+  room        Rooms @relation(fields: [room_no], references: [room_no])
+
+  name        String
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+}
+
+model Borrow {
+  id          String @id @default(uuid())
+  user_id     String
+  room_id     String
+  subject_id  String
+  borrow_date DateTime @default(now())
+  return_date DateTime
+  status      StatusBorrow @default(Pending)
   created_at  DateTime @default(now())
   updated_at  DateTime @updatedAt
 }

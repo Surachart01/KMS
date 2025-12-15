@@ -8,6 +8,7 @@ import { updatePassword } from "@/service/users";
 import { CloudCog } from "lucide-react";
 const { Title, Text } = Typography;
 import { useRouter } from "next/navigation";
+import Cookies from "js-cookie";
 
 export default function LoginPage() {
   const [loading, setLoading] = useState(false);
@@ -34,8 +35,13 @@ export default function LoginPage() {
       let res = await login(values.email, values.password, values.remember);
       console.log(res);
       if (res.status == 200) {
-        localStorage.setItem("token", res.data.token);
-        localStorage.setItem("user", JSON.stringify(res.data.user));
+        if (values.remember) {
+          Cookies.set("token", res.data.token, { expires: 7 });
+          Cookies.set("user", JSON.stringify(res.data.user), { expires: 7 });
+        } else {
+          Cookies.set("token", res.data.token , {expires: 1});
+          Cookies.set("user", JSON.stringify(res.data.user), {expires: 1});
+        }
         notification.success({
           title: "เข้าสู่ระบบสำเร็จ",
           description: "ยินดีต้อนรับคุณ ... (นักเรียน)",

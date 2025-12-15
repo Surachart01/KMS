@@ -41,3 +41,4 @@ export const verifyOTP = async (email, OTP) => {
         throw error;
     }
 }
+

@@ -42,6 +42,23 @@ export const createUser = async (req,res) => {
     try {
         
         const {user_no,prefix,firstname,lastname,email,password,year_study,position} = req.body;
+        const checkUserNo = await prisma.users.findUnique({
+            where: {
+                user_no: user_no
+            }
+        });
+        if(checkUserNo){
+            return res.status(400).json({"message":"เลขประจำตัวนักศึกษาซ้ำ"});
+        }
+        const checkEmail = await prisma.users.findUnique({
+            where: {
+                email: email
+            }
+        });
+
+        if(checkEmail){
+            return res.status(400).json({"message":"อีเมลซ้ำ"});
+        }
         let passwordHash = await bcrypt.hash(password, 10);
         const user = {
             user_no: user_no,
@@ -71,13 +88,31 @@ export const createUser = async (req,res) => {
 export const updateUser = async (req,res) => {
     try {
         const {id} = req.params;
-        const {prefix,firstname,lastname,email,password,year_study,position,status} = req.body;
+        const {user_no,prefix,firstname,lastname,email,password,year_study,position,status} = req.body;
+        const checkUserNo = await prisma.users.findUnique({
+            where: {
+                user_no: user_no
+            }
+        });
+        if(checkUserNo){
+            return res.status(400).json({"message":"เลขประจำตัวนักศึกษาซ้ำ"});
+        }
+        const checkEmail = await prisma.users.findUnique({
+            where: {
+                email: email
+            }
+        });
+        if(checkEmail){
+            return res.status(400).json({"message":"อีเมลซ้ำ"});
+        }
+        let passwordHash = await bcrypt.hash(password, 10);
         const user = {
+            user_no,
             prefix,
             firstname,
             lastname,
             email,
-            password,
+            password: passwordHash,
             year_study,
             position,
             status,
