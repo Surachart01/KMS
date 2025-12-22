@@ -12,7 +12,7 @@ RUN npm install
 COPY . .
 
 # เปิดพอร์ตที่ใช้งาน
-EXPOSE 5000
+EXPOSE 4556
 
 # คอมไพล์ Prisma Client และรันเซิร์ฟเวอร์
 CMD ["sh", "-c", "npx prisma generate && node src/server.js"]
