@@ -50,7 +50,7 @@ export default function AppHeader({
         <Header
             style={{
                 padding: "0 24px",
-                background: colorBgContainer,
+                background: colorBgContainer || "#fff",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "space-between",
@@ -66,17 +66,17 @@ export default function AppHeader({
                         type="text"
                         icon={<MenuUnfoldOutlined />}
                         onClick={() => setMobileDrawerOpen(true)}
-                        style={{ fontSize: 18 }}
+                        style={{ fontSize: 18, color: "#000" }}
                     />
                 ) : (
                     <Button
                         type="text"
                         icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
                         onClick={() => setCollapsed(!collapsed)}
-                        style={{ fontSize: 18 }}
+                        style={{ fontSize: 18, color: "#000" }}
                     />
                 )}
-                <Title level={4} style={{ margin: 0 }}>
+                <Title level={4} style={{ margin: 0, color: "#000" }}>
                     {title}
                 </Title>
             </div>
@@ -96,11 +96,15 @@ export default function AppHeader({
                     />
                     {!isMobile && user && (
                         <div style={{ display: "flex", flexDirection: "column" }}>
-                            <Text strong>
+                            <Text strong style={{ color: "#000" }}>
                                 {user.prefix} {user.firstname} {user.lastname}
                             </Text>
-                            <Text type="secondary" style={{ fontSize: 12 }}>
-                                {user.position === "Student" ? "นักเรียน" : "ผู้ดูแลระบบ"}
+                            <Text type="secondary" style={{ fontSize: 12, color: "#666" }}>
+                                {user.position === "Student"
+                                    ? "นักเรียน"
+                                    : user.position === "Teacher"
+                                        ? "อาจารย์"
+                                        : "ผู้ดูแลระบบ"}
                             </Text>
                         </div>
                     )}

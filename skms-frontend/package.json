@@ -17,7 +17,9 @@
     "next": "16.0.8",
     "react": "19.2.1",
     "react-dom": "19.2.1",
-    "resend": "^6.6.0"
+    "recharts": "^2.10.0",
+    "resend": "^6.6.0",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

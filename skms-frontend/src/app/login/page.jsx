@@ -44,13 +44,13 @@ export default function LoginPage() {
         }
         notification.success({
           title: "เข้าสู่ระบบสำเร็จ",
-          description: "ยินดีต้อนรับคุณ ... (นักเรียน)",
+          description: `ยินดีต้อนรับ ${res.data.user.first_name} ${res.data.user.last_name}`,
         });
-        router.push("/");
+        router.push("/staff/dashboard");
       } else {
         notification.error({
           title: "เข้าสู่ระบบไม่สำเร็จ",
-          description: "อีเมลหรือรหัสผ่านไม่ถูกต้อง",
+          description: res.data?.message || "อีเมลหรือรหัสผ่านไม่ถูกต้อง",
         });
       }
       setLoading(false);
@@ -59,7 +59,7 @@ export default function LoginPage() {
       console.log(error);
       notification.error({
         title: "เข้าสู่ระบบไม่สำเร็จ",
-        description: "อีเมลหรือรหัสผ่านไม่ถูกต้อง",
+        description: error.response?.data?.message || "เกิดข้อผิดพลาดในการเชื่อมต่อ",
       });
       setLoading(false);
     }
@@ -222,14 +222,14 @@ export default function LoginPage() {
               name="email"
               label={<span className="font-medium text-gray-700">อีเมลนักศึกษา</span>}
               rules={[
-                { required: true, message: "โปรดกรอกอีเมล @email.kmutnb.ac.th เท่านั้น" },
-                { pattern: /^\w{14}@email\.kmutnb\.ac\.th$/, message: "อีเมลไม่ถูกต้อง" }
+                { required: true, message: "โปรดกรอกอีเมล" },
+                { type: "email", message: "รูปแบบอีเมลไม่ถูกต้อง" }
               ]}
               className="mb-4"
             >
               <Input
                 prefix={<UserOutlined className="text-gray-400 mx-1" />}
-                placeholder="s6xxxxxxxxxxxx@email.kmutnb.ac.th"
+                placeholder="อีเมลของคุณ"
                 className="rounded-lg py-2.5"
               />
             </Form.Item>
@@ -313,10 +313,10 @@ export default function LoginPage() {
             >
               <Form.Item
                 name="email"
-                label="อีเมลสถาบัน"
+                label="อีเมล"
                 rules={[
                   { required: true, message: "กรุณากรอกอีเมลที่ลืมรหัสผ่าน" },
-                  { pattern: /^\w{14}@email\.kmutnb\.ac\.th$/, message: "อีเมลไม่ถูกต้อง" }
+                  { type: "email", message: "รูปแบบอีเมลไม่ถูกต้อง" }
                 ]}
               >
                 <Input

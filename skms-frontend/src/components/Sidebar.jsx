@@ -13,17 +13,48 @@ export default function Sidebar({
     menuItems,
     pathname,
     handleMenuClick,
-    logo = "🔑 SKMS",
-    logoCollapsed = "SKMS",
 }) {
-    const SidebarContent = () => (
-        <Menu
-            theme="dark"
-            mode="inline"
-            selectedKeys={[pathname]}
-            onClick={handleMenuClick}
-            items={menuItems}
-        />
+    const Logo = ({ isCollapsed }) => (
+        <div
+            style={{
+                height: 64,
+                margin: "16px 0",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "white",
+                fontWeight: "bold",
+                fontSize: isCollapsed ? 16 : 20,
+                padding: "0 16px",
+                overflow: "hidden",
+                whiteSpace: "nowrap",
+            }}
+        >
+            {isCollapsed ? (
+                <span style={{ fontSize: 24 }}>🔑</span>
+            ) : (
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ fontSize: 24 }}>🔑</span>
+                    <span>SKMS</span>
+                </div>
+            )}
+        </div>
+    );
+
+    const SidebarContent = ({ showLogo = true, isCollapsed = false }) => (
+        <>
+            {showLogo && <Logo isCollapsed={isCollapsed} />}
+            <Menu
+                theme="dark"
+                mode="inline"
+                selectedKeys={[pathname]}
+                onClick={handleMenuClick}
+                items={menuItems}
+                style={{
+                    borderRight: 0,
+                }}
+            />
+        </>
     );
 
     return (
@@ -41,23 +72,12 @@ export default function Sidebar({
                         left: 0,
                         top: 0,
                         bottom: 0,
+                        zIndex: 1,
                     }}
+                    width={200}
+                    collapsedWidth={80}
                 >
-                    <div
-                        style={{
-                            height: 64,
-                            margin: 16,
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            color: "white",
-                            fontSize: collapsed ? 18 : 20,
-                            fontWeight: "bold",
-                        }}
-                    >
-                        {collapsed ? logoCollapsed : logo}
-                    </div>
-                    <SidebarContent />
+                    <SidebarContent showLogo={true} isCollapsed={collapsed} />
                 </Sider>
             )}
 
@@ -69,23 +89,14 @@ export default function Sidebar({
                     open={mobileDrawerOpen}
                     closable={false}
                     width={250}
-                    styles={{ body: { padding: 0, background: "#001529" } }}
+                    styles={{
+                        body: {
+                            padding: 0,
+                            background: "#001529"
+                        }
+                    }}
                 >
-                    <div
-                        style={{
-                            height: 64,
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            color: "white",
-                            fontSize: 20,
-                            fontWeight: "bold",
-                            background: "#001529",
-                        }}
-                    >
-                        {logo}
-                    </div>
-                    <SidebarContent />
+                    <SidebarContent showLogo={true} isCollapsed={false} />
                 </Drawer>
             )}
         </>

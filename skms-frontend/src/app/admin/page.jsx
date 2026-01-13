@@ -9,6 +9,7 @@ import {
   HistoryOutlined,
   SettingOutlined,
   DashboardOutlined,
+  BookOutlined,
 } from "@ant-design/icons";
 import { useRouter, usePathname } from "next/navigation";
 import Cookies from "js-cookie";
@@ -77,14 +78,29 @@ export default function Home() {
       label: "จัดการผู้ใช้",
     },
     {
-      key: "/admin/keys",
-      icon: <KeyOutlined />,
-      label: "จัดการกุญแจ",
+      key: "/admin/majors",
+      icon: <BookOutlined />,
+      label: "จัดการสาขา",
     },
     {
-      key: "/admin/history",
+      key: "/admin/sections",
+      icon: <BookOutlined />,
+      label: "จัดการกลุ่มเรียน",
+    },
+    {
+      key: "/admin/rooms",
+      icon: <KeyOutlined />,
+      label: "จัดการห้อง",
+    },
+    {
+      key: "/admin/subjects",
+      icon: <BookOutlined />,
+      label: "จัดการวิชา",
+    },
+    {
+      key: "/admin/schedules",
       icon: <HistoryOutlined />,
-      label: "ประวัติการเบิก-คืน",
+      label: "จัดการตารางเรียน",
     },
     {
       key: "/admin/settings",

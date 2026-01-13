@@ -1,197 +1,287 @@
-import { PrismaClient } from "@prisma/client";
-import bcrypt from "bcrypt";
+import { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcrypt';
+
 const prisma = new PrismaClient();
 
-export const getAllUsers = async (req,res) => {
+// GET /api/users
+export const getAllUsers = async (req, res) => {
     try {
-        const {status , position} = req.query;
+        const { role, major_id, section_id, keyword } = req.query;
+
+        // Build where clause
         const where = {};
-        if(status){
-            where.status = status;
-        }
-        if(position){
-            where.position = position;
+        if (role) where.role = role;
+        if (major_id) where.major_id = parseInt(major_id);
+        if (section_id) where.section_id = parseInt(section_id);
+
+        if (keyword) {
+            where.OR = [
+                { first_name: { contains: keyword, mode: 'insensitive' } },
+                { last_name: { contains: keyword, mode: 'insensitive' } },
+                { user_no: { contains: keyword, mode: 'insensitive' } },
+                { email: { contains: keyword, mode: 'insensitive' } }
+            ];
         }
 
-        const users = await prisma.users.findMany({
-            where: where
+        const users = await prisma.user.findMany({
+            where,
+            include: {
+                major: true,
+                section: true
+            },
+            orderBy: {
+                created_at: 'desc'
+            }
         });
-        return res.status(200).json({"message":"ดึงข้อมูลผู้ใช้งานสำเร็จ",data:users});
+
+        return res.status(200).json({
+            message: "ดึงข้อมูลผู้ใช้งานสำเร็จ",
+            data: users
+        });
     } catch (error) {
         console.error("Error fetching users:", error);
-        return res.status(500).json({"message":"เกิดข้อผิดพลาดในการดึงข้อมูลผู้ใช้งาน"});
+        return res.status(500).json({ message: "เกิดข้อผิดพลาดในการดึงข้อมูลผู้ใช้งาน" });
     }
-}
+};
 
-export const getUserById = async (req,res) => {
+// GET /api/users/:id
+export const getUserById = async (req, res) => {
     try {
-        const {id} = req.params;
-        const user = await prisma.users.findUnique({
-            where: {
-                user_no: id
-            }
-        });
-        return res.status(200).json({"message":"ดึงข้อมูลผู้ใช้งานสำเร็จ",data:user});
-    } catch (error) {
-        console.error("Error fetching user:", error);
-        return res.status(500).json({"message":"เกิดข้อผิดพลาดในการดึงข้อมูลผู้ใช้งาน"});
-    }
-}
-
-export const createUser = async (req,res) => {
-    try {
-        
-        const {user_no,prefix,firstname,lastname,email,password,year_study,position} = req.body;
-        const checkUserNo = await prisma.users.findUnique({
-            where: {
-                user_no: user_no
-            }
-        });
-        if(checkUserNo){
-            return res.status(400).json({"message":"เลขประจำตัวนักศึกษาซ้ำ"});
-        }
-        const checkEmail = await prisma.users.findUnique({
-            where: {
-                email: email
+        const { id } = req.params;
+        const user = await prisma.user.findUnique({
+            where: { user_id: id },
+            include: {
+                major: true,
+                section: true
             }
         });
 
-        if(checkEmail){
-            return res.status(400).json({"message":"อีเมลซ้ำ"});
+        if (!user) {
+            return res.status(404).json({ message: "ไม่พบผู้ใช้งาน" });
         }
-        let passwordHash = await bcrypt.hash(password, 10);
-        const user = {
-            user_no: user_no,
-            prefix,
-            firstname,
-            lastname,
-            email,
-            password: passwordHash,
-            year_study,
-            position,
-            status: "Active",
-            is_reset_password: false
-        }
-        console.log(user);
-        const newUser = await prisma.users.create({
-            data: user,
-        });
-        console.log(newUser);
-        return res.status(201).json({"message":"สร้างผู้ใช้งานสำเร็จ",data:newUser});
-   
-    } catch (error) {
-        console.error("Error creating user:", error);
-        return res.status(500).json({"message":"เกิดข้อผิดพลาดในการสร้างผู้ใช้งาน"});
-    }
-}
 
-export const updateUser = async (req,res) => {
-    try {
-        const {id} = req.params;
-        const {user_no,prefix,firstname,lastname,email,password,year_study,position,status} = req.body;
-        const checkUserNo = await prisma.users.findUnique({
-            where: {
-                user_no: user_no
-            }
-        });
-        if(checkUserNo){
-            return res.status(400).json({"message":"เลขประจำตัวนักศึกษาซ้ำ"});
-        }
-        const checkEmail = await prisma.users.findUnique({
-            where: {
-                email: email
-            }
-        });
-        if(checkEmail){
-            return res.status(400).json({"message":"อีเมลซ้ำ"});
-        }
-        let passwordHash = await bcrypt.hash(password, 10);
-        const user = {
-            user_no,
-            prefix,
-            firstname,
-            lastname,
-            email,
-            password: passwordHash,
-            year_study,
-            position,
-            status,
-            is_reset_password: false
-        }
-        const updatedUser = await prisma.users.update({
-            where: {
-                id: id
-            },
+        return res.status(200).json({
+            message: "ดึงข้อมูลผู้ใช้งานสำเร็จ",
             data: user
         });
-        return res.status(200).json({"message":"อัปเดตข้อมูลผู้ใช้งานสำเร็จ",data:updatedUser});
     } catch (error) {
-        console.error("Error updating user:", error);
-        return res.status(500).json({"message":"เกิดข้อผิดพลาดในการอัปเดตข้อมูลผู้ใช้งาน"});
+        console.error("Error fetching user:", error);
+        return res.status(500).json({ message: "เกิดข้อผิดพลาดในการดึงข้อมูล" });
     }
-}
+};
 
-export const updatePassword = async (req,res) => {
+// POST /api/users
+export const createUser = async (req, res) => {
     try {
-        const {email,password} = req.body;
-        console.log(email,password);
-        const user = await prisma.users.findUnique({
-            where: {
-                email: email
-            }
-        });
-        if(!user){
-            return res.status(404).json({"message":"ไม่พบผู้ใช้งาน"});
+        const { user_no, first_name, last_name, email, password, role, status, major_id, section_id } = req.body;
+
+        // Check duplicates
+        if (user_no) {
+            const existingUserNo = await prisma.user.findUnique({ where: { user_no } });
+            if (existingUserNo) return res.status(400).json({ message: "รหัสผู้ใช้งานซ้ำ" });
         }
-        let passwordHash = await bcrypt.hash(password, 10);
-        const updatedUser = await prisma.users.update({
-            where: {
-                id: user.id
-            },
+
+        // Check email duplicate only if email is provided
+        // Note: In current schema email is not marked unique but logically it should be treated as unique for login
+        if (email) {
+            const existingEmail = await prisma.user.findFirst({ where: { email } });
+            if (existingEmail) return res.status(400).json({ message: "อีเมลซ้ำ" });
+        }
+
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        const newUser = await prisma.user.create({
             data: {
-                password: passwordHash
+                user_no,
+                first_name,
+                last_name,
+                email,
+                password: hashedPassword,
+                role,
+                status: status || 'active',
+                major_id: major_id ? parseInt(major_id) : null,
+                section_id: section_id ? parseInt(section_id) : null
             }
         });
-        return res.status(200).json({"message":"อัปเดตรหัสผ่านผู้ใช้งานสำเร็จ",data:updatedUser});
+
+        return res.status(201).json({
+            message: "เพิ่มผู้ใช้งานสำเร็จ",
+            data: newUser
+        });
+    } catch (error) {
+        console.error("Error creating user:", error);
+        return res.status(500).json({ message: "เกิดข้อผิดพลาดในการสร้างผู้ใช้งาน" });
+    }
+};
+
+// PUT /api/users/:id
+export const updateUser = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { user_no, first_name, last_name, email, role, status, major_id, section_id, password } = req.body;
+
+        // Check duplicates if updating user_no
+        if (user_no) {
+            const existingUserNo = await prisma.user.findUnique({ where: { user_no } });
+            if (existingUserNo && existingUserNo.user_id !== id) {
+                return res.status(400).json({ message: "รหัสผู้ใช้งานซ้ำ" });
+            }
+        }
+        // Check duplicates if updating email
+        if (email) {
+            const existingEmail = await prisma.user.findFirst({ where: { email } });
+            if (existingEmail && existingEmail.user_id !== id) {
+                return res.status(400).json({ message: "อีเมลซ้ำ" });
+            }
+        }
+
+        const updateData = {
+            user_no,
+            first_name,
+            last_name,
+            email,
+            role,
+            status,
+            major_id: major_id ? parseInt(major_id) : null,
+            section_id: section_id ? parseInt(section_id) : null
+        };
+
+        if (password) {
+            updateData.password = await bcrypt.hash(password, 10);
+        }
+
+        const updatedUser = await prisma.user.update({
+            where: { user_id: id },
+            data: updateData
+        });
+
+        return res.status(200).json({
+            message: "อัปเดตข้อมูลสำเร็จ",
+            data: updatedUser
+        });
+
     } catch (error) {
         console.error("Error updating user:", error);
-        return res.status(500).json({"message":"เกิดข้อผิดพลาดในการอัปเดตรหัสผ่านผู้ใช้งาน"});
+        return res.status(500).json({ message: "เกิดข้อผิดพลาดในการอัปเดตข้อมูล" });
     }
-}
+};
 
-export const updateIsResetPassword = async (req,res) => {
+// DELETE /api/users/:id
+export const deleteUser = async (req, res) => {
     try {
-        const {id} = req.params;
-        const updatedUser = await prisma.users.update({
-            where: {
-                user_no: id
-            },
-            data: {
-                is_reset_password: true
-            }
-        });
-        return res.status(200).json({"message":"อัปเดตผู้ใช้งานสำเร็จ",data:updatedUser});
-    } catch (error) {
-        console.error("Error updating user:", error);
-        return res.status(500).json({"message":"เกิดข้อผิดพลาดในการอัปเดตผู้ใช้งาน"});
-    }
-}
+        const { id } = req.params;
 
-export const deleteUser = async (req,res) => {
-    try {
-        const {id} = req.params;
-        const deletedUser = await prisma.users.update({
-            where: {
-                user_no: id
-            },
-            data: {
-                status: "Inactive"
-            }
+        // Check constraints (e.g., has borrow transactions)
+        // For simple soft delete or direct delete, let's keep it simple for now or check relation
+        const hasTransactions = await prisma.borrowTransaction.count({
+            where: { user_id: id }
         });
-        return res.status(200).json({"message":"ลบผู้ใช้งานสำเร็จ",data:deletedUser});
+
+        if (hasTransactions > 0) {
+            // Soft delete recommended
+            await prisma.user.update({
+                where: { user_id: id },
+                data: { status: 'inactive' }
+            });
+            return res.status(200).json({ message: "ผู้ใช้งานมีประวัติการเบิกคืน จึงทำการระงับการใช้งานแทนการลบ" });
+        }
+
+        await prisma.user.delete({
+            where: { user_id: id }
+        });
+
+        return res.status(200).json({ message: "ลบผู้ใช้งานสำเร็จ" });
+
     } catch (error) {
         console.error("Error deleting user:", error);
-        return res.status(500).json({"message":"เกิดข้อผิดพลาดในการลบผู้ใช้งาน"});
+        return res.status(500).json({ message: "เกิดข้อผิดพลาดในการลบผู้ใช้งาน" });
     }
-}
+};
 
+// Update Password (Specific)
+export const updatePassword = async (req, res) => {
+    try {
+        const { email, password } = req.body;
+
+        // Find user by email (using findFirst as email is not unique in schema)
+        const user = await prisma.user.findFirst({
+            where: { email }
+        });
+
+        if (!user) {
+            return res.status(404).json({ message: "ไม่พบผู้ใช้งาน" });
+        }
+
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        await prisma.user.update({
+            where: { user_id: user.user_id },
+            data: { password: hashedPassword }
+        });
+
+        return res.status(200).json({ message: "รีเซ็ตรหัสผ่านสำเร็จ" });
+    } catch (error) {
+        console.error("Error updating password:", error);
+        return res.status(500).json({ message: "เกิดข้อผิดพลาดในการรีเซ็ตรหัสผ่าน" });
+    }
+};
+
+// POST /api/users/batch-import
+export const batchImportUsers = async (req, res) => {
+    try {
+        const { users } = req.body; // Expect array of user objects
+
+        if (!Array.isArray(users) || users.length === 0) {
+            return res.status(400).json({ message: "ไม่มีข้อมูลนำเข้า" });
+        }
+
+        let successCount = 0;
+        let failCount = 0;
+        const errors = [];
+
+        // Prepare default password hash
+        const defaultPasswordHash = await bcrypt.hash("123456", 10);
+
+        for (const item of users) {
+            try {
+                // Validate data
+                if (!item.user_no || !item.first_name) {
+                    throw new Error("Missing required fields (user_no, first_name)");
+                }
+
+                // Check duplicates (user_no)
+                const existingUser = await prisma.user.findUnique({ where: { user_no: String(item.user_no) } });
+                if (existingUser) {
+                    throw new Error(`User No ${item.user_no} already exists`);
+                }
+
+                await prisma.user.create({
+                    data: {
+                        user_no: String(item.user_no),
+                        first_name: item.first_name,
+                        last_name: item.last_name || "",
+                        email: item.email || null,
+                        password: defaultPasswordHash,
+                        role: item.role || 'student', // Default valid role
+                        status: 'active',
+                        major_id: item.major_id ? parseInt(item.major_id) : null,
+                        section_id: item.section_id ? parseInt(item.section_id) : null
+                    }
+                });
+                successCount++;
+            } catch (err) {
+                failCount++;
+                errors.push({ item, error: err.message });
+            }
+        }
+
+        return res.status(200).json({
+            message: `นำเข้าเสร็จสิ้น: สำเร็จ ${successCount}, ล้มเหลว ${failCount}`,
+            errors: errors.length > 0 ? errors : undefined
+        });
+
+    } catch (error) {
+        console.error("Error importing users:", error);
+        return res.status(500).json({ message: "เกิดข้อผิดพลาดในการนำเข้าข้อมูล" });
+    }
+};
