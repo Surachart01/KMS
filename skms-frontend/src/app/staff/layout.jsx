@@ -126,9 +126,10 @@ export default function StaffLayout({ children }) {
 
     const userMenuItems = [
         {
-            key: "profile",
+            key: "/staff/profile",
             icon: <UserOutlined />,
             label: "โปรไฟล์",
+            onClick: () => router.push("/staff/profile"),
         },
         {
             type: "divider",
@@ -179,7 +180,7 @@ export default function StaffLayout({ children }) {
                         borderBottom: "1px solid rgba(255, 255, 255, 0.1)",
                     }}
                 >
-                    {collapsed ? "SKMS" : "SKMS - Staff"}
+                    KMS
                 </div>
                 <Menu
                     theme="dark"

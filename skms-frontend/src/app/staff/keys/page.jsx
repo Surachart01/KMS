@@ -240,8 +240,30 @@ export default function KeysPage() {
                     <Form.Item name="cabinet_slot" label="ช่องตู้">
                         <InputNumber style={{ width: "100%" }} />
                     </Form.Item>
-                    <Form.Item name="nfc_uid" label="NFC UID" rules={[{ required: true }]}>
-                        <Input />
+                    <Form.Item label="NFC UID">
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                            <Form.Item
+                                name="nfc_uid"
+                                noStyle
+                                rules={[{ required: true, message: 'กรุณากรอก NFC UID' }]}
+                            >
+                                <Input
+                                    placeholder="กรอก NFC UID หรือคลิก Generate"
+                                />
+                            </Form.Item>
+                            <Button
+                                type="primary"
+                                onClick={() => {
+                                    // Generate random 8-character hex string (NFC UID format)
+                                    const randomHex = Array.from({ length: 8 }, () =>
+                                        Math.floor(Math.random() * 16).toString(16).toUpperCase()
+                                    ).join('');
+                                    form.setFieldValue('nfc_uid', randomHex);
+                                }}
+                            >
+                                Generate
+                            </Button>
+                        </div>
                     </Form.Item>
                     <Form.Item name="status" label="สถานะ" initialValue="in_cabinet">
                         <Select>

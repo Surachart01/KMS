@@ -8,10 +8,12 @@ import {
     Modal,
     Form,
     Input,
+    Select,
     message,
     Popconfirm,
     Typography,
     Card,
+    Tag,
 } from "antd";
 import {
     PlusOutlined,
@@ -19,12 +21,13 @@ import {
     DeleteOutlined,
     BookOutlined,
 } from "@ant-design/icons";
-import { subjectsAPI } from "@/service/api";
+import { subjectsAPI, usersAPI } from "@/service/api";
 
 const { Title } = Typography;
 
 export default function SubjectsPage() {
     const [subjects, setSubjects] = useState([]);
+    const [teachers, setTeachers] = useState([]);
     const [loading, setLoading] = useState(false);
     const [modalVisible, setModalVisible] = useState(false);
     const [editingSubject, setEditingSubject] = useState(null);
@@ -32,7 +35,17 @@ export default function SubjectsPage() {
 
     useEffect(() => {
         fetchSubjects();
+        fetchTeachers();
     }, []);
+
+    const fetchTeachers = async () => {
+        try {
+            const response = await usersAPI.getTeachers();
+            setTeachers(response.data.data || []);
+        } catch (error) {
+            console.error('Error fetching teachers:', error);
+        }
+    };
 
     const fetchSubjects = async () => {
         try {
@@ -55,7 +68,11 @@ export default function SubjectsPage() {
 
     const handleEdit = (record) => {
         setEditingSubject(record);
-        form.setFieldsValue(record);
+        form.setFieldsValue({
+            subject_code: record.subject_code,
+            subject_name: record.subject_name,
+            teacher_ids: record.teachers?.map(t => t.user_id) || []
+        });
         setModalVisible(true);
     };
 
@@ -72,13 +89,16 @@ export default function SubjectsPage() {
 
     const handleSubmit = async (values) => {
         try {
+            const data = {
+                subject_name: values.subject_name,
+                teacher_ids: values.teacher_ids || []
+            };
+
             if (editingSubject) {
-                await subjectsAPI.update(editingSubject.subject_code, {
-                    subject_name: values.subject_name
-                });
+                await subjectsAPI.update(editingSubject.subject_code, data);
                 message.success("แก้ไขรายวิชาสำเร็จ");
             } else {
-                await subjectsAPI.create(values);
+                await subjectsAPI.create({ subject_code: values.subject_code, ...data });
                 message.success("เพิ่มรายวิชาสำเร็จ");
             }
             setModalVisible(false);
@@ -101,6 +121,23 @@ export default function SubjectsPage() {
             title: "ชื่อรายวิชา",
             dataIndex: "subject_name",
             key: "subject_name",
+        },
+        {
+            title: "อาจารย์ผู้สอน",
+            key: "teachers",
+            render: (_, record) => (
+                <Space direction="vertical" size={0}>
+                    {record.teachers?.length > 0 ? (
+                        record.teachers.map((teacher, idx) => (
+                            <Tag key={idx} color="blue">
+                                {teacher.first_name} {teacher.last_name}
+                            </Tag>
+                        ))
+                    ) : (
+                        <span style={{ color: '#999' }}>-</span>
+                    )}
+                </Space>
+            ),
         },
         {
             title: "จำนวนตารางเรียน",
@@ -204,6 +241,28 @@ export default function SubjectsPage() {
                         rules={[{ required: true, message: "กรุณากรอกชื่อรายวิชา" }]}
                     >
                         <Input placeholder="เช่น การเขียนโปรแกรมเบื้องต้น" />
+                    </Form.Item>
+
+                    <Form.Item
+                        name="teacher_ids"
+                        label="อาจารย์ผู้สอน"
+                        tooltip="สามารถเลือกได้หลายคน"
+                    >
+                        <Select
+                            mode="multiple"
+                            placeholder="เลือกอาจารย์ผู้สอน"
+                            allowClear
+                            showSearch
+                            filterOption={(input, option) =>
+                                option.children.toLowerCase().includes(input.toLowerCase())
+                            }
+                        >
+                            {teachers.map((teacher) => (
+                                <Select.Option key={teacher.user_id} value={teacher.user_id}>
+                                    {teacher.first_name} {teacher.last_name} {teacher.user_no && `(${teacher.user_no})`}
+                                </Select.Option>
+                            ))}
+                        </Select>
                     </Form.Item>
                 </Form>
             </Modal>

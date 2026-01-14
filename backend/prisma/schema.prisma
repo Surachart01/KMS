@@ -88,8 +88,12 @@ model User {
   /// ความสัมพันธ์กับ Major
   major   Major?   @relation(fields: [major_id], references: [major_id])
 
+
   /// ความสัมพันธ์กับ Section
   section Section? @relation(fields: [section_id], references: [section_id])
+
+  /// รายวิชาที่สอน (สำหรับอาจารย์)
+  teaching_subjects SubjectTeacher[]
 
   /// ประวัติการเบิกกุญแจ
   borrow_transactions BorrowTransaction[]
@@ -137,8 +141,34 @@ model Subject {
   /// ชื่อวิชา
   subject_name String
 
+  /// อาจารย์ผู้สอน (Many-to-Many)
+  teachers SubjectTeacher[]
+
   /// ตารางเรียนของรายวิชา
   class_schedules ClassSchedule[]
+}
+
+////////////////////////////////////////////////
+/// ตาราง SubjectTeacher (วิชา-อาจารย์ผู้สอน)
+////////////////////////////////////////////////
+model SubjectTeacher {
+  /// รหัสวิชา
+  subject_code String
+
+  /// รหัสอาจารย์
+  teacher_id   String
+
+  /// ความสัมพันธ์กับ Subject
+  subject Subject @relation(fields: [subject_code], references: [subject_code], onDelete: Cascade)
+
+  /// ความสัมพันธ์กับ User (Teacher)
+  teacher User    @relation(fields: [teacher_id], references: [user_id], onDelete: Cascade)
+
+  /// Primary Key (Composite)
+  @@id([subject_code, teacher_id])
+  
+  /// Index สำหรับค้นหาวิชาที่อาจารย์สอน
+  @@index([teacher_id])
 }
 
 ////////////////////////////////////////////////

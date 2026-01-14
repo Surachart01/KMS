@@ -178,9 +178,9 @@ export default function LoginPage() {
             <CloudCog size={80} className="text-white" />
           </div>
           <div className="space-y-2">
-            <h1 className="text-4xl font-bold tracking-tight">SKMS</h1>
+            <h1 className="text-4xl font-bold tracking-tight">KMS</h1>
             <p className="text-green-100 text-lg font-light">
-              Student Knowledge Management System
+              Key Management System
             </p>
           </div>
           <div className="h-1 w-24 bg-green-400 rounded-full my-4 opacity-50"></div>
@@ -220,7 +220,7 @@ export default function LoginPage() {
           >
             <Form.Item
               name="email"
-              label={<span className="font-medium text-gray-700">อีเมลนักศึกษา</span>}
+              label={<span className="font-medium text-gray-700">อีเมล</span>}
               rules={[
                 { required: true, message: "โปรดกรอกอีเมล" },
                 { type: "email", message: "รูปแบบอีเมลไม่ถูกต้อง" }
@@ -273,7 +273,7 @@ export default function LoginPage() {
           </Form>
 
           <div className="mt-8 pt-8 border-t border-gray-100 text-center text-xs text-gray-400">
-            &copy; {new Date().getFullYear()} SKMS. King Mongkut's University of Technology North Bangkok.
+            &copy; {new Date().getFullYear()} KMS. King Mongkut's University of Technology North Bangkok.
           </div>
         </div>
       </div>

@@ -88,7 +88,9 @@ export const createUser = async (req, res) => {
             if (existingEmail) return res.status(400).json({ message: "อีเมลซ้ำ" });
         }
 
-        const hashedPassword = await bcrypt.hash(password, 10);
+        // Auto-generate password from user_no if not provided
+        const passwordToHash = password || user_no || 'default123';
+        const hashedPassword = await bcrypt.hash(passwordToHash, 10);
 
         const newUser = await prisma.user.create({
             data: {
@@ -283,5 +285,32 @@ export const batchImportUsers = async (req, res) => {
     } catch (error) {
         console.error("Error importing users:", error);
         return res.status(500).json({ message: "เกิดข้อผิดพลาดในการนำเข้าข้อมูล" });
+    }
+};
+
+// GET /api/users/teachers
+export const getTeachers = async (req, res) => {
+    try {
+        const teachers = await prisma.user.findMany({
+            where: {
+                role: 'teacher',
+                status: 'active'
+            },
+            select: {
+                user_id: true,
+                user_no: true,
+                first_name: true,
+                last_name: true,
+            },
+            orderBy: { first_name: 'asc' }
+        });
+
+        return res.status(200).json({
+            message: "ดึงข้อมูลอาจารย์สำเร็จ",
+            data: teachers
+        });
+    } catch (error) {
+        console.error("Error getting teachers:", error);
+        return res.status(500).json({ message: "เกิดข้อผิดพลาดในการดึงข้อมูล" });
     }
 };

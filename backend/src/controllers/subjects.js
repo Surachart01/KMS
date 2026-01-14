@@ -10,6 +10,18 @@ export const getAllSubjects = async (req, res) => {
     try {
         const subjects = await prisma.subject.findMany({
             include: {
+                teachers: {
+                    include: {
+                        teacher: {
+                            select: {
+                                user_id: true,
+                                user_no: true,
+                                first_name: true,
+                                last_name: true
+                            }
+                        }
+                    }
+                },
                 _count: {
                     select: {
                         class_schedules: true
@@ -21,9 +33,15 @@ export const getAllSubjects = async (req, res) => {
             }
         });
 
+        // Transform data to flatten teachers
+        const formattedSubjects = subjects.map(s => ({
+            ...s,
+            teachers: s.teachers.map(st => st.teacher)
+        }));
+
         return res.status(200).json({
             message: "ดึงข้อมูลรายวิชาสำเร็จ",
-            data: subjects
+            data: formattedSubjects
         });
     } catch (error) {
         console.error("Error getting subjects:", error);
@@ -72,7 +90,7 @@ export const getSubjectByCode = async (req, res) => {
  */
 export const createSubject = async (req, res) => {
     try {
-        const { subject_code, subject_name } = req.body;
+        const { subject_code, subject_name, teacher_ids } = req.body;
 
         if (!subject_code || !subject_name) {
             return res.status(400).json({ message: "กรุณากรอกข้อมูลให้ครบถ้วน" });
@@ -81,7 +99,12 @@ export const createSubject = async (req, res) => {
         const subject = await prisma.subject.create({
             data: {
                 subject_code,
-                subject_name
+                subject_name,
+                teachers: {
+                    create: teacher_ids?.map(id => ({
+                        teacher_id: id
+                    })) || []
+                }
             }
         });
 
@@ -107,7 +130,7 @@ export const createSubject = async (req, res) => {
 export const updateSubject = async (req, res) => {
     try {
         const { code } = req.params;
-        const { subject_name } = req.body;
+        const { subject_name, teacher_ids } = req.body;
 
         if (!subject_name) {
             return res.status(400).json({ message: "กรุณากรอกชื่อรายวิชา" });
@@ -118,7 +141,13 @@ export const updateSubject = async (req, res) => {
                 subject_code: code
             },
             data: {
-                subject_name
+                subject_name,
+                teachers: {
+                    deleteMany: {},
+                    create: teacher_ids?.map(id => ({
+                        teacher_id: id
+                    })) || []
+                }
             }
         });
 

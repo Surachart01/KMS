@@ -14,7 +14,12 @@ import {
     Typography,
     Card,
     Tag,
-    Upload
+    Upload,
+    Alert,
+    Divider,
+    List,
+    Progress,
+    Result
 } from "antd";
 import {
     PlusOutlined,
@@ -22,13 +27,20 @@ import {
     DeleteOutlined,
     UserOutlined,
     FileExcelOutlined,
-    UploadOutlined
+    UploadOutlined,
+    DownloadOutlined,
+    CheckCircleOutlined,
+    CloseCircleOutlined,
+    WarningOutlined,
+    InboxOutlined
 } from "@ant-design/icons";
 import { usersAPI, majorsAPI, sectionsAPI } from "@/service/api";
 import { useSearchParams } from "next/navigation";
-import * as XLSX from 'xlsx';
+import axios from 'axios';
 
-const { Title } = Typography;
+const { Title, Text } = Typography;
+const { Dragger } = Upload;
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4556';
 
 export default function UsersPage() {
     const [users, setUsers] = useState([]);
@@ -42,11 +54,19 @@ export default function UsersPage() {
     const searchParams = useSearchParams();
     const currentRole = searchParams.get("role");
 
+    // Excel Import States
+    const [importModalVisible, setImportModalVisible] = useState(false);
+    const [uploadedFile, setUploadedFile] = useState(null);
+    const [previewData, setPreviewData] = useState(null);
+    const [validationLoading, setValidationLoading] = useState(false);
+    const [importLoading, setImportLoading] = useState(false);
+    const [importStep, setImportStep] = useState('upload'); // 'upload', 'preview', 'importing', 'complete'
+
     useEffect(() => {
         fetchUsers();
         fetchMajors();
         fetchSections();
-    }, [currentRole]); // Re-fetch when role changes
+    }, [currentRole]);
 
     const fetchUsers = async () => {
         try {
@@ -142,51 +162,132 @@ export default function UsersPage() {
         }
     };
 
-    // Excel Import Logic
-    const handleExcelUpload = (file) => {
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-            try {
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, { type: 'array' });
-                const sheetName = workbook.SheetNames[0];
-                const worksheet = workbook.Sheets[sheetName];
-                const jsonData = XLSX.utils.sheet_to_json(worksheet);
+    // ========================================================================
+    // Excel Import Functions
+    // ========================================================================
 
-                if (jsonData.length === 0) {
-                    message.error("ไม่พบข้อมูลในไฟล์");
-                    return;
+    // Download Template
+    const handleDownloadTemplate = async () => {
+        try {
+            const response = await axios.get(`${API_BASE_URL}/students/import/template`, {
+                responseType: 'blob'
+            });
+
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', 'student-import-template.xlsx');
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            message.success('ดาวน์โหลด Template สำเร็จ');
+        } catch (error) {
+            console.error('Download error:', error);
+            message.error('ไม่สามารถดาวน์โหลด Template ได้');
+        }
+    };
+
+    // Open Import Modal
+    const handleOpenImportModal = () => {
+        setImportModalVisible(true);
+        setImportStep('upload');
+        setUploadedFile(null);
+        setPreviewData(null);
+    };
+
+    // Handle File Upload and Preview
+    const handleFileUpload = async (file) => {
+        setUploadedFile(file);
+        setValidationLoading(true);
+
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const response = await axios.post(
+                `${API_BASE_URL}/students/import/preview`,
+                formData,
+                {
+                    headers: { 'Content-Type': 'multipart/form-data' }
                 }
+            );
 
-                // Transform data
-                const formattedData = jsonData.map(row => ({
-                    user_no: String(row['รหัส'] || row['user_no'] || ''),
-                    first_name: row['ชื่อ'] || row['first_name'],
-                    last_name: row['นามสกุล'] || row['last_name'],
-                    email: row['อีเมล'] || row['email'],
-                    major_id: row['รหัสสาขา'] || row['major_id'],
-                    section_id: row['รหัสกลุ่มเรียน'] || row['section_id'],
-                    role: row['บทบาท'] || row['role'] || currentRole || 'student' // Default to currentRole or student
-                })).filter(u => u.user_no && u.first_name); // Filter invalid rows
+            setPreviewData(response.data.data);
+            setImportStep('preview');
 
-                if (formattedData.length === 0) {
-                    message.error("ไม่พบข้อมูลที่ถูกต้อง (ต้องมีรหัสและชื่อ)");
-                    return;
-                }
-
-                // Send to backend
-                await usersAPI.batchImport({ users: formattedData });
-                message.success(`นำเข้าข้อมูลสำเร็จ ${formattedData.length} รายการ`);
-                fetchUsers();
-
-            } catch (error) {
-                console.error("Excel import error:", error);
-                message.error("เกิดข้อผิดพลาดในการอ่านไฟล์ Excel");
+            if (response.data.data.invalid_count > 0) {
+                message.warning(`พบข้อมูลผิดพลาด ${response.data.data.invalid_count} รายการ`);
+            } else {
+                message.success('ตรวจสอบข้อมูลเรียบร้อย พร้อมนำเข้า');
             }
-        };
-        reader.readAsArrayBuffer(file);
+
+        } catch (error) {
+            console.error('Preview error:', error);
+            message.error(error.response?.data?.message || 'เกิดข้อผิดพลาดในการตรวจสอบไฟล์');
+            setImportStep('upload');
+        } finally {
+            setValidationLoading(false);
+        }
+
         return false; // Prevent auto upload
     };
+
+    // Confirm Import
+    const handleConfirmImport = async () => {
+        if (!uploadedFile) {
+            message.error('ไม่พบไฟล์ที่อัปโหลด');
+            return;
+        }
+
+        setImportLoading(true);
+        setImportStep('importing');
+
+        try {
+            const formData = new FormData();
+            formData.append('file', uploadedFile);
+
+            const response = await axios.post(
+                `${API_BASE_URL}/students/import/confirm`,
+                formData,
+                {
+                    headers: { 'Content-Type': 'multipart/form-data' }
+                }
+            );
+
+            message.success(response.data.message || 'นำเข้าข้อมูลสำเร็จ');
+            setImportStep('complete');
+
+            // Refresh user list
+            fetchUsers();
+
+            // Close modal after 2 seconds
+            setTimeout(() => {
+                setImportModalVisible(false);
+                setUploadedFile(null);
+                setPreviewData(null);
+                setImportStep('upload');
+            }, 2000);
+
+        } catch (error) {
+            console.error('Import error:', error);
+            message.error(error.response?.data?.message || 'เกิดข้อผิดพลาดในการนำเข้าข้อมูล');
+            setImportStep('preview');
+        } finally {
+            setImportLoading(false);
+        }
+    };
+
+    // Close Import Modal
+    const handleCloseImportModal = () => {
+        setImportModalVisible(false);
+        setUploadedFile(null);
+        setPreviewData(null);
+        setImportStep('upload');
+    };
+
+    // ========================================================================
+    // Utility Functions
+    // ========================================================================
 
     const handleMajorChange = (majorId) => {
         setSelectedMajor(majorId);
@@ -210,6 +311,10 @@ export default function UsersPage() {
             default: return role;
         }
     };
+
+    // ========================================================================
+    // Table Columns
+    // ========================================================================
 
     const columns = [
         {
@@ -295,6 +400,171 @@ export default function UsersPage() {
         ? sections.filter((s) => s.major_id === selectedMajor)
         : sections;
 
+    // ========================================================================
+    // Render Import Modal Content
+    // ========================================================================
+
+    const renderImportModalContent = () => {
+        if (importStep === 'upload') {
+            return (
+                <div>
+                    <Alert
+                        message="วิธีการใช้งาน"
+                        description={
+                            <div>
+                                <p>1. ดาวน์โหลด Template Excel ด้านล่าง</p>
+                                <p>2. กรอกข้อมูลนักศึกษาใน Template</p>
+                                <p>3. อัปโหลดไฟล์เพื่อตรวจสอบข้อมูล</p>
+                                <p>4. ยืนยันการนำเข้าข้อมูล</p>
+                            </div>
+                        }
+                        type="info"
+                        showIcon
+                        style={{ marginBottom: 20 }}
+                    />
+
+                    <Button
+                        type="primary"
+                        icon={<DownloadOutlined />}
+                        onClick={handleDownloadTemplate}
+                        block
+                        size="large"
+                        style={{ marginBottom: 20 }}
+                    >
+                        ดาวน์โหลด Template
+                    </Button>
+
+                    <Divider>อัปโหลดไฟล์</Divider>
+
+                    <Dragger
+                        beforeUpload={handleFileUpload}
+                        accept=".xlsx,.xls"
+                        maxCount={1}
+                        showUploadList={false}
+                        disabled={validationLoading}
+                    >
+                        <p className="ant-upload-drag-icon">
+                            <InboxOutlined />
+                        </p>
+                        <p className="ant-upload-text">คลิกหรือลากไฟล์มาวางที่นี่</p>
+                        <p className="ant-upload-hint">
+                            รองรับไฟล์ .xlsx และ .xls เท่านั้น (ขนาดไม่เกิน 5MB)
+                        </p>
+                    </Dragger>
+
+                    {validationLoading && (
+                        <div style={{ textAlign: 'center', marginTop: 20 }}>
+                            <Progress percent={100} status="active" showInfo={false} />
+                            <Text>กำลังตรวจสอบข้อมูล...</Text>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        if (importStep === 'preview') {
+            return (
+                <div>
+                    <Alert
+                        message="ผลการตรวจสอบ"
+                        description={
+                            <div>
+                                <p>ทั้งหมด: {previewData?.total_rows} รายการ</p>
+                                <p style={{ color: '#52c41a' }}>✓ ข้อมูลถูกต้อง: {previewData?.valid_count} รายการ</p>
+                                <p style={{ color: '#f5222d' }}>✗ ข้อมูลผิดพลาด: {previewData?.invalid_count} รายการ</p>
+                            </div>
+                        }
+                        type={previewData?.invalid_count > 0 ? "warning" : "success"}
+                        showIcon
+                        style={{ marginBottom: 20 }}
+                    />
+
+                    {previewData?.valid_count > 0 && (
+                        <div style={{ marginBottom: 20 }}>
+                            <Title level={5}>
+                                <CheckCircleOutlined style={{ color: '#52c41a' }} /> ข้อมูลที่พร้อมนำเข้า ({previewData?.valid_count})
+                            </Title>
+                            <List
+                                size="small"
+                                bordered
+                                dataSource={previewData?.valid_students?.slice(0, 5)}
+                                renderItem={(item) => (
+                                    <List.Item>
+                                        <Text>{item.user_no}</Text> -
+                                        <Text strong> {item.first_name} {item.last_name}</Text> -
+                                        <Text type="secondary">{item.email}</Text>
+                                    </List.Item>
+                                )}
+                                style={{ maxHeight: 200, overflow: 'auto' }}
+                            />
+                            {previewData?.valid_count > 5 && (
+                                <Text type="secondary">และอีก {previewData?.valid_count - 5} รายการ...</Text>
+                            )}
+                        </div>
+                    )}
+
+                    {previewData?.invalid_count > 0 && (
+                        <div>
+                            <Title level={5}>
+                                <CloseCircleOutlined style={{ color: '#f5222d' }} /> ข้อมูลผิดพลาด ({previewData?.invalid_count})
+                            </Title>
+                            <List
+                                size="small"
+                                bordered
+                                dataSource={previewData?.invalid_students?.slice(0, 5)}
+                                renderItem={(item) => (
+                                    <List.Item>
+                                        <div style={{ width: '100%' }}>
+                                            <Text>แถว {item.row_number}: {item.user_no || '(ไม่มีรหัส)'} - {item.first_name} {item.last_name}</Text>
+                                            <div style={{ color: '#f5222d', fontSize: 12 }}>
+                                                {item.errors.map((err, idx) => (
+                                                    <div key={idx}>• {err}</div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </List.Item>
+                                )}
+                                style={{ maxHeight: 200, overflow: 'auto' }}
+                            />
+                            {previewData?.invalid_count > 5 && (
+                                <Text type="secondary">และอีก {previewData?.invalid_count - 5} รายการ...</Text>
+                            )}
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        if (importStep === 'importing') {
+            return (
+                <div style={{ textAlign: 'center', padding: 40 }}>
+                    <Progress type="circle" percent={100} status="active" />
+                    <Title level={4} style={{ marginTop: 20 }}>กำลังนำเข้าข้อมูล...</Title>
+                    <Text type="secondary">กรุณารอสักครู่</Text>
+                </div>
+            );
+        }
+
+        if (importStep === 'complete') {
+            return (
+                <Result
+                    status="success"
+                    title="นำเข้าข้อมูลสำเร็จ!"
+                    subTitle={`นำเข้าข้อมูลนักศึกษาทั้งหมด ${previewData?.valid_count} คน`}
+                    extra={[
+                        <Button type="primary" key="close" onClick={handleCloseImportModal}>
+                            ปิด
+                        </Button>
+                    ]}
+                />
+            );
+        }
+    };
+
+    // ========================================================================
+    // Main Render
+    // ========================================================================
+
     return (
         <div>
             <Space direction="vertical" size="large" style={{ width: "100%" }}>
@@ -305,13 +575,15 @@ export default function UsersPage() {
                         </Title>
                     </div>
                     <Space>
-                        <Upload
-                            beforeUpload={handleExcelUpload}
-                            showUploadList={false}
-                            accept=".xlsx, .xls"
-                        >
-                            <Button icon={<FileExcelOutlined />}>นำเข้า Excel</Button>
-                        </Upload>
+                        {currentRole === 'student' && (
+                            <Button
+                                icon={<FileExcelOutlined />}
+                                onClick={handleOpenImportModal}
+                                size="large"
+                            >
+                                นำเข้า Excel
+                            </Button>
+                        )}
                         <Button
                             type="primary"
                             icon={<PlusOutlined />}
@@ -338,6 +610,7 @@ export default function UsersPage() {
                 </Card>
             </Space>
 
+            {/* Add/Edit User Modal */}
             <Modal
                 title={editingUser ? "แก้ไขผู้ใช้งาน" : "เพิ่มผู้ใช้งาน"}
                 open={modalVisible}
@@ -454,13 +727,39 @@ export default function UsersPage() {
                         <Form.Item
                             name="password"
                             label="รหัสผ่าน"
-                            rules={[{ required: true, message: "กรุณากรอกรหัสผ่าน" }]}
-                            tooltip="รหัสผ่านเริ่มต้น สามารถเปลี่ยนได้ภายหลัง"
+                            tooltip="ไม่จำเป็นสำหรับ student/teacher (ระบบจะสร้างอัตโนมัติจากรหัสผู้ใช้งาน)"
                         >
-                            <Input.Password placeholder="รหัสผ่าน" />
+                            <Input.Password placeholder="ไม่จำเป็น (ถ้าเว้นว่างจะใช้รหัสผู้ใช้งาน)" />
                         </Form.Item>
                     )}
                 </Form>
+            </Modal>
+
+            {/* Excel Import Modal */}
+            <Modal
+                title={"นำเข้าข้อมูลนักศึกษาจาก Excel"}
+                open={importModalVisible}
+                onCancel={handleCloseImportModal}
+                footer={
+                    importStep === 'preview' ? [
+                        <Button key="back" onClick={() => setImportStep('upload')}>
+                            ย้อนกลับ
+                        </Button>,
+                        <Button
+                            key="confirm"
+                            type="primary"
+                            onClick={handleConfirmImport}
+                            loading={importLoading}
+                            disabled={previewData?.valid_count === 0}
+                        >
+                            ยืนยันนำเข้า {previewData?.valid_count || 0} รายการ
+                        </Button>
+                    ] : null
+                }
+                width={700}
+                destroyOnClose
+            >
+                {renderImportModalContent()}
             </Modal>
         </div>
     );

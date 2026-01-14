@@ -19,6 +19,7 @@ import statisticsRouter from './src/routes/statistics.js';
 import keyRouter from './src/routes/key.js';
 import borrowReasonRouter from './src/routes/borrowReason.js';
 import transactionsRouter from './src/routes/transactions.js';
+import studentImportRouter from './src/routes/studentImport.js';
 
 // initialize express app and prisma client
 const app = express();
@@ -40,6 +41,7 @@ app.use("/api/statistics", statisticsRouter);
 app.use("/api/keys", keyRouter);
 app.use("/api/borrow-reasons", borrowReasonRouter);
 app.use("/api/transactions", transactionsRouter);
+app.use("/api/students/import", studentImportRouter);
 
 app.get("/", async (req, res) => {
   try {
