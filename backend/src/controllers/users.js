@@ -6,19 +6,21 @@ const prisma = new PrismaClient();
 // GET /api/users
 export const getAllUsers = async (req, res) => {
     try {
-        const { role, major_id, section_id, keyword } = req.query;
+        const { role, majorId, sectionId, keyword } = req.query;
 
         // Build where clause
-        const where = {};
+        const where = {
+            isBanned: false // Default to showing only active users
+        };
         if (role) where.role = role;
-        if (major_id) where.major_id = parseInt(major_id);
-        if (section_id) where.section_id = parseInt(section_id);
+        if (majorId) where.section = { majorId: majorId };
+        if (sectionId) where.sectionId = sectionId;
 
         if (keyword) {
             where.OR = [
-                { first_name: { contains: keyword, mode: 'insensitive' } },
-                { last_name: { contains: keyword, mode: 'insensitive' } },
-                { user_no: { contains: keyword, mode: 'insensitive' } },
+                { firstName: { contains: keyword, mode: 'insensitive' } },
+                { lastName: { contains: keyword, mode: 'insensitive' } },
+                { studentCode: { contains: keyword, mode: 'insensitive' } },
                 { email: { contains: keyword, mode: 'insensitive' } }
             ];
         }
@@ -26,11 +28,14 @@ export const getAllUsers = async (req, res) => {
         const users = await prisma.user.findMany({
             where,
             include: {
-                major: true,
-                section: true
+                section: {
+                    include: {
+                        major: true
+                    }
+                }
             },
             orderBy: {
-                created_at: 'desc'
+                createdAt: 'desc'
             }
         });
 
@@ -49,10 +54,13 @@ export const getUserById = async (req, res) => {
     try {
         const { id } = req.params;
         const user = await prisma.user.findUnique({
-            where: { user_id: id },
+            where: { id: id },
             include: {
-                major: true,
-                section: true
+                section: {
+                    include: {
+                        major: true
+                    }
+                }
             }
         });
 
@@ -73,36 +81,42 @@ export const getUserById = async (req, res) => {
 // POST /api/users
 export const createUser = async (req, res) => {
     try {
-        const { user_no, first_name, last_name, email, password, role, status, major_id, section_id } = req.body;
+        let { studentCode, firstName, lastName, email, password, role, majorId, sectionId } = req.body;
+
+        // Auto-generate email for student if not provided
+        if (!email && role === 'STUDENT' && studentCode) {
+            const digits = studentCode.replace(/\D/g, '');
+            if (digits.length > 0) {
+                email = `s${digits}@email.kmutnb.ac.th`;
+            }
+        }
 
         // Check duplicates
-        if (user_no) {
-            const existingUserNo = await prisma.user.findUnique({ where: { user_no } });
-            if (existingUserNo) return res.status(400).json({ message: "รหัสผู้ใช้งานซ้ำ" });
+        if (studentCode) {
+            const existingCode = await prisma.user.findUnique({ where: { studentCode } });
+            if (existingCode) return res.status(400).json({ message: "รหัสผู้ใช้งานซ้ำ" });
         }
 
         // Check email duplicate only if email is provided
-        // Note: In current schema email is not marked unique but logically it should be treated as unique for login
         if (email) {
             const existingEmail = await prisma.user.findFirst({ where: { email } });
             if (existingEmail) return res.status(400).json({ message: "อีเมลซ้ำ" });
         }
 
-        // Auto-generate password from user_no if not provided
-        const passwordToHash = password || user_no || 'default123';
+        // Auto-generate password from studentCode if not provided
+        const passwordToHash = password || studentCode || 'default123';
         const hashedPassword = await bcrypt.hash(passwordToHash, 10);
 
         const newUser = await prisma.user.create({
             data: {
-                user_no,
-                first_name,
-                last_name,
+                studentCode,
+                firstName,
+                lastName,
                 email,
                 password: hashedPassword,
                 role,
-                status: status || 'active',
-                major_id: major_id ? parseInt(major_id) : null,
-                section_id: section_id ? parseInt(section_id) : null
+                isBanned: false,
+                sectionId: sectionId || null
             }
         });
 
@@ -120,32 +134,31 @@ export const createUser = async (req, res) => {
 export const updateUser = async (req, res) => {
     try {
         const { id } = req.params;
-        const { user_no, first_name, last_name, email, role, status, major_id, section_id, password } = req.body;
+        const { studentCode, firstName, lastName, email, role, isBanned, majorId, sectionId, password } = req.body;
 
-        // Check duplicates if updating user_no
-        if (user_no) {
-            const existingUserNo = await prisma.user.findUnique({ where: { user_no } });
-            if (existingUserNo && existingUserNo.user_id !== id) {
+        // Check duplicates if updating studentCode
+        if (studentCode) {
+            const existingCode = await prisma.user.findUnique({ where: { studentCode } });
+            if (existingCode && existingCode.id !== id) {
                 return res.status(400).json({ message: "รหัสผู้ใช้งานซ้ำ" });
             }
         }
         // Check duplicates if updating email
         if (email) {
             const existingEmail = await prisma.user.findFirst({ where: { email } });
-            if (existingEmail && existingEmail.user_id !== id) {
+            if (existingEmail && existingEmail.id !== id) {
                 return res.status(400).json({ message: "อีเมลซ้ำ" });
             }
         }
 
         const updateData = {
-            user_no,
-            first_name,
-            last_name,
+            studentCode,
+            firstName,
+            lastName,
             email,
             role,
-            status,
-            major_id: major_id ? parseInt(major_id) : null,
-            section_id: section_id ? parseInt(section_id) : null
+            isBanned,
+            sectionId: sectionId || null
         };
 
         if (password) {
@@ -153,7 +166,7 @@ export const updateUser = async (req, res) => {
         }
 
         const updatedUser = await prisma.user.update({
-            where: { user_id: id },
+            where: { id: id },
             data: updateData
         });
 
@@ -173,26 +186,46 @@ export const deleteUser = async (req, res) => {
     try {
         const { id } = req.params;
 
-        // Check constraints (e.g., has borrow transactions)
-        // For simple soft delete or direct delete, let's keep it simple for now or check relation
-        const hasTransactions = await prisma.borrowTransaction.count({
-            where: { user_id: id }
+        // Check if user has any related records (bookings, schedules, etc.)
+        // We prioritize soft delete if there are historical records.
+        // Actually, for consistency, we can just soft delete everyone or check constraints.
+
+        // Check for bookings
+        const hasBookings = await prisma.booking.count({
+            where: { userId: id }
         });
 
-        if (hasTransactions > 0) {
-            // Soft delete recommended
+        if (hasBookings > 0) {
+            // Soft delete (Ban) because of history
             await prisma.user.update({
-                where: { user_id: id },
-                data: { status: 'inactive' }
+                where: { id: id },
+                data: { isBanned: true }
             });
-            return res.status(200).json({ message: "ผู้ใช้งานมีประวัติการเบิกคืน จึงทำการระงับการใช้งานแทนการลบ" });
+            return res.status(200).json({ message: "ผู้ใช้งานมีประวัติการใช้งาน จึงทำการระงับการใช้งาน (Soft Delete) แทนการลบถาวร" });
         }
 
-        await prisma.user.delete({
-            where: { user_id: id }
-        });
+        // If no history, we can try hard delete, but if other constraints exist (like being a teacher in a subject), it might fail.
+        // Let's safe delete -> Soft delete for everyone is requested?
+        // "Both system help me do soft delete" -> imply preference for soft delete.
+        // But for fresh users with no data, hard delete is cleaner.
+        // Let's stick to: if error/constraints -> soft delete.
 
-        return res.status(200).json({ message: "ลบผู้ใช้งานสำเร็จ" });
+        try {
+            await prisma.user.delete({
+                where: { id: id }
+            });
+            return res.status(200).json({ message: "ลบผู้ใช้งานถาวรสำเร็จ" });
+        } catch (deleteError) {
+            // If delete fails (e.g. FK constraint), fall back to soft delete
+            if (deleteError.code === 'P2003') {
+                await prisma.user.update({
+                    where: { id: id },
+                    data: { isBanned: true }
+                });
+                return res.status(200).json({ message: "ผู้ใช้งานมีข้อมูลที่เกี่ยวข้อง จึงทำการระงับการใช้งานแทนการลบ" });
+            }
+            throw deleteError;
+        }
 
     } catch (error) {
         console.error("Error deleting user:", error);
@@ -205,7 +238,6 @@ export const updatePassword = async (req, res) => {
     try {
         const { email, password } = req.body;
 
-        // Find user by email (using findFirst as email is not unique in schema)
         const user = await prisma.user.findFirst({
             where: { email }
         });
@@ -217,7 +249,7 @@ export const updatePassword = async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, 10);
 
         await prisma.user.update({
-            where: { user_id: user.user_id },
+            where: { id: user.id },
             data: { password: hashedPassword }
         });
 
@@ -241,33 +273,38 @@ export const batchImportUsers = async (req, res) => {
         let failCount = 0;
         const errors = [];
 
-        // Prepare default password hash
         const defaultPasswordHash = await bcrypt.hash("123456", 10);
 
         for (const item of users) {
             try {
                 // Validate data
-                if (!item.user_no || !item.first_name) {
-                    throw new Error("Missing required fields (user_no, first_name)");
+                if (!item.studentCode || !item.firstName) {
+                    throw new Error("Missing required fields (studentCode, firstName)");
                 }
 
-                // Check duplicates (user_no)
-                const existingUser = await prisma.user.findUnique({ where: { user_no: String(item.user_no) } });
+                // Auto-generate email for student if missing
+                if (!item.email && (item.role === 'STUDENT' || !item.role)) { // Default role is student
+                    const digits = String(item.studentCode).replace(/\D/g, '');
+                    if (digits.length > 0) {
+                        item.email = `s${digits}@email.kmutnb.ac.th`;
+                    }
+                }
+
+                const existingUser = await prisma.user.findUnique({ where: { studentCode: String(item.studentCode) } });
                 if (existingUser) {
-                    throw new Error(`User No ${item.user_no} already exists`);
+                    throw new Error(`User Code ${item.studentCode} already exists`);
                 }
 
                 await prisma.user.create({
                     data: {
-                        user_no: String(item.user_no),
-                        first_name: item.first_name,
-                        last_name: item.last_name || "",
+                        studentCode: String(item.studentCode),
+                        firstName: item.firstName,
+                        lastName: item.lastName || "",
                         email: item.email || null,
                         password: defaultPasswordHash,
-                        role: item.role || 'student', // Default valid role
-                        status: 'active',
-                        major_id: item.major_id ? parseInt(item.major_id) : null,
-                        section_id: item.section_id ? parseInt(item.section_id) : null
+                        role: item.role || 'STUDENT',
+                        isBanned: false,
+                        sectionId: item.sectionId ? String(item.sectionId) : null
                     }
                 });
                 successCount++;
@@ -293,16 +330,16 @@ export const getTeachers = async (req, res) => {
     try {
         const teachers = await prisma.user.findMany({
             where: {
-                role: 'teacher',
-                status: 'active'
+                role: 'TEACHER',
+                isBanned: false
             },
             select: {
-                user_id: true,
-                user_no: true,
-                first_name: true,
-                last_name: true,
+                id: true,
+                studentCode: true,
+                firstName: true,
+                lastName: true,
             },
-            orderBy: { first_name: 'asc' }
+            orderBy: { firstName: 'asc' }
         });
 
         return res.status(200).json({

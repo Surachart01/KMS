@@ -18,15 +18,18 @@ const transporter = nodemailer.createTransport({
 export const login = async (req, res) => {
     try {
         const { email, password, remember } = req.body;
-        console.log(email, password, remember);
+        // console.log(email, password, remember);
         // 1. ค้นหา User จาก Email
         const user = await prisma.user.findFirst({
             where: {
                 email: email
             },
             include: {
-                major: true,
-                section: true
+                section: {
+                    include: {
+                        major: true
+                    }
+                }
             }
         });
         // 2. เช็คว่ามี User หรือไม่?
@@ -45,18 +48,17 @@ export const login = async (req, res) => {
         }
 
         // เช็ค Role: อนุญาตเฉพาะ Staff เท่านั้นสำหรับหน้า Backoffice
-        if (user.role !== 'staff') {
+        if (user.role !== 'STAFF') {
             return res.status(403).json({ "message": "คุณไม่มีสิทธิ์เข้าใช้งานระบบ (สำหรับเจ้าหน้าที่เท่านั้น)" });
         }
         const EXP = remember ? '7d' : '1d';
         // 4. สร้าง JWT Token
         // payload: ข้อมูลที่จะฝังใน Token (เช่น id, role) อย่าใส่ password เข้าไปเด็ดขาด
         const payload = {
-            user_id: user.user_id,
-            user_no: user.user_no,
+            id: user.id,
+            studentCode: user.studentCode,
             email: user.email,
-            role: user.role,
-            status: user.status
+            role: user.role
         };
 
         const token = jwt.sign(

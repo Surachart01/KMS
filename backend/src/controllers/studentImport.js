@@ -54,26 +54,26 @@ export const previewImport = async (req, res) => {
             success: true,
             message: 'วิเคราะห์ไฟล์เสร็จสิ้น',
             data: {
-                total_rows: result.total_rows,
-                valid_count: result.valid_count,
-                invalid_count: result.invalid_count,
-                valid_students: result.valid_students.map(s => ({
+                totalRows: result.totalRows,
+                validCount: result.validCount,
+                invalidCount: result.invalidCount,
+                validStudents: result.validStudents.map(s => ({
                     user_no: s.user_no,
                     first_name: s.first_name,
                     last_name: s.last_name,
                     email: s.email,
                     major_name: s.major_name,
                     section_name: s.section_name || '-',
-                    row_number: s.rowNumber
+                    rowNumber: s.rowNumber
                 })),
-                invalid_students: result.invalid_students.map(s => ({
+                invalidStudents: result.invalidStudents.map(s => ({
                     user_no: s.user_no,
                     first_name: s.first_name,
                     last_name: s.last_name,
-                    row_number: s.rowNumber,
+                    rowNumber: s.rowNumber,
                     errors: s.errors
                 })),
-                parse_errors: result.parse_errors
+                parseErrors: result.parseErrors
             }
         });
 
@@ -102,34 +102,34 @@ export const confirmImport = async (req, res) => {
         // Parse และ validate
         const parseResult = await parseStudentExcel(req.file.buffer);
 
-        if (parseResult.valid_count === 0) {
+        if (parseResult.validCount === 0) {
             return res.status(400).json({
                 success: false,
                 message: 'ไม่มีข้อมูลที่ถูกต้องสำหรับ Import',
                 data: {
-                    invalid_students: parseResult.invalid_students
+                    invalidStudents: parseResult.invalidStudents
                 }
             });
         }
 
         // Import เข้าฐานข้อมูล
-        const importResult = await importStudentsToDatabase(parseResult.valid_students);
+        const importResult = await importStudentsToDatabase(parseResult.validStudents);
 
         return res.json({
             success: true,
             message: `Import สำเร็จ ${importResult.success.length} คน`,
             data: {
-                total_attempted: parseResult.valid_count,
-                success_count: importResult.success.length,
-                failed_count: importResult.failed.length,
-                invalid_count: parseResult.invalid_count,
-                success_students: importResult.success,
-                failed_students: importResult.failed,
-                invalid_students: parseResult.invalid_students.map(s => ({
+                totalAttempted: parseResult.validCount,
+                successCount: importResult.success.length,
+                failedCount: importResult.failed.length,
+                invalidCount: parseResult.invalidCount,
+                successStudents: importResult.success,
+                failedStudents: importResult.failed,
+                invalidStudents: parseResult.invalidStudents.map(s => ({
                     user_no: s.user_no,
                     first_name: s.first_name,
                     last_name: s.last_name,
-                    row_number: s.rowNumber,
+                    rowNumber: s.rowNumber,
                     errors: s.errors
                 }))
             }

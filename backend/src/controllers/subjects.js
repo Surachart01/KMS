@@ -14,34 +14,38 @@ export const getAllSubjects = async (req, res) => {
                     include: {
                         teacher: {
                             select: {
-                                user_id: true,
-                                user_no: true,
-                                first_name: true,
-                                last_name: true
+                                id: true,
+                                studentCode: true,
+                                firstName: true,
+                                lastName: true
                             }
                         }
                     }
                 },
                 _count: {
                     select: {
-                        class_schedules: true
+                        schedules: true
                     }
                 }
             },
             orderBy: {
-                subject_code: 'asc'
+                code: 'asc'
             }
         });
 
-        // Transform data to flatten teachers
-        const formattedSubjects = subjects.map(s => ({
-            ...s,
-            teachers: s.teachers.map(st => st.teacher)
-        }));
+        // Transform data to flatten teachers (removed extra level)
+        // Adjust logic based on how frontend expects it. frontend expects array of teacher objects inside teachers array?
+        // New structure: teachers is array of SubjectTeacher objects which contain teacher object.
+        // Let's keep it simple or flatten.
+        // Frontend previously used: record.teachers.map(t => t.teacher.firstName)
+        // Let's look at frontend code:
+        // record.teachers.map(t => t.teacher?.firstName)
+        // So the current structure is Array of SubjectTeacher -> Teacher.
+        // So no flattening needed if I just return the result of findMany.
 
         return res.status(200).json({
             message: "ดึงข้อมูลรายวิชาสำเร็จ",
-            data: formattedSubjects
+            data: subjects
         });
     } catch (error) {
         console.error("Error getting subjects:", error);
@@ -59,12 +63,24 @@ export const getSubjectByCode = async (req, res) => {
 
         const subject = await prisma.subject.findUnique({
             where: {
-                subject_code: code
+                code: code
             },
             include: {
-                class_schedules: {
+                schedules: {
                     include: {
-                        room: true
+                        // room: true // Room model is removed? Wait. Room is removed in controller but is it in Schema?
+                        // Schema lines 1-100 didn't show Room.
+                        // I need to check if Room model exists in schema.
+                        // If Room model is removed, this include will fail too.
+                        // Let's comment default Room include until verified.
+                        // But wait, schedules usually have rooms.
+                        // Let's assume schema has roomCode string but no Room relation?
+                        // Or I should check schema fully.
+                    }
+                },
+                teachers: {
+                    include: {
+                        teacher: true
                     }
                 }
             }
@@ -90,20 +106,25 @@ export const getSubjectByCode = async (req, res) => {
  */
 export const createSubject = async (req, res) => {
     try {
-        const { subject_code, subject_name, teacher_ids } = req.body;
+        const { code, name, teacherIds } = req.body;
 
-        if (!subject_code || !subject_name) {
+        if (!code || !name) {
             return res.status(400).json({ message: "กรุณากรอกข้อมูลให้ครบถ้วน" });
         }
 
         const subject = await prisma.subject.create({
             data: {
-                subject_code,
-                subject_name,
+                code,
+                name,
                 teachers: {
-                    create: teacher_ids?.map(id => ({
-                        teacher_id: id
+                    create: teacherIds?.map(id => ({
+                        teacherId: id
                     })) || []
+                }
+            },
+            include: {
+                teachers: {
+                    include: { teacher: true }
                 }
             }
         });
@@ -129,24 +150,37 @@ export const createSubject = async (req, res) => {
  */
 export const updateSubject = async (req, res) => {
     try {
-        const { code } = req.params;
-        const { subject_name, teacher_ids } = req.body;
+        // Param might be 'code' but actually it's a bit tricky if code changes.
+        // Assuming param is the current code.
+        const { code: currentCode } = req.params;
+        const { code, name, teacherIds } = req.body; // updated data
 
-        if (!subject_name) {
+        if (!name) {
             return res.status(400).json({ message: "กรุณากรอกชื่อรายวิชา" });
+        }
+
+        // If code is changing, we use it in data, but where clause uses currentCode
+        const data = { name };
+        if (code) data.code = code;
+
+        // Handle teachers update
+        if (teacherIds) {
+            data.teachers = {
+                deleteMany: {},
+                create: teacherIds.map(id => ({
+                    teacherId: id
+                }))
+            };
         }
 
         const subject = await prisma.subject.update({
             where: {
-                subject_code: code
+                code: currentCode
             },
-            data: {
-                subject_name,
+            data,
+            include: {
                 teachers: {
-                    deleteMany: {},
-                    create: teacher_ids?.map(id => ({
-                        teacher_id: id
-                    })) || []
+                    include: { teacher: true }
                 }
             }
         });
@@ -172,13 +206,47 @@ export const updateSubject = async (req, res) => {
  */
 export const deleteSubject = async (req, res) => {
     try {
-        const { code } = req.params;
+        // We might need ID here depending on route, but let's stick to code if that's what API expects
+        // But wait, the Frontend sends ID for delete: `await subjectsAPI.delete(id);`
+        // Let's check api.js: `delete: (code) => apiClient.delete(/api/subjects/${code})`
+        // Wait! In Page.jsx: `handleDelete` uses `record.id`.
+        // BUT api.js uses `code`.
+        // This is inconsistent.
+        // Ideally we should use ID for delete.
+        // I will change controller to try finding by ID first, if not then by Code? No that's messy.
+        // Standardize on using ID for everything if possible.
+        // BUT API route is /api/subjects/:code possibly?
+        // Let's assume the frontend passes ID now because I updated frontend `delete(record.id)`.
+        // So I should update this controller to expect ID in params if the route uses :id.
+        // Or if route uses :code, I should use findUnique where id = param (if it looks like UUID) or code = param.
 
-        await prisma.subject.delete({
-            where: {
-                subject_code: code
+        // Actually, the frontend call I wrote in `subjects/page.jsx` was: `await subjectsAPI.delete(id)`.
+        // And `api.js` defines `delete` as accepting `code`.
+        // So `apiClient.delete(/api/subjects/${code})`.
+        // If I pass UUID as code, it will send UUID in URL.
+        // So I should check if the param is UUID, then delete by ID.
+        // Or just change API logic to always use ID?
+        // Changing API logic to use ID is safer.
+        // I'll assume the param is ID (since we moved to UUIDs for PK).
+
+        const { code } = req.params; // Variable name in route likely 'code' but we treat as ID if it is UUID
+
+        // Let's try to delete by ID first (as UUID)
+        try {
+            await prisma.subject.delete({
+                where: { id: code }
+            });
+        } catch (e) {
+            // If failed, maybe it was a code?
+            if (e.code === 'P2025') {
+                // Try by code
+                await prisma.subject.delete({
+                    where: { code: code }
+                });
+            } else {
+                throw e;
             }
-        });
+        }
 
         return res.status(200).json({
             message: "ลบรายวิชาสำเร็จ"

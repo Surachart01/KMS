@@ -41,7 +41,6 @@ export async function parseStudentExcel(fileBuffer) {
             'รหัสนักศึกษา*',
             'ชื่อ*',
             'นามสกุล*',
-            'อีเมล*',
             'สาขาวิชา*',
             'กลุ่มเรียน'
         ];
@@ -64,13 +63,21 @@ export async function parseStudentExcel(fileBuffer) {
             }
 
             try {
+                // Auto-generate email immediately during parsing
+                const user_no = row[0]?.toString().trim() || '';
+                let email = '';
+                const digits = user_no.replace(/\D/g, '');
+                if (digits.length > 0) {
+                    email = `s${digits}@email.kmutnb.ac.th`;
+                }
+
                 const student = {
-                    user_no: row[0]?.toString().trim() || '',
+                    user_no: user_no,
                     first_name: row[1]?.toString().trim() || '',
                     last_name: row[2]?.toString().trim() || '',
-                    email: row[3]?.toString().trim() || '',
-                    major_name: row[4]?.toString().trim() || '',
-                    section_name: row[5]?.toString().trim() || '',
+                    email: email,
+                    major_name: row[3]?.toString().trim() || '',
+                    section_name: row[4]?.toString().trim() || '',
                     rowNumber: i + 1 // เก็บเลขแถวสำหรับ error reporting
                 };
 
@@ -92,12 +99,12 @@ export async function parseStudentExcel(fileBuffer) {
 
         return {
             success: true,
-            total_rows: students.length,
-            valid_count: validationResult.valid.length,
-            invalid_count: validationResult.invalid.length,
-            valid_students: validationResult.valid,
-            invalid_students: validationResult.invalid,
-            parse_errors: errors
+            totalRows: students.length,
+            validCount: validationResult.valid.length,
+            invalidCount: validationResult.invalid.length,
+            validStudents: validationResult.valid,
+            invalidStudents: validationResult.invalid,
+            parseErrors: errors
         };
 
     } catch (error) {
@@ -136,25 +143,27 @@ async function validateStudents(students) {
         }
     });
 
-    // สร้าง map สำหรับค้นหาเร็ว
-    const majorMap = new Map(majors.map(m => [m.major_name, m]));
+    // สร้าง map สำหรับค้นหาเร็ว (รองรับทั้ง name และ code)
+    const majorByName = new Map(majors.map(m => [m.name, m]));
+    const majorByCode = new Map(majors.map(m => [m.code, m]));
 
     // ดึงรหัสนักศึกษาที่มีอยู่แล้ว
     const existingUserNos = await prisma.user.findMany({
         where: {
-            user_no: {
+            studentCode: {
                 in: students.map(s => s.user_no)
             }
         },
-        select: { user_no: true }
+        select: { studentCode: true }
     });
-    const existingUserNoSet = new Set(existingUserNos.map(u => u.user_no));
+    const existingUserNoSet = new Set(existingUserNos.map(u => u.studentCode));
 
     // ดึงอีเมลที่มีอยู่แล้ว
+    const emailsToCheck = students.map(s => s.email).filter(e => e); // Filter out empty/undefined
     const existingEmails = await prisma.user.findMany({
         where: {
             email: {
-                in: students.map(s => s.email)
+                in: emailsToCheck
             }
         },
         select: { email: true }
@@ -182,11 +191,14 @@ async function validateStudents(students) {
         }
 
         // 4. Validate อีเมล
+        // Email is already generated in parsing step.
+
         if (!student.email) {
-            validationErrors.push('อีเมลห้ามเป็นค่าว่าง');
-        } else if (!isValidEmail(student.email)) {
-            validationErrors.push('รูปแบบอีเมลไม่ถูกต้อง');
-        } else if (existingEmailSet.has(student.email)) {
+            validationErrors.push('ไม่สามารถสร้างอีเมลได้ (ตรวจสอบรหัสนักศึกษา)');
+        }
+
+        if (student.email && existingEmailSet.has(student.email)) {
+            // This might happen if user_no is unique but email is used by someone else (rare?)
             validationErrors.push(`อีเมล ${student.email} มีอยู่ในระบบแล้ว`);
         }
 
@@ -197,19 +209,20 @@ async function validateStudents(students) {
         if (!student.major_name) {
             validationErrors.push('สาขาวิชาห้ามเป็นค่าว่าง');
         } else {
-            const major = majorMap.get(student.major_name);
+            // ค้นหาโดย name หรือ code
+            const major = majorByName.get(student.major_name) || majorByCode.get(student.major_name);
             if (!major) {
                 validationErrors.push(`ไม่พบสาขาวิชา "${student.major_name}" ในระบบ`);
             } else {
-                student.major_id = major.major_id;
+                student.major_id = major.id;
 
                 // 7. Validate กลุ่มเรียน (ถ้ามี)
                 if (student.section_name) {
-                    const section = major.sections.find(s => s.section_name === student.section_name);
+                    const section = major.sections.find(s => s.name === student.section_name);
                     if (!section) {
                         validationErrors.push(`ไม่พบกลุ่มเรียน "${student.section_name}" ในสาขา "${student.major_name}"`);
                     } else {
-                        student.section_id = section.section_id;
+                        student.section_id = section.id;
                     }
                 }
             }
@@ -254,15 +267,14 @@ export async function importStudentsToDatabase(students) {
             // Create user
             const createdUser = await prisma.user.create({
                 data: {
-                    user_no: student.user_no,
-                    first_name: student.first_name,
-                    last_name: student.last_name,
+                    studentCode: student.user_no,
+                    firstName: student.first_name,
+                    lastName: student.last_name,
                     email: student.email,
                     password: hashedPassword,
-                    role: 'student',
-                    major_id: student.major_id,
-                    section_id: student.section_id || null,
-                    status: 'active'
+                    role: 'STUDENT',
+                    sectionId: student.section_id || null,
+                    isBanned: false
                 }
             });
 

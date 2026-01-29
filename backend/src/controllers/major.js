@@ -18,7 +18,7 @@ export const getAllMajors = async (req, res) => {
                 }
             },
             orderBy: {
-                major_name: 'asc'
+                name: 'asc'
             }
         });
 
@@ -42,16 +42,16 @@ export const getMajorById = async (req, res) => {
 
         const major = await prisma.major.findUnique({
             where: {
-                major_id: parseInt(id)
+                id: id
             },
             include: {
                 sections: true,
                 users: {
                     select: {
-                        user_id: true,
-                        user_no: true,
-                        first_name: true,
-                        last_name: true,
+                        id: true,
+                        studentCode: true,
+                        firstName: true,
+                        lastName: true,
                         email: true,
                         role: true
                     }
@@ -79,15 +79,25 @@ export const getMajorById = async (req, res) => {
  */
 export const createMajor = async (req, res) => {
     try {
-        const { major_name } = req.body;
+        const { code, name } = req.body;
 
-        if (!major_name) {
-            return res.status(400).json({ message: "กรุณากรอกชื่อสาขาวิชา" });
+        if (!code || !name) {
+            return res.status(400).json({ message: "กรุณากรอกรหัสและชื่อสาขาวิชา" });
+        }
+
+        // Check if code exists
+        const existing = await prisma.major.findUnique({
+            where: { code }
+        });
+
+        if (existing) {
+            return res.status(400).json({ message: "รหัสสาขาวิชานี้มีอยู่แล้ว" });
         }
 
         const major = await prisma.major.create({
             data: {
-                major_name
+                code,
+                name
             }
         });
 
@@ -103,24 +113,25 @@ export const createMajor = async (req, res) => {
 
 /**
  * PUT /api/majors/:id
- * แก้ไขสาขาวิช า (Staff Only)
+ * แก้ไขสาขาวิชา (Staff Only)
  */
 export const updateMajor = async (req, res) => {
     try {
         const { id } = req.params;
-        const { major_name } = req.body;
+        const { code, name } = req.body;
 
-        if (!major_name) {
-            return res.status(400).json({ message: "กรุณากรอกชื่อสาขาวิชา" });
+        if (!name) { // code might be optional if not changing
+            return res.status(400).json({ message: "กรุณากรอกข้อมูลให้ครบถ้วน" });
         }
+
+        const data = { name };
+        if (code) data.code = code;
 
         const major = await prisma.major.update({
             where: {
-                major_id: parseInt(id)
+                id: id
             },
-            data: {
-                major_name
-            }
+            data
         });
 
         return res.status(200).json({
@@ -132,6 +143,10 @@ export const updateMajor = async (req, res) => {
 
         if (error.code === 'P2025') {
             return res.status(404).json({ message: "ไม่พบสาขาวิชา" });
+        }
+
+        if (error.code === 'P2002') {
+            return res.status(400).json({ message: "รหัสสาขาวิชาซ้ำ" });
         }
 
         return res.status(500).json({ message: "เกิดข้อผิดพลาดในการแก้ไขข้อมูล" });
@@ -148,7 +163,7 @@ export const deleteMajor = async (req, res) => {
 
         await prisma.major.delete({
             where: {
-                major_id: parseInt(id)
+                id: id
             }
         });
 

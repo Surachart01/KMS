@@ -1,352 +1,230 @@
+// ================================
+// Prisma Schema : Key Management System
+// รองรับการเบิก-คืนกุญแจ, ตรวจสอบเวลาคืน, ตัดคะแนน, แบนผู้ใช้
+// ================================
+
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
-  /// Connection string ของฐานข้อมูล PostgreSQL
   url      = env("DATABASE_URL")
 }
 
-////////////////////////////////////////////////
-/// ตาราง Major (สาขาวิชา)
-////////////////////////////////////////////////
-model Major {
-  /// รหัสสาขาวิชา (Primary Key, Auto Increment)
-  major_id   Int    @id @default(autoincrement())
-
-  /// ชื่อสาขาวิชา
-  major_name String
-
-  /// ความสัมพันธ์: 1 สาขา มีหลาย section
-  sections   Section[]
-
-  /// ความสัมพันธ์: 1 สาขา มีผู้ใช้งานหลายคน
-  users      User[]
+// ---------- ENUMS ----------
+enum Role {
+  STUDENT
+  TEACHER
+  STAFF
+  ADMIN
 }
 
-////////////////////////////////////////////////
-/// ตาราง Section (กลุ่มเรียน)
-////////////////////////////////////////////////
-model Section {
-  /// รหัส section (Primary Key)
-  section_id   Int    @id @default(autoincrement())
-
-  /// ชื่อกลุ่มเรียน เช่น 1/1, 2/3
-  section_name String
-
-  /// FK อ้างอิงไปยังสาขาวิชา
-  major_id     Int
-
-  /// ความสัมพันธ์กับ Major
-  major Major @relation(fields: [major_id], references: [major_id])
-
-  /// ผู้ใช้งานใน section นี้
-  users User[]
-
-  /// ตารางเรียนของ section นี้
-  class_schedules ClassSchedule[]
+enum BookingStatus {
+  BORROWED   // กำลังเบิกอยู่
+  RETURNED   // คืนแล้ว
+  LATE       // คืนเกินเวลา
+  RESERVED   // จองไว้ (ระบบสร้างให้)
 }
 
-////////////////////////////////////////////////
-/// ตาราง User (นักศึกษา / อาจารย์ / เจ้าหน้าที่)
-////////////////////////////////////////////////
-model User {
-  /// รหัสผู้ใช้งาน (UUID)
-  user_id    String   @id @default(uuid())
-
-  /// รหัสนักศึกษา / รหัสบุคลากร
-  user_no    String?  @unique
-
-  /// ชื่อ
-  first_name String?
-
-  /// นามสกุล
-  last_name  String?
-
-  /// อีเมล (มหาวิทยาลัย)
-  email      String?
-
-  /// รหัสผ่าน (Hashed)
-  password   String
-
-  /// บทบาทผู้ใช้งาน (student, teacher, staff)
-  role       UserRole
-
-  /// สถานะบัญชี (active / inactive)
-  status     String   @default("active")
-
-  /// วันที่สร้างข้อมูล
-  created_at DateTime @default(now())
-
-  /// FK อ้างอิงสาขาวิชา (ถ้ามี)
-  major_id   Int?
-
-  /// FK อ้างอิงกลุ่มเรียน (ถ้ามี)
-  section_id Int?
-
-  /// ความสัมพันธ์กับ Major
-  major   Major?   @relation(fields: [major_id], references: [major_id])
-
-
-  /// ความสัมพันธ์กับ Section
-  section Section? @relation(fields: [section_id], references: [section_id])
-
-  /// รายวิชาที่สอน (สำหรับอาจารย์)
-  teaching_subjects SubjectTeacher[]
-
-  /// ประวัติการเบิกกุญแจ
-  borrow_transactions BorrowTransaction[]
-
-  /// Log การใช้งานระบบ
-  access_logs         AccessLog[]
+enum PenaltyType {
+  LATE_RETURN
+  MANUAL
 }
 
-////////////////////////////////////////////////
-/// ตาราง Room (ห้องเรียน)
-////////////////////////////////////////////////
-model Room {
-  /// รหัสห้อง (เช่น C-301)
-  room_id   String @id
-
-  /// ชื่อห้อง
-  room_name String?
-
-  /// อาคาร
-  building  String?
-
-  /// ชั้น
-  floor     Int?
-
-  /// สถานะห้อง (available / maintenance)
-  status    String @default("available")
-
-  /// กุญแจที่ใช้กับห้องนี้
-  keys            Key[]
-
-  /// ตารางเรียนของห้อง
-  class_schedules ClassSchedule[]
-
-  /// ประวัติการเบิกกุญแจของห้อง
-  borrow_transactions BorrowTransaction[]
-}
-
-////////////////////////////////////////////////
-/// ตาราง Subject (รายวิชา)
-////////////////////////////////////////////////
-model Subject {
-  /// รหัสวิชา
-  subject_code String @id
-
-  /// ชื่อวิชา
-  subject_name String
-
-  /// อาจารย์ผู้สอน (Many-to-Many)
-  teachers SubjectTeacher[]
-
-  /// ตารางเรียนของรายวิชา
-  class_schedules ClassSchedule[]
-}
-
-////////////////////////////////////////////////
-/// ตาราง SubjectTeacher (วิชา-อาจารย์ผู้สอน)
-////////////////////////////////////////////////
+// ---------- SUBJECT - TEACHER ----------
 model SubjectTeacher {
-  /// รหัสวิชา
-  subject_code String
+  id         String @id @default(uuid())
 
-  /// รหัสอาจารย์
-  teacher_id   String
+  subjectId  String
+  teacherId  String
 
-  /// ความสัมพันธ์กับ Subject
-  subject Subject @relation(fields: [subject_code], references: [subject_code], onDelete: Cascade)
+  subject Subject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  teacher User    @relation(fields: [teacherId], references: [id], onDelete: Cascade)
 
-  /// ความสัมพันธ์กับ User (Teacher)
-  teacher User    @relation(fields: [teacher_id], references: [user_id], onDelete: Cascade)
-
-  /// Primary Key (Composite)
-  @@id([subject_code, teacher_id])
-  
-  /// Index สำหรับค้นหาวิชาที่อาจารย์สอน
-  @@index([teacher_id])
+  @@unique([subjectId, teacherId])
 }
 
-////////////////////////////////////////////////
-/// ตาราง ClassSchedule (ตารางเรียน)
-////////////////////////////////////////////////
-model ClassSchedule {
-  /// รหัสตารางเรียน (UUID)
-  schedule_id  String @id @default(uuid())
 
-  /// รหัสวิชา
-  subject_code String
+// ---------- USERS ----------
+model User {
+  id            String   @id @default(uuid())
+
+  /// รหัสนักศึกษา / รหัสบุคลากร (อ้างอิงกับเครื่อง ZKTEco)
+  studentCode   String   @unique
+
+  /// อีเมลสำหรับ Login (สำหรับ Staff/Admin)
+  email         String?  @unique
+  password      String?
+
+  firstName     String
+  lastName      String
+
+  role          Role
+
+  /// คะแนนเริ่มต้น 100 ใช้สำหรับระบบตัดคะแนน / แบน
+  score         Int      @default(100)
+  isBanned      Boolean  @default(false)
+
+
+
+  /// กลุ่มเรียน (FK)
+  sectionId     String?
+  section       Section? @relation(fields: [sectionId], references: [id])
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  bookings        Booking[]
+  logs            SystemLog[]
+  subjectTeachers SubjectTeacher[]
+  teachingSchedules Schedule[] @relation("TeacherSchedules")
+  enrolledSchedules Schedule[] @relation("StudentSchedules")
+  penaltyLogs     PenaltyLog[]
+}
+
+// ---------- MAJORS ----------
+model Major {
+  id        String    @id @default(uuid())
+  code      String    @unique
+  name      String
+
+  sections  Section[]
+
+}
+
+// ---------- SECTIONS ----------
+model Section {
+  id        String   @id @default(uuid())
+  name      String
+  
+  majorId   String
+  major     Major    @relation(fields: [majorId], references: [id])
+
+  users     User[]
+}
+
+// ---------- SUBJECTS ----------
+model Subject {
+  id        String   @id @default(uuid())
+  code      String   @unique
+  name      String
+
+  /// อาจารย์ที่สอนวิชานี้
+  teachers  SubjectTeacher[]
+
+  /// ตารางสอนของวิชานี้
+  schedules Schedule[]
+
+  /// การจองที่เกี่ยวข้องกับวิชานี้
+  bookings  Booking[]
+}
+
+// ---------- SCHEDULES (เรียนตามตาราง) ----------
+model Schedule {
+  id          String   @id @default(uuid())
+
+  subjectId   String
+  subject     Subject  @relation(fields: [subjectId], references: [id])
 
   /// ห้องเรียน
-  room_id      String
+  roomCode    String
 
-  /// วันในสัปดาห์ (1=จันทร์ … 7=อาทิตย์)
-  day_of_week  Int
+  /// กลุ่มเรียน / ห้องเรียน (เช่น ปวช.3/1)
+  section     String
 
-  /// เวลาเริ่มเรียน
-  start_time   DateTime
+  /// อาจารย์ผู้สอนคาบนี้
+  teacherId   String
+  teacher     User     @relation("TeacherSchedules", fields: [teacherId], references: [id])
 
-  /// เวลาสิ้นสุด
-  end_time     DateTime
+  dayOfWeek   Int      // 1-7 (Mon-Sun)
+  startTime   DateTime
+  endTime     DateTime
 
-  /// ภาคการศึกษา
-  semester     String
+  createdAt   DateTime @default(now())
 
-  /// ปีการศึกษา
-  academic_year Int
-
-  /// ความสัมพันธ์กับ Subject
-  subject Subject @relation(fields: [subject_code], references: [subject_code])
-
-  /// ความสัมพันธ์กับ Room
-  room    Room    @relation(fields: [room_id], references: [room_id])
-
-  /// กลุ่มเรียนที่เรียนวิชานี้
-  section_id Int?
-
-  /// ความสัมพันธ์กับ Section
-  section Section? @relation(fields: [section_id], references: [section_id])
+  students    User[]   @relation("StudentSchedules")
 }
 
-////////////////////////////////////////////////
-/// ตาราง Key (กุญแจ + NFC)
-////////////////////////////////////////////////
+// ---------- KEYS ----------
 model Key {
-  /// รหัสกุญแจ
-  key_id       String @id
+  id          String   @id @default(uuid())
+  roomCode    String   // เช่น LAB401
+  slotNumber  Int      // ช่องในตู้
 
-  /// ห้องที่กุญแจใช้
-  room_id      String
+  isActive    Boolean  @default(true)
 
-  /// ช่องในตู้กุญแจ
-  cabinet_slot Int?
-
-  /// UID จาก NFC (ต้องไม่ซ้ำ)
-  nfc_uid      String @unique
-
-  /// สถานะกุญแจ (in_cabinet / borrowed / disabled)
-  status       String @default("in_cabinet")
-
-  /// วันที่เพิ่มข้อมูล
-  created_at   DateTime @default(now())
-
-  /// ความสัมพันธ์กับ Room
-  room Room @relation(fields: [room_id], references: [room_id])
-
-  /// ประวัติการเบิกกุญแจ
-  borrow_transactions BorrowTransaction[]
+  bookings    Booking[]
 }
 
-////////////////////////////////////////////////
-/// ตาราง BorrowReason (เหตุผลการเบิก)
-////////////////////////////////////////////////
-model BorrowReason {
-  /// รหัสเหตุผล
-  reason_id    String  @id
+// ---------- DAILY BOOKING (Raspberry Pi สร้างทุกวัน) ----------
+model Booking {
+  id            String   @id @default(uuid())
 
-  /// ชื่อเหตุผล
-  reason_name  String
+  userId        String
+  user          User     @relation(fields: [userId], references: [id])
 
-  /// ต้องกรอกหมายเหตุเพิ่มเติมหรือไม่
-  require_note Boolean @default(false)
+  keyId         String
+  key           Key      @relation(fields: [keyId], references: [id])
 
-  /// ประวัติการใช้งานเหตุผลนี้
-  borrow_transactions BorrowTransaction[]
+  subjectId     String?  // ไม่มีเรียนก็เบิกได้
+  subject       Subject? @relation(fields: [subjectId], references: [id])
+
+  borrowAt      DateTime @default(now())
+  dueAt         DateTime // เวลาที่ต้องคืน
+  returnAt      DateTime?
+
+  status        BookingStatus @default(BORROWED)
+
+  lateMinutes   Int      @default(0)
+  penaltyScore  Int      @default(0)
+
+  createdAt     DateTime @default(now())
+
+  penaltyLogs   PenaltyLog[]
 }
 
-////////////////////////////////////////////////
-/// ตาราง BorrowTransaction (การเบิก–คืนกุญแจ)
-////////////////////////////////////////////////
-model BorrowTransaction {
-  /// รหัสธุรกรรม
-  transaction_id String @id @default(uuid())
+// ---------- PENALTY CONFIG (ตั้งค่าโดยเจ้าหน้าที่) ----------
+model PenaltyConfig {
+  id               String   @id @default(uuid())
 
-  /// ผู้เบิกกุญแจ
-  user_id        String
+  graceMinutes     Int      // เช่น 30 นาที
+  scorePerInterval Int      // ตัดกี่คะแนน
+  intervalMinutes  Int      // ทุกกี่นาทีที่ตัด
+  restoreDays      Int      @default(7) // คืนคะแนนให้หลังจากกี่วัน
 
-  /// กุญแจที่ถูกเบิก
-  key_id         String
+  isActive         Boolean  @default(true)
 
-  /// ห้องที่เกี่ยวข้อง
-  room_id        String
-
-  /// เหตุผลการเบิก
-  reason_id      String?
-
-  /// หมายเหตุเพิ่มเติม
-  reason_note    String?
-
-  /// เวลาเบิกกุญแจ
-  borrow_time    DateTime @default(now())
-
-  /// เวลาคืนกุญแจ
-  return_time    DateTime?
-
-  /// สถานะ (borrowed / returned)
-  status         BorrowStatus
-
-  /// วิธีการยืนยันตัวตน (NFC / Face / Card)
-  verify_method  String?
-
-  /// วันที่บันทึกข้อมูล
-  created_at     DateTime @default(now())
-
-  /// ความสัมพันธ์กับ User
-  user   User @relation(fields: [user_id], references: [user_id])
-
-  /// ความสัมพันธ์กับ Key
-  key    Key  @relation(fields: [key_id], references: [key_id])
-
-  /// ความสัมพันธ์กับ Room
-  room   Room @relation(fields: [room_id], references: [room_id])
-
-  /// ความสัมพันธ์กับ BorrowReason
-  reason BorrowReason? @relation(fields: [reason_id], references: [reason_id])
+  createdAt        DateTime @default(now())
 }
 
-////////////////////////////////////////////////
-/// ตาราง AccessLog (Log การใช้งาน)
-////////////////////////////////////////////////
-model AccessLog {
-  /// รหัส log
-  log_id      String @id @default(uuid())
+// ---------- PENALTY LOG ----------
+model PenaltyLog {
+  id          String   @id @default(uuid())
 
-  /// ผู้ใช้งาน (ถ้ามี)
-  user_id     String?
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
 
-  /// การกระทำ (borrow / return / deny)
+  bookingId   String?
+  booking     Booking? @relation(fields: [bookingId], references: [id])
+
+  type        PenaltyType
+  scoreCut    Int
+  reason      String
+
+  createdAt   DateTime @default(now())
+}
+
+// ---------- SYSTEM LOG ----------
+model SystemLog {
+  id          String   @id @default(uuid())
+
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+
   action      String
+  details     String?
+  ipAddress   String?
 
-  /// ห้องที่เกี่ยวข้อง
-  room_id     String?
-
-  /// เวลาที่เกิดเหตุการณ์
-  action_time DateTime @default(now())
-
-  /// หมายเหตุเพิ่มเติม
-  remark      String?
-
-  /// ความสัมพันธ์กับ User
-  user User? @relation(fields: [user_id], references: [user_id])
-}
-
-////////////////////////////////////////////////
-/// ENUM: บทบาทผู้ใช้งาน
-////////////////////////////////////////////////
-enum UserRole {
-  student
-  teacher
-  staff
-}
-
-////////////////////////////////////////////////
-/// ENUM: สถานะการเบิกกุญแจ
-////////////////////////////////////////////////
-enum BorrowStatus {
-  borrowed
-  returned
+  createdAt   DateTime @default(now())
 }

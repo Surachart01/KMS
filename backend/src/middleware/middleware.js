@@ -25,13 +25,17 @@ export const authenticate = async (req, res, next) => {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
         // 4. ดึงข้อมูล User จาก Database
+        // Note: decoded uses 'id' not 'user_id' based on auth.js payload
         const user = await prisma.user.findUnique({
             where: {
-                user_id: decoded.user_id
+                id: decoded.id // Updated to match payload
             },
             include: {
-                major: true,
-                section: true
+                section: {
+                    include: {
+                        major: true
+                    }
+                }
             }
         });
 
@@ -42,7 +46,8 @@ export const authenticate = async (req, res, next) => {
             });
         }
 
-        if (user.status !== 'active') {
+        // Check isBanned instead of status
+        if (user.isBanned) {
             return res.status(403).json({
                 message: "บัญชีผู้ใช้งานถูกระงับ"
             });
@@ -83,8 +88,8 @@ export const requireStaff = async (req, res, next) => {
     try {
         // ตรวจสอบ authentication ก่อน
         await authenticate(req, res, () => {
-            // ตรวจสอบว่า role เป็น staff หรือไม่
-            if (req.user.role !== 'staff') {
+            // ตรวจสอบว่า role เป็น STAFF หรือไม่ (Use Uppercase)
+            if (req.user.role !== 'STAFF' && req.user.role !== 'ADMIN') { // Allow ADMIN too just in case
                 return res.status(403).json({
                     message: "ไม่มีสิทธิ์เข้าถึง - เฉพาะเจ้าหน้าที่เท่านั้น"
                 });
@@ -105,7 +110,7 @@ export const requireStaff = async (req, res, next) => {
 export const requireTeacherOrStaff = async (req, res, next) => {
     try {
         await authenticate(req, res, () => {
-            if (req.user.role !== 'teacher' && req.user.role !== 'staff') {
+            if (req.user.role !== 'TEACHER' && req.user.role !== 'STAFF' && req.user.role !== 'ADMIN') {
                 return res.status(403).json({
                     message: "ไม่มีสิทธิ์เข้าถึง - เฉพาะอาจารย์และเจ้าหน้าที่เท่านั้น"
                 });
@@ -126,7 +131,7 @@ export const requireTeacherOrStaff = async (req, res, next) => {
 export const requireStudent = async (req, res, next) => {
     try {
         await authenticate(req, res, () => {
-            if (req.user.role !== 'student') {
+            if (req.user.role !== 'STUDENT') {
                 return res.status(403).json({
                     message: "ไม่มีสิทธิ์เข้าถึง - เฉพาะนักศึกษาเท่านั้น"
                 });
@@ -147,7 +152,7 @@ export const requireStudent = async (req, res, next) => {
 export const requireTeacher = async (req, res, next) => {
     try {
         await authenticate(req, res, () => {
-            if (req.user.role !== 'teacher') {
+            if (req.user.role !== 'TEACHER') {
                 return res.status(403).json({
                     message: "ไม่มีสิทธิ์เข้าถึง - เฉพาะอาจารย์เท่านั้น"
                 });

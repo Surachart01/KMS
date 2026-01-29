@@ -18,8 +18,8 @@ export const getAllSections = async (req, res) => {
                 }
             },
             orderBy: [
-                { major_id: 'asc' },
-                { section_name: 'asc' }
+                { majorId: 'asc' },
+                { name: 'asc' }
             ]
         });
 
@@ -43,16 +43,16 @@ export const getSectionById = async (req, res) => {
 
         const section = await prisma.section.findUnique({
             where: {
-                section_id: parseInt(id)
+                id: id
             },
             include: {
                 major: true,
                 users: {
                     select: {
-                        user_id: true,
-                        user_no: true,
-                        first_name: true,
-                        last_name: true,
+                        id: true,
+                        studentCode: true,
+                        firstName: true,
+                        lastName: true,
                         email: true,
                         role: true
                     }
@@ -80,16 +80,16 @@ export const getSectionById = async (req, res) => {
  */
 export const createSection = async (req, res) => {
     try {
-        const { section_name, major_id } = req.body;
+        const { name, majorId } = req.body;
 
-        if (!section_name || !major_id) {
+        if (!name || !majorId) {
             return res.status(400).json({ message: "กรุณากรอกข้อมูลให้ครบถ้วน" });
         }
 
         const section = await prisma.section.create({
             data: {
-                section_name,
-                major_id: parseInt(major_id)
+                name,
+                majorId
             },
             include: {
                 major: true
@@ -118,19 +118,19 @@ export const createSection = async (req, res) => {
 export const updateSection = async (req, res) => {
     try {
         const { id } = req.params;
-        const { section_name, major_id } = req.body;
+        const { name, majorId } = req.body;
 
-        if (!section_name || !major_id) {
+        if (!name || !majorId) {
             return res.status(400).json({ message: "กรุณากรอกข้อมูลให้ครบถ้วน" });
         }
 
         const section = await prisma.section.update({
             where: {
-                section_id: parseInt(id)
+                id: id
             },
             data: {
-                section_name,
-                major_id: parseInt(major_id)
+                name,
+                majorId
             },
             include: {
                 major: true
@@ -166,7 +166,7 @@ export const deleteSection = async (req, res) => {
 
         await prisma.section.delete({
             where: {
-                section_id: parseInt(id)
+                id: id
             }
         });
 
