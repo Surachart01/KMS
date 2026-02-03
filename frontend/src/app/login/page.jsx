@@ -178,9 +178,9 @@ export default function LoginPage() {
             <CloudCog size={80} className="text-white" />
           </div>
           <div className="space-y-2">
-            <h1 className="text-4xl font-bold tracking-tight">AKMS</h1>
+            <h1 className="text-4xl font-bold tracking-tight">KMS</h1>
             <p className="text-green-100 text-lg font-light">
-              Automatic Key Management System
+              Key Management System
             </p>
           </div>
           <div className="h-1 w-24 bg-green-400 rounded-full my-4 opacity-50"></div>

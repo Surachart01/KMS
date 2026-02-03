@@ -61,7 +61,7 @@ async function main() {
         create: {
             id: 'ced-de-ra',
             name: 'DE-RA',
-            role: 'TEACHER'
+            majorId: majorCED.id
         }
     });
     console.log('✅ Created 3 sections: TCT(DE-RA, DE-RB), CED(DE-RA)');

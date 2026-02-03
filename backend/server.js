@@ -24,6 +24,7 @@ import kioskRouter from './src/routes/kiosk.js';
 import penaltyRouter from './src/routes/penalty.js';
 import bookingsRouter from './src/routes/bookings.js';
 import scheduleRoutesRouter from './src/routes/scheduleRoutes.js';
+import authorizationsRouter from './src/routes/authorizations.js';
 
 // initialize express app and prisma client
 const app = express();
@@ -49,6 +50,7 @@ app.use("/api/students/import", studentImportRouter);
 app.use("/api/kiosk", kioskRouter);           // Kiosk API for Raspberry Pi
 app.use("/api/penalty", penaltyRouter);       // Penalty management
 app.use("/api/bookings", bookingsRouter);     // Booking history & stats
+app.use("/api/authorizations", authorizationsRouter); // Daily authorization management
 app.use("/api/v2/schedules", scheduleRoutesRouter); // New schedule API with room swap/move
 
 app.get("/", async (req, res) => {

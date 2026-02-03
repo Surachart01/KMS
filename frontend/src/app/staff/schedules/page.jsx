@@ -48,8 +48,13 @@ export default function SchedulesPage() {
 
     const fetchAllStudents = async () => {
         try {
+            console.log("Fetching students with params:", { role: 'STUDENT', limit: 2000 });
             const response = await usersAPI.getAll({ role: 'STUDENT', limit: 2000 });
-            setAllStudents(response.data.users || []);
+            console.log("API Response:", response);
+            console.log("response.data:", response.data);
+            console.log("response.data.data:", response.data.data);
+            setAllStudents(response.data.data || []);
+            console.log("Students set to state:", response.data.data?.length || 0, "students");
         } catch (error) {
             console.error("Error fetching students:", error);
         }
@@ -598,52 +603,54 @@ export default function SchedulesPage() {
                             size="small"
                             style={{ marginBottom: 12 }}
                             description={
-                                <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
-                                    <Input
-                                        placeholder="รหัสนักศึกษา"
-                                        style={{ width: 150 }}
-                                        id="add-student-code"
-                                    />
-                                    <Input
-                                        placeholder="ชื่อ"
-                                        style={{ width: 150 }}
-                                        id="add-student-first"
-                                    />
-                                    <Input
-                                        placeholder="นามสกุล"
-                                        style={{ width: 150 }}
-                                        id="add-student-last"
-                                    />
-                                    <Button
-                                        type="primary"
-                                        icon={<PlusOutlined />}
-                                        onClick={() => {
-                                            const code = document.getElementById('add-student-code').value.trim();
-                                            const first = document.getElementById('add-student-first').value.trim();
-                                            const last = document.getElementById('add-student-last').value.trim();
-
-                                            if (!code) {
-                                                message.error("กรุณากรอกรหัสนักศึกษา");
+                                <div style={{ marginTop: 8 }}>
+                                    <Select
+                                        showSearch
+                                        placeholder="ค้นหาและเลือกนักศึกษา (พิมพ์รหัส หรือ ชื่อ)"
+                                        style={{ width: '100%' }}
+                                        optionFilterProp="label"
+                                        filterOption={(input, option) =>
+                                            (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                                        }
+                                        onChange={(val, option) => {
+                                            if (studentList.some(s => s.studentCode === val)) {
+                                                message.warning("นักศึกษานี้อยู่ในรายการแล้ว");
                                                 return;
                                             }
-                                            if (studentList.some(s => s.studentCode === code)) {
-                                                message.error("มีรหัสนักศึกษานี้แล้ว");
-                                                return;
-                                            }
-
+                                            const s = option.data;
                                             setStudentList([...studentList, {
-                                                studentCode: code,
-                                                firstName: first || 'ไม่ระบุ',
-                                                lastName: last || ''
+                                                studentCode: s.studentCode,
+                                                firstName: s.firstName,
+                                                lastName: s.lastName
                                             }]);
-
-                                            document.getElementById('add-student-code').value = '';
-                                            document.getElementById('add-student-first').value = '';
-                                            document.getElementById('add-student-last').value = '';
                                         }}
+                                        value={null}
                                     >
-                                        เพิ่ม
-                                    </Button>
+                                        {Object.entries(
+                                            allStudents.reduce((groups, student) => {
+                                                const sectionName = student.section
+                                                    ? `${student.section.major?.code || ''} ${student.section.name}`
+                                                    : 'ไม่มีกลุ่มเรียน';
+
+                                                if (!groups[sectionName]) groups[sectionName] = [];
+                                                groups[sectionName].push(student);
+                                                return groups;
+                                            }, {})
+                                        ).sort().map(([group, students]) => (
+                                            <Select.OptGroup label={group} key={group}>
+                                                {students.map(s => (
+                                                    <Select.Option
+                                                        key={s.id}
+                                                        value={s.studentCode}
+                                                        label={`${s.studentCode} ${s.firstName} ${s.lastName}`}
+                                                        data={s}
+                                                    >
+                                                        {s.studentCode} {s.firstName} {s.lastName}
+                                                    </Select.Option>
+                                                ))}
+                                            </Select.OptGroup>
+                                        ))}
+                                    </Select>
                                 </div>
                             }
                         />
@@ -816,6 +823,68 @@ export default function SchedulesPage() {
                             size="small"
                             title={`รายชื่อนักศึกษา (${parsedData.students?.length || 0} คน)`}
                         >
+                            <Alert
+                                message="เพิ่มนักศึกษา"
+                                type="info"
+                                size="small"
+                                style={{ marginBottom: 12 }}
+                                description={
+                                    <div style={{ marginTop: 8 }}>
+                                        <Select
+                                            showSearch
+                                            placeholder="ค้นหาและเลือกนักศึกษา (พิมพ์รหัส หรือ ชื่อ)"
+                                            style={{ width: '100%' }}
+                                            optionFilterProp="label"
+                                            filterOption={(input, option) =>
+                                                (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                                            }
+                                            onChange={(val, option) => {
+                                                const currentStudents = parsedData.students || [];
+                                                if (currentStudents.some(s => s.studentCode === val)) {
+                                                    message.warning("นักศึกษานี้อยู่ในรายการแล้ว");
+                                                    return;
+                                                }
+                                                const s = option.data;
+                                                setParsedData({
+                                                    ...parsedData,
+                                                    students: [...currentStudents, {
+                                                        studentCode: s.studentCode,
+                                                        firstName: s.firstName,
+                                                        lastName: s.lastName,
+                                                        section: s.section ? `${s.section.major?.code || ''} ${s.section.name}` : ''
+                                                    }]
+                                                });
+                                            }}
+                                            value={null}
+                                        >
+                                            {Object.entries(
+                                                allStudents.reduce((groups, student) => {
+                                                    const sectionName = student.section
+                                                        ? `${student.section.major?.code || ''} ${student.section.name}`
+                                                        : 'ไม่มีกลุ่มเรียน';
+
+                                                    if (!groups[sectionName]) groups[sectionName] = [];
+                                                    groups[sectionName].push(student);
+                                                    return groups;
+                                                }, {})
+                                            ).sort().map(([group, students]) => (
+                                                <Select.OptGroup label={group} key={group}>
+                                                    {students.map(s => (
+                                                        <Select.Option
+                                                            key={s.id}
+                                                            value={s.studentCode}
+                                                            label={`${s.studentCode} ${s.firstName} ${s.lastName}`}
+                                                            data={s}
+                                                        >
+                                                            {s.studentCode} {s.firstName} {s.lastName}
+                                                        </Select.Option>
+                                                    ))}
+                                                </Select.OptGroup>
+                                            ))}
+                                        </Select>
+                                    </div>
+                                }
+                            />
                             <div style={{ maxHeight: 400, overflow: 'auto' }}>
                                 <Table
                                     size="small"

@@ -32,6 +32,11 @@ enum PenaltyType {
   MANUAL
 }
 
+enum AuthSource {
+  SCHEDULE  // มาจากตารางเรียน (auto-generated)
+  MANUAL    // เพิ่มด้วยมือโดย Staff
+}
+
 // ---------- SUBJECT - TEACHER ----------
 model SubjectTeacher {
   id         String @id @default(uuid())
@@ -81,6 +86,7 @@ model User {
   teachingSchedules Schedule[] @relation("TeacherSchedules")
   enrolledSchedules Schedule[] @relation("StudentSchedules")
   penaltyLogs     PenaltyLog[]
+  authorizedRooms DailyAuthorization[]
 }
 
 // ---------- MAJORS ----------
@@ -118,6 +124,9 @@ model Subject {
 
   /// การจองที่เกี่ยวข้องกับวิชานี้
   bookings  Booking[]
+  
+  /// สิทธิ์ในการเบิกกุญแจรายวัน
+  dailyAuthorizations DailyAuthorization[]
 }
 
 // ---------- SCHEDULES (เรียนตามตาราง) ----------
@@ -144,6 +153,7 @@ model Schedule {
   createdAt   DateTime @default(now())
 
   students    User[]   @relation("StudentSchedules")
+  dailyAuthorizations DailyAuthorization[]
 }
 
 // ---------- KEYS ----------
@@ -213,6 +223,43 @@ model PenaltyLog {
   reason      String
 
   createdAt   DateTime @default(now())
+}
+
+// ---------- DAILY AUTHORIZATION (สิทธิ์เบิกกุญแจรายวัน) ----------
+model DailyAuthorization {
+  id          String   @id @default(uuid())
+  
+  /// ห้องที่มีสิทธิ์เบิก
+  roomCode    String
+  
+  /// วันที่ (YYYY-MM-DD)
+  date        DateTime @db.Date
+  
+  /// ช่วงเวลา
+  startTime   DateTime
+  endTime     DateTime
+  
+  /// ผู้ใช้ที่มีสิทธิ์
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  /// แหล่งที่มา
+  source      AuthSource @default(MANUAL)
+  
+  /// อ้างอิงจาก Schedule (ถ้ามาจากการ sync)
+  scheduleId  String?
+  schedule    Schedule? @relation(fields: [scheduleId], references: [id], onDelete: SetNull)
+  
+  /// วิชา (optional)
+  subjectId   String?
+  subject     Subject?  @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+  
+  createdAt   DateTime @default(now())
+  createdBy   String?  // Staff/Admin ที่เพิ่ม
+  
+  @@unique([userId, roomCode, date, startTime])
+  @@index([roomCode, date])
+  @@index([userId, date])
 }
 
 // ---------- SYSTEM LOG ----------

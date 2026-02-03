@@ -60,6 +60,27 @@ export const checkSchedulePermission = async (studentCode, roomCode, currentTime
 };
 
 /**
+ * Update DailyAuthorization records when a schedule's room changes
+ * @param {string} scheduleId - Schedule ID
+ * @param {string} newRoomCode - New room code
+ * @returns {Promise<number>} - Number of affected authorizations
+ */
+export const updateDailyAuthorizationsOnRoomChange = async (scheduleId, newRoomCode) => {
+    try {
+        // Update all DailyAuthorization records for this schedule
+        const result = await prisma.dailyAuthorization.updateMany({
+            where: { scheduleId },
+            data: { roomCode: newRoomCode }
+        });
+
+        return result.count;
+    } catch (error) {
+        console.error('Error updating daily authorizations:', error);
+        return 0;
+    }
+};
+
+/**
  * สลับห้องเรียนระหว่าง 2 ตารางสอน
  * @param {string} scheduleId1 - Schedule ID ที่ 1
  * @param {string} scheduleId2 - Schedule ID ที่ 2
@@ -91,11 +112,18 @@ export const swapRooms = async (scheduleId1, scheduleId2) => {
         // ทำการสลับ
         const result = await scheduleRepository.swapRooms(scheduleId1, scheduleId2);
 
+        // Update DailyAuthorization for both schedules
+        const [auth1Count, auth2Count] = await Promise.all([
+            updateDailyAuthorizationsOnRoomChange(scheduleId1, result.schedule1.roomCode),
+            updateDailyAuthorizationsOnRoomChange(scheduleId2, result.schedule2.roomCode)
+        ]);
+
         return {
             success: true,
             schedule1: result.schedule1,
             schedule2: result.schedule2,
-            message: `สลับห้องเรียนสำเร็จ: ${result.schedule1.roomCode} ↔ ${result.schedule2.roomCode}`
+            affectedAuthorizations: auth1Count + auth2Count,
+            message: `สลับห้องเรียนสำเร็จ: ${result.schedule1.roomCode} ↔ ${result.schedule2.roomCode} (อัพเดท ${auth1Count + auth2Count} รายการจอง)`
         };
 
     } catch (error) {
@@ -141,11 +169,15 @@ export const moveScheduleToRoom = async (scheduleId, newRoomCode) => {
         // ทำการย้าย
         const updatedSchedule = await scheduleRepository.moveToRoom(scheduleId, newRoomCode);
 
+        // Update DailyAuthorization
+        const affectedCount = await updateDailyAuthorizationsOnRoomChange(scheduleId, newRoomCode);
+
         return {
             success: true,
             schedule: updatedSchedule,
             previousRoomCode: schedule.roomCode,
-            message: `ย้ายห้องเรียนสำเร็จ: ${schedule.roomCode} → ${newRoomCode}`
+            affectedAuthorizations: affectedCount,
+            message: `ย้ายห้องเรียนสำเร็จ: ${schedule.roomCode} → ${newRoomCode} (อัพเดท ${affectedCount} รายการจอง)`
         };
 
     } catch (error) {
