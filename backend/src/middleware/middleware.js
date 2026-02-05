@@ -166,3 +166,32 @@ export const requireTeacher = async (req, res, next) => {
         });
     }
 };
+
+
+export const hardwareMiddleware = async (req, res, next) => {
+    try {
+         // 1. ตรวจสอบ Authorization Header
+        const authHeader = req.headers.authorization;
+
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            return res.status(401).json({
+                message: "ไม่พบ Token กรุณาเข้าสู่ระบบ"
+            });
+        }
+        const token = authHeader.split(' ')[1];
+
+        if(token === process.env.HARDWARE_TOKEN){
+            next();
+        }else{
+            return res.status(401).json({
+                message: "เครื่องนี้ไม่มีสิทธิ์ในการใช้งานระบบ"
+            });
+        }
+
+    } catch (error) {
+        console.error("Error in hardwareMiddleware middleware:", error);
+        return res.status(500).json({
+            message: "เกิดข้อผิดพลาดในการตรวจสอบสิทธิ์"
+        });
+    }
+};

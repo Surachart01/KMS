@@ -8,6 +8,8 @@ const router = express.Router();
  * ไม่ต้อง authenticate ด้วย JWT เพราะใช้ studentCode จาก ZKTEco
  */
 
+
+
 // ตรวจสอบสิทธิ์เบิก
 router.post('/verify-borrow', kioskController.verifyBorrow);
 
