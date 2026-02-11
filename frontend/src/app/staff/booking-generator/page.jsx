@@ -167,15 +167,15 @@ export default function DailyBookingGenerator() {
     ];
 
     return (
-        <div>
+        <div className="fade-in">
             <Space direction="vertical" size="large" style={{ width: "100%" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <Title level={2}>
+                <div className="page-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <Title level={2} style={{ margin: 0 }}>
                         <CalendarOutlined /> สร้างรายการจองรายวัน (Daily Booking Generator)
                     </Title>
                 </div>
 
-                <Card>
+                <Card className="feature-card">
                     <Row gutter={[16, 16]} align="middle">
                         <Col xs={24} md={8}>
                             <Space direction="vertical" style={{ width: "100%" }}>

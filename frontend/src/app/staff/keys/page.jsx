@@ -196,14 +196,12 @@ export default function KeysPage() {
     ];
 
     return (
-        <div>
+        <div className="fade-in">
             <Space direction="vertical" size="large" style={{ width: "100%" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <div>
-                        <Title level={2}>
-                            <KeyOutlined /> จัดการกุญแจ
-                        </Title>
-                    </div>
+                <div className="page-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <Title level={2} style={{ margin: 0 }}>
+                        <KeyOutlined /> จัดการกุญแจ
+                    </Title>
                     <Button
                         type="primary"
                         icon={<PlusOutlined />}
@@ -214,7 +212,7 @@ export default function KeysPage() {
                     </Button>
                 </div>
 
-                <Card>
+                <Card className="feature-card">
                     <Table
                         columns={columns}
                         dataSource={keys}

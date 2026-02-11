@@ -176,14 +176,12 @@ export default function SubjectsPage() {
     ];
 
     return (
-        <div>
+        <div className="fade-in">
             <Space direction="vertical" size="large" style={{ width: "100%" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <div>
-                        <Title level={2}>
-                            <BookOutlined /> จัดการรายวิชา
-                        </Title>
-                    </div>
+                <div className="page-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <Title level={2} style={{ margin: 0 }}>
+                        <BookOutlined /> จัดการรายวิชา
+                    </Title>
                     <Button
                         type="primary"
                         icon={<PlusOutlined />}
@@ -194,7 +192,7 @@ export default function SubjectsPage() {
                     </Button>
                 </div>
 
-                <Card>
+                <Card className="feature-card">
                     <Table
                         columns={columns}
                         dataSource={subjects}

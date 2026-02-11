@@ -12,8 +12,7 @@ export const getAllMajors = async (req, res) => {
             include: {
                 _count: {
                     select: {
-                        sections: true,
-                        users: true
+                        sections: true
                     }
                 }
             },
@@ -45,15 +44,13 @@ export const getMajorById = async (req, res) => {
                 id: id
             },
             include: {
-                sections: true,
-                users: {
-                    select: {
-                        id: true,
-                        studentCode: true,
-                        firstName: true,
-                        lastName: true,
-                        email: true,
-                        role: true
+                sections: {
+                    include: {
+                        _count: {
+                            select: {
+                                users: true
+                            }
+                        }
                     }
                 }
             }

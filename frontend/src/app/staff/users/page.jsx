@@ -50,6 +50,7 @@ export default function UsersPage() {
     const [editingUser, setEditingUser] = useState(null);
     const [form] = Form.useForm();
     const [selectedMajor, setSelectedMajor] = useState(null);
+    const [formRole, setFormRole] = useState(null); // Track role in form for conditional rendering
     const searchParams = useSearchParams();
     const currentRole = searchParams.get("role");
 
@@ -108,7 +109,22 @@ export default function UsersPage() {
     const handleAdd = () => {
         setEditingUser(null);
         setSelectedMajor(null);
+
         form.resetFields();
+
+        if (currentRole) {
+            setFormRole(currentRole);
+            form.setFieldsValue({ role: currentRole });
+
+            // Trigger value change logic for auto-email if student
+            if (currentRole === 'STUDENT') {
+                // We don't have studentCode yet, so just ensuring formRole is set is enough
+                // The handleFormValuesChange will catch studentCode input later
+            }
+        } else {
+            setFormRole(null);
+        }
+
         setModalVisible(true);
     };
 
@@ -124,6 +140,8 @@ export default function UsersPage() {
             majorId: majorId,
             sectionId: record.sectionId,
         });
+        setEditingUser(record);
+        setFormRole(record.role);
         setModalVisible(true);
     };
 
@@ -395,7 +413,12 @@ export default function UsersPage() {
                 </Space>
             ),
         },
-    ];
+    ].filter(col => {
+        if (currentRole === 'TEACHER' || currentRole === 'STAFF') {
+            return col.key !== 'major' && col.key !== 'section';
+        }
+        return true;
+    });
 
     const filteredSections = selectedMajor
         ? sections.filter((s) => s.majorId === selectedMajor)
@@ -534,11 +557,19 @@ export default function UsersPage() {
     };
 
     const handleFormValuesChange = (changedValues, allValues) => {
+        if (changedValues.role) {
+            setFormRole(changedValues.role);
+            // Clear major/section if switching to non-student
+            if (changedValues.role !== 'STUDENT') {
+                form.setFieldsValue({ majorId: null, sectionId: null });
+            }
+        }
+
         if (allValues.role === 'STUDENT') {
             const studentCode = allValues.studentCode;
+            // Auto-generate email when studentCode changes or role switches to STUDENT
             if (studentCode && (changedValues.studentCode || changedValues.role)) {
-                // Remove non-digits if user types them or just use raw if standard is expected
-                // User said "digits only" for the middle part, typically studentCode is digits.
+                // Extract only digits
                 const digits = studentCode.replace(/\D/g, '');
                 if (digits.length > 0) {
                     const autoEmail = `s${digits}@email.kmutnb.ac.th`;
@@ -577,15 +608,21 @@ export default function UsersPage() {
                         label="อีเมล"
                         rules={[
                             { type: "email", message: "รูปแบบอีเมลไม่ถูกต้อง" },
+                            { required: true, message: "กรุณากรอกอีเมล" }
                         ]}
                     >
-                        <Input placeholder="example@email.com" />
+                        <Input
+                            placeholder={formRole === 'STUDENT' ? "จะถูกสร้างอัตโนมัติ" : "example@email.com"}
+                            readOnly={formRole === 'STUDENT'}
+                            disabled={formRole === 'STUDENT'}
+                        />
                     </Form.Item>
 
                     <Form.Item
                         name="role"
                         label="บทบาท"
                         rules={[{ required: true, message: "กรุณาเลือกบทบาท" }]}
+                        hidden={!!currentRole} // Hide if role is determined by page context
                     >
                         <Select placeholder="เลือกบทบาท">
                             <Select.Option value="STUDENT">นักศึกษา</Select.Option>
@@ -594,31 +631,33 @@ export default function UsersPage() {
                         </Select>
                     </Form.Item>
 
-                    <Space style={{ width: "100%" }} size="middle">
-                        <Form.Item name="majorId" label="สาขาวิชา" style={{ width: 300 }}>
-                            <Select
-                                placeholder="เลือกสาขาวิชา"
-                                allowClear
-                                onChange={handleMajorChange}
-                                options={majors.map((major) => ({
-                                    label: `${major.code} - ${major.name}`,
-                                    value: major.id,
-                                }))}
-                            />
-                        </Form.Item>
+                    {formRole === 'STUDENT' && (
+                        <Space style={{ width: "100%" }} size="middle">
+                            <Form.Item name="majorId" label="สาขาวิชา" style={{ width: 300 }}>
+                                <Select
+                                    placeholder="เลือกสาขาวิชา"
+                                    allowClear
+                                    onChange={handleMajorChange}
+                                    options={majors.map((major) => ({
+                                        label: `${major.code} - ${major.name}`,
+                                        value: major.id,
+                                    }))}
+                                />
+                            </Form.Item>
 
-                        <Form.Item name="sectionId" label="กลุ่มเรียน" style={{ width: 300 }}>
-                            <Select
-                                placeholder="เลือกกลุ่มเรียน"
-                                allowClear
-                                disabled={!selectedMajor}
-                                options={filteredSections.map((section) => ({
-                                    label: section.name,
-                                    value: section.id,
-                                }))}
-                            />
-                        </Form.Item>
-                    </Space>
+                            <Form.Item name="sectionId" label="กลุ่มเรียน" style={{ width: 300 }}>
+                                <Select
+                                    placeholder="เลือกกลุ่มเรียน"
+                                    allowClear
+                                    disabled={!selectedMajor}
+                                    options={filteredSections.map((section) => ({
+                                        label: section.name,
+                                        value: section.id,
+                                    }))}
+                                />
+                            </Form.Item>
+                        </Space>
+                    )}
 
                     {!editingUser && (
                         <Form.Item
@@ -651,14 +690,12 @@ export default function UsersPage() {
 
 
     return (
-        <div>
+        <div className="fade-in">
             <Space direction="vertical" size="large" style={{ width: "100%" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <div>
-                        <Title level={2}>
-                            <UserOutlined /> จัดการผู้ใช้งาน {currentRole && `(${getRoleText(currentRole)})`}
-                        </Title>
-                    </div>
+                <div className="page-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <Title level={2} style={{ margin: 0 }}>
+                        <UserOutlined /> จัดการผู้ใช้งาน {currentRole && `(${getRoleText(currentRole)})`}
+                    </Title>
                     <Space>
                         {currentRole === 'STUDENT' && (
                             <Upload

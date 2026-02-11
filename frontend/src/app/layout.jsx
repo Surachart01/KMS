@@ -39,6 +39,60 @@ export default function RootLayout({ children }) {
               token: {
                 fontFamily: ibmPlexSansThai.style.fontFamily,
                 colorPrimary: "#16a34a",
+                colorSuccess: "#10B981",
+                colorWarning: "#F59E0B",
+                colorError: "#EF4444",
+                colorInfo: "#3B82F6",
+                borderRadius: 10,
+                wireframe: false,
+                fontSize: 14,
+              },
+              components: {
+                Button: {
+                  fontWeight: 500,
+                  controlHeight: 40,
+                  defaultShadow: "0 2px 0 rgba(0, 0, 0, 0.02)",
+                  primaryShadow: "0 4px 14px 0 rgba(22, 163, 74, 0.35)",
+                  paddingContentHorizontal: 20,
+                },
+                Card: {
+                  headerFontSize: 16,
+                  headerFontWeight: 600,
+                  paddingLG: 24,
+                  boxShadowTertiary: "0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.04)",
+                },
+                Table: {
+                  headerBg: "#F0FDF4",
+                  headerColor: "#166534",
+                  headerSplitColor: "transparent",
+                  rowHoverBg: "#F0FDF4",
+                  borderColor: "#E5E7EB",
+                },
+                Input: {
+                  controlHeight: 40,
+                  activeShadow: "0 0 0 2px rgba(22, 163, 74, 0.15)",
+                  hoverBorderColor: "#22c55e",
+                },
+                Select: {
+                  controlHeight: 40,
+                },
+                Typography: {
+                  colorTextHeading: "#111827",
+                  fontWeightStrong: 600,
+                },
+                Layout: {
+                  bodyBg: "#F1F5F9",
+                  headerBg: "#FFFFFF",
+                  siderBg: "#0f3524",
+                },
+                Menu: {
+                  darkItemBg: "#0f3524",
+                  darkSubMenuItemBg: "#0a2618",
+                  darkItemSelectedBg: "#16a34a",
+                  itemHeight: 44,
+                  itemMarginInline: 8,
+                  itemBorderRadius: 8,
+                },
               },
             }}
           >

@@ -12,7 +12,7 @@ const router = express.Router();
 router.get('/', scheduleController.getAllSchedules);
 router.get('/room/:roomCode', scheduleController.getSchedulesByRoom);
 router.get('/teacher/:teacherId', scheduleController.getSchedulesByTeacher);
-router.get('/section/:section', scheduleController.getSchedulesBySection);
+
 
 // Check permission (for kiosk use)
 router.post('/check-permission', scheduleController.checkSchedulePermission);

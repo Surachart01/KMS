@@ -163,7 +163,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex w-full bg-white">
       {/* Left Side - Branding (Hidden on mobile) */}
-      <div className="hidden lg:flex w-1/2 bg-gradient-to-br from-green-600 to-green-800 relative overflow-hidden items-center justify-center p-12">
+      <div className="hidden lg:flex w-1/2 bg-gradient-to-br from-green-600 to-emerald-800 relative overflow-hidden items-center justify-center p-12">
         {/* Decorative Grid Pattern */}
         <div className="absolute inset-0 opacity-10"
           style={{ backgroundImage: 'radial-gradient(#fff 1px, transparent 1px)', backgroundSize: '30px 30px' }}>
@@ -171,7 +171,7 @@ export default function LoginPage() {
 
         {/* Decorative Circles */}
         <div className="absolute top-10 left-10 w-32 h-32 bg-white opacity-10 rounded-full blur-2xl"></div>
-        <div className="absolute bottom-10 right-10 w-64 h-64 bg-green-400 opacity-20 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-10 right-10 w-64 h-64 bg-emerald-400 opacity-20 rounded-full blur-3xl"></div>
 
         <div className="relative z-10 flex flex-col items-center text-center text-white space-y-6 max-w-lg">
           <div className="bg-white/10 backdrop-blur-md p-6 rounded-3xl border border-white/20 shadow-2xl">
@@ -183,7 +183,7 @@ export default function LoginPage() {
               Key Management System
             </p>
           </div>
-          <div className="h-1 w-24 bg-green-400 rounded-full my-4 opacity-50"></div>
+          <div className="h-1 w-24 bg-emerald-400 rounded-full my-4 opacity-50"></div>
           <p className="text-green-50/80 leading-relaxed text-sm max-w-md">
             ระบบตู้บริหารจัดการกุญแจอัตโนมัติ
             <br />
@@ -265,7 +265,7 @@ export default function LoginPage() {
                 type="primary"
                 htmlType="submit"
                 loading={loading}
-                className="w-full h-12 text-base font-semibold rounded-lg bg-green-600 hover:bg-green-500 shadow-lg shadow-green-600/20 border-none transition-all duration-200 hover:scale-[1.02]"
+                className="w-full h-12 text-base font-semibold rounded-lg shadow-lg shadow-green-600/20 border-none transition-all duration-200 hover:scale-[1.02]"
               >
                 เข้าสู่ระบบ
               </Button>
@@ -326,7 +326,7 @@ export default function LoginPage() {
                 />
               </Form.Item>
               <Form.Item className="mt-8">
-                <Button type="primary" loading={loading} htmlType="submit" className="w-full h-11 rounded-lg font-medium bg-green-600">
+                <Button type="primary" loading={loading} htmlType="submit" className="w-full h-11 rounded-lg font-medium">
                   ส่งรหัสยืนยัน
                 </Button>
               </Form.Item>
@@ -344,7 +344,7 @@ export default function LoginPage() {
               </Form.Item>
 
               <Form.Item className="mt-8 mb-3">
-                <Button type="primary" loading={loading} htmlType="submit" className="w-full h-11 rounded-lg font-medium bg-green-600">
+                <Button type="primary" loading={loading} htmlType="submit" className="w-full h-11 rounded-lg font-medium">
                   ตรวจสอบรหัส
                 </Button>
               </Form.Item>
@@ -391,7 +391,7 @@ export default function LoginPage() {
                 <Input.Password placeholder="ยืนยันรหัสผ่านใหม่" className="rounded-lg" />
               </Form.Item>
               <Form.Item className="mt-8">
-                <Button type="primary" htmlType="submit" className="w-full h-11 rounded-lg font-medium bg-green-600">
+                <Button type="primary" htmlType="submit" className="w-full h-11 rounded-lg font-medium">
                   บันทึกรหัสผ่าน
                 </Button>
               </Form.Item>

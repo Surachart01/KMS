@@ -244,10 +244,10 @@ export default function BookingsPage() {
     ];
 
     return (
-        <div>
+        <div className="fade-in">
             <Space direction="vertical" size="large" style={{ width: "100%" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <Title level={2}>
+                <div className="page-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <Title level={2} style={{ margin: 0 }}>
                         <HistoryOutlined /> ประวัติการเบิก-คืนกุญแจ
                     </Title>
                     <Button icon={<ReloadOutlined />} onClick={handleRefresh}>
@@ -258,48 +258,49 @@ export default function BookingsPage() {
                 {/* Stats Cards */}
                 <Row gutter={16}>
                     <Col xs={24} sm={12} md={6}>
-                        <Card>
-                            <Statistic
-                                title="กำลังเบิกอยู่"
-                                value={activeBookings.length}
-                                prefix={<ClockCircleOutlined style={{ color: "#faad14" }} />}
-                                valueStyle={{ color: "#faad14" }}
-                            />
+                        <Card className="stat-card-orange">
+                            <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                                <div style={{ width: 44, height: 44, borderRadius: 10, background: "rgba(249,115,22,0.1)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                                    <ClockCircleOutlined style={{ fontSize: 20, color: "#f97316" }} />
+                                </div>
+                                <Statistic title="กำลังเบิกอยู่" value={activeBookings.length} />
+                            </div>
                         </Card>
                     </Col>
                     <Col xs={24} sm={12} md={6}>
-                        <Card>
-                            <Statistic
-                                title="เลยกำหนดคืน"
-                                value={overdueBookings.length}
-                                prefix={<WarningOutlined style={{ color: "#ff4d4f" }} />}
-                                valueStyle={{ color: "#ff4d4f" }}
-                            />
+                        <Card className="stat-card-red">
+                            <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                                <div style={{ width: 44, height: 44, borderRadius: 10, background: "rgba(239,68,68,0.1)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                                    <WarningOutlined style={{ fontSize: 20, color: "#ef4444" }} />
+                                </div>
+                                <Statistic title="เลยกำหนดคืน" value={overdueBookings.length} />
+                            </div>
                         </Card>
                     </Col>
                     <Col xs={24} sm={12} md={6}>
-                        <Card>
-                            <Statistic
-                                title="เบิกวันนี้"
-                                value={stats?.totalBorrow || 0}
-                                prefix={<HistoryOutlined style={{ color: "#1890ff" }} />}
-                            />
+                        <Card className="stat-card-blue">
+                            <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                                <div style={{ width: 44, height: 44, borderRadius: 10, background: "rgba(59,130,246,0.1)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                                    <HistoryOutlined style={{ fontSize: 20, color: "#3b82f6" }} />
+                                </div>
+                                <Statistic title="เบิกวันนี้" value={stats?.totalBorrow || 0} />
+                            </div>
                         </Card>
                     </Col>
                     <Col xs={24} sm={12} md={6}>
-                        <Card>
-                            <Statistic
-                                title="คืนวันนี้"
-                                value={stats?.totalReturn || 0}
-                                prefix={<CheckCircleOutlined style={{ color: "#52c41a" }} />}
-                                valueStyle={{ color: "#52c41a" }}
-                            />
+                        <Card className="stat-card-green">
+                            <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                                <div style={{ width: 44, height: 44, borderRadius: 10, background: "rgba(22,163,74,0.1)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                                    <CheckCircleOutlined style={{ fontSize: 20, color: "#16a34a" }} />
+                                </div>
+                                <Statistic title="คืนวันนี้" value={stats?.totalReturn || 0} />
+                            </div>
                         </Card>
                     </Col>
                 </Row>
 
                 {/* Main Table */}
-                <Card>
+                <Card className="feature-card">
                     <Space
                         direction="vertical"
                         size="middle"

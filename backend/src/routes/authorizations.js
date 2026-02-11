@@ -19,8 +19,11 @@ router.get('/room/:roomCode', authorizationController.getAuthorizedUsersForRoom)
 // Check if user is authorized
 router.get('/check', authorizationController.checkAuthorization);
 
-// Sync from schedule
+// Sync from schedule (date range)
 router.post('/sync-schedule', authorizationController.syncSchedule);
+
+// Sync today's schedules
+router.post('/sync-today', authorizationController.syncToday);
 
 // Delete authorization
 router.delete('/:id', authorizationController.deleteAuthorization);

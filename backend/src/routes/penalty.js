@@ -20,5 +20,7 @@ router.post('/config', requireStaff, penaltyController.createConfig);
 router.put('/config/:id', requireStaff, penaltyController.updateConfig);
 router.post('/manual', requireStaff, penaltyController.manualPenalty);
 router.get('/logs', requireStaff, penaltyController.getPenaltyLogs);
+router.get('/scores', requireStaff, penaltyController.getAllScores);
+router.put('/scores/:userId', requireStaff, penaltyController.updateScore);
 
 export default router;

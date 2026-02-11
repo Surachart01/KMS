@@ -153,14 +153,12 @@ export default function SectionsPage() {
     ];
 
     return (
-        <div>
+        <div className="fade-in">
             <Space direction="vertical" size="large" style={{ width: "100%" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <div>
-                        <Title level={2}>
-                            <TeamOutlined /> จัดการกลุ่มเรียน
-                        </Title>
-                    </div>
+                <div className="page-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <Title level={2} style={{ margin: 0 }}>
+                        <TeamOutlined /> จัดการกลุ่มเรียน
+                    </Title>
                     <Button
                         type="primary"
                         icon={<PlusOutlined />}
@@ -171,7 +169,7 @@ export default function SectionsPage() {
                     </Button>
                 </div>
 
-                <Card>
+                <Card className="feature-card">
                     <Table
                         columns={columns}
                         dataSource={sections}

@@ -150,20 +150,34 @@ export const createSubject = async (req, res) => {
  */
 export const updateSubject = async (req, res) => {
     try {
-        // Param might be 'code' but actually it's a bit tricky if code changes.
-        // Assuming param is the current code.
-        const { code: currentCode } = req.params;
+        // Param could be 'code' or 'id' - try both
+        const { code: identifier } = req.params;
         const { code, name, teacherIds } = req.body; // updated data
 
         if (!name) {
             return res.status(400).json({ message: "กรุณากรอกชื่อรายวิชา" });
         }
 
+        // Check if subject exists - try id first, then code
+        let existingSubject = await prisma.subject.findUnique({
+            where: { id: identifier }
+        });
+
+        if (!existingSubject) {
+            existingSubject = await prisma.subject.findUnique({
+                where: { code: identifier }
+            });
+        }
+
+        if (!existingSubject) {
+            return res.status(404).json({ message: "ไม่พบรายวิชา" });
+        }
+
         // If code is changing, we use it in data, but where clause uses currentCode
         const data = { name };
         if (code) data.code = code;
 
-        // Handle teachers update
+        // Handle teachers update - use subject id instead of code for reliability
         if (teacherIds) {
             data.teachers = {
                 deleteMany: {},
@@ -175,7 +189,7 @@ export const updateSubject = async (req, res) => {
 
         const subject = await prisma.subject.update({
             where: {
-                code: currentCode
+                id: existingSubject.id
             },
             data,
             include: {

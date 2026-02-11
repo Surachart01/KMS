@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Table, Button, Space, Modal, Form, Input, Select, TimePicker, message, Popconfirm, Typography, Card, Tag, Upload, Alert } from "antd";
+import { Table, Button, Space, Modal, Form, Input, Select, TimePicker, message, Popconfirm, Typography, Card, Tag, Upload, Alert, TreeSelect } from "antd";
 import {
     PlusOutlined,
     EditOutlined,
@@ -10,7 +10,7 @@ import {
     FileExcelOutlined,
     ClearOutlined
 } from "@ant-design/icons";
-import { schedulesAPI, subjectsAPI, usersAPI } from "@/service/api";
+import { schedulesAPI, subjectsAPI, usersAPI, majorsAPI, sectionsAPI } from "@/service/api";
 import dayjs from "dayjs";
 import * as XLSX from 'xlsx';
 import { UserOutlined } from "@ant-design/icons";
@@ -39,12 +39,43 @@ export default function SchedulesPage() {
     const [filterRoom, setFilterRoom] = useState(null);
     const [filterDay, setFilterDay] = useState(null);
 
+    // Major/Section data for import modal
+    const [majors, setMajors] = useState([]);
+    const [sections, setSections] = useState([]);
+
+
+
+
+
     useEffect(() => {
         fetchSchedules();
         fetchSubjects();
         fetchTeachers();
         fetchAllStudents();
+        fetchMajors();
+        fetchSections();
+
     }, []);
+
+    const fetchMajors = async () => {
+        try {
+            const response = await majorsAPI.getAll();
+            setMajors(response.data.data || []);
+        } catch (error) {
+            console.error("Error fetching majors:", error);
+        }
+    };
+
+    const fetchSections = async () => {
+        try {
+            const response = await sectionsAPI.getAll();
+            setSections(response.data.data || []);
+        } catch (error) {
+            console.error("Error fetching sections:", error);
+        }
+    };
+
+
 
     const fetchAllStudents = async () => {
         try {
@@ -107,9 +138,7 @@ export default function SchedulesPage() {
         form.setFieldsValue({
             subjectId: record.subjectId,
             roomCode: record.roomCode,
-            roomCode: record.roomCode,
-            // section: record.section, // Removed
-            teacherId: record.teacherId,
+            teacherIds: record.teachers?.map(t => t.id) || [],
             dayOfWeek: record.dayOfWeek,
             startTime: dayjs(record.startTime),
             endTime: dayjs(record.endTime)
@@ -205,7 +234,7 @@ export default function SchedulesPage() {
                 if (subjectMatch) {
                     subjectCode = subjectMatch[1];
                     subjectName = subjectMatch[2].trim();
-                    section = `ตอน ${subjectMatch[3]}`;
+                    // section = `ตอน ${subjectMatch[3]}`; // REMOVED - We don't use schedule section anymore
                 }
 
                 // Parse line 5: schedule info
@@ -263,7 +292,7 @@ export default function SchedulesPage() {
                 const parsed = {
                     subjectCode,
                     subjectName,
-                    section,
+                    // section, // REMOVED
                     dayOfWeek,
                     startTime: startTime ? `2024-01-01T${startTime}:00` : null,
                     endTime: endTime ? `2024-01-01T${endTime}:00` : null,
@@ -295,12 +324,27 @@ export default function SchedulesPage() {
             setParsedData(null);
             fetchSchedules();
             fetchSubjects();
+            // Refresh students to see new sections if any
+            fetchAllStudents();
         } catch (error) {
             console.error("Import error:", error);
             message.error(error.response?.data?.message || "เกิดข้อผิดพลาดในการนำเข้าข้อมูล");
         } finally {
             setImporting(false);
         }
+    };
+
+    const parseSectionString = (sectionStr) => {
+        if (!sectionStr) return { majorCode: '', sectionName: '' };
+        // Expected "MAJOR-SECTION" e.g. "TCT-DE-RA"
+        const dashIndex = sectionStr.indexOf('-');
+        if (dashIndex !== -1) {
+            return {
+                majorCode: sectionStr.substring(0, dashIndex),
+                sectionName: sectionStr.substring(dashIndex + 1).split(' ')[0]
+            };
+        }
+        return { majorCode: '', sectionName: '' };
     };
 
     const getDayName = (day) => {
@@ -355,11 +399,14 @@ export default function SchedulesPage() {
 
         {
             title: "อาจารย์",
-            key: "teacher",
-            width: 150,
-            render: (_, record) => (
-                record.teacher ? `${record.teacher.firstName} ${record.teacher.lastName}` : '-'
-            )
+            key: "teachers",
+            width: 200,
+            render: (_, record) => {
+                const teachers = record.subject?.teachers?.map(st => st.teacher).filter(Boolean) || [];
+                return teachers.length > 0
+                    ? teachers.map(t => `${t.firstName} ${t.lastName}`).join(', ')
+                    : '-';
+            }
         },
         {
             title: "นักศึกษา",
@@ -400,11 +447,11 @@ export default function SchedulesPage() {
     ];
 
     return (
-        <div>
+        <div className="fade-in">
             <Space orientation="vertical" size="large" style={{ width: "100%" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div className="page-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <div>
-                        <Title level={2}>
+                        <Title level={2} style={{ margin: 0 }}>
                             <CalendarOutlined style={{ marginRight: 12 }} />
                             จัดการตารางเรียน
                         </Title>
@@ -525,23 +572,6 @@ export default function SchedulesPage() {
                                     ))}
                                 </Select>
                             </Form.Item>
-
-
-
-                            <Form.Item
-                                name="teacherId"
-                                label="อาจารย์ผู้สอน"
-                                rules={[{ required: true, message: "กรุณาเลือกอาจารย์" }]}
-                                style={{ width: 250, marginBottom: 0 }}
-                            >
-                                <Select placeholder="เลือกอาจารย์">
-                                    {teachers.map((t) => (
-                                        <Select.Option key={t.id} value={t.id}>
-                                            {t.firstName} {t.lastName}
-                                        </Select.Option>
-                                    ))}
-                                </Select>
-                            </Form.Item>
                         </Space>
                     </Card>
 
@@ -590,6 +620,8 @@ export default function SchedulesPage() {
                             >
                                 <Input placeholder="เช่น 44-703" />
                             </Form.Item>
+
+
                         </Space>
                     </Card>
 
@@ -604,30 +636,38 @@ export default function SchedulesPage() {
                             style={{ marginBottom: 12 }}
                             description={
                                 <div style={{ marginTop: 8 }}>
-                                    <Select
+                                    <TreeSelect
                                         showSearch
-                                        placeholder="ค้นหาและเลือกนักศึกษา (พิมพ์รหัส หรือ ชื่อ)"
                                         style={{ width: '100%' }}
-                                        optionFilterProp="label"
-                                        filterOption={(input, option) =>
-                                            (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-                                        }
-                                        onChange={(val, option) => {
+                                        value={null}
+                                        dropdownStyle={{ maxHeight: 400, overflow: 'auto' }}
+                                        placeholder="ค้นหาและเลือกนักศึกษา (พิมพ์รหัส หรือ ชื่อ)"
+                                        allowClear
+                                        treeDefaultExpandAll={false}
+                                        onChange={(val, label, extra) => {
+                                            if (!val) return;
+                                            // Check if it's a student node (not a section node)
+                                            // Section nodes have value starting with 'section_' (we'll implement this in treeData)
+                                            // Actually with treeCheckable=false, we select value.
+
+                                            // Find student object
+                                            const student = allStudents.find(s => s.studentCode === val);
+                                            if (!student) return; // Selected a group node maybe?
+
                                             if (studentList.some(s => s.studentCode === val)) {
                                                 message.warning("นักศึกษานี้อยู่ในรายการแล้ว");
                                                 return;
                                             }
-                                            const s = option.data;
+
                                             setStudentList([...studentList, {
-                                                studentCode: s.studentCode,
-                                                firstName: s.firstName,
-                                                lastName: s.lastName
+                                                studentCode: student.studentCode,
+                                                firstName: student.firstName,
+                                                lastName: student.lastName,
+                                                section: student.section
                                             }]);
                                         }}
-                                        value={null}
-                                    >
-                                        {Object.entries(
-                                            allStudents.reduce((groups, student) => {
+                                        treeData={(() => {
+                                            const grouped = allStudents.reduce((groups, student) => {
                                                 const sectionName = student.section
                                                     ? `${student.section.major?.code || ''} ${student.section.name}`
                                                     : 'ไม่มีกลุ่มเรียน';
@@ -635,22 +675,23 @@ export default function SchedulesPage() {
                                                 if (!groups[sectionName]) groups[sectionName] = [];
                                                 groups[sectionName].push(student);
                                                 return groups;
-                                            }, {})
-                                        ).sort().map(([group, students]) => (
-                                            <Select.OptGroup label={group} key={group}>
-                                                {students.map(s => (
-                                                    <Select.Option
-                                                        key={s.id}
-                                                        value={s.studentCode}
-                                                        label={`${s.studentCode} ${s.firstName} ${s.lastName}`}
-                                                        data={s}
-                                                    >
-                                                        {s.studentCode} {s.firstName} {s.lastName}
-                                                    </Select.Option>
-                                                ))}
-                                            </Select.OptGroup>
-                                        ))}
-                                    </Select>
+                                            }, {});
+
+                                            return Object.entries(grouped).sort().map(([groupName, students]) => ({
+                                                title: groupName,
+                                                value: `section_${groupName}`, // Unique value for parent
+                                                selectable: false, // Cannot select the group itself
+                                                key: `section_${groupName}`,
+                                                children: students.map(s => ({
+                                                    title: `${s.studentCode} ${s.firstName} ${s.lastName}`,
+                                                    value: s.studentCode,
+                                                    key: s.id,
+                                                    isLeaf: true
+                                                }))
+                                            }));
+                                        })()}
+                                        treeNodeFilterProp="title"
+                                    />
                                 </div>
                             }
                         />
@@ -681,6 +722,18 @@ export default function SchedulesPage() {
                                         title: 'นามสกุล',
                                         dataIndex: 'lastName',
                                         width: 140,
+                                    },
+                                    {
+                                        title: 'สาขา',
+                                        key: 'major',
+                                        width: 80,
+                                        render: (_, record) => record.section?.major?.code || '-'
+                                    },
+                                    {
+                                        title: 'กลุ่ม',
+                                        key: 'section',
+                                        width: 80,
+                                        render: (_, record) => record.section?.name || '-'
                                     },
 
                                     {
@@ -830,35 +883,39 @@ export default function SchedulesPage() {
                                 style={{ marginBottom: 12 }}
                                 description={
                                     <div style={{ marginTop: 8 }}>
-                                        <Select
+                                        <TreeSelect
                                             showSearch
-                                            placeholder="ค้นหาและเลือกนักศึกษา (พิมพ์รหัส หรือ ชื่อ)"
                                             style={{ width: '100%' }}
-                                            optionFilterProp="label"
-                                            filterOption={(input, option) =>
-                                                (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-                                            }
-                                            onChange={(val, option) => {
+                                            value={null}
+                                            dropdownStyle={{ maxHeight: 400, overflow: 'auto' }}
+                                            placeholder="ค้นหาและเลือกนักศึกษา (พิมพ์รหัส หรือ ชื่อ)"
+                                            allowClear
+                                            treeDefaultExpandAll={false}
+                                            onChange={(val) => {
+                                                if (!val) return;
+
+                                                // Find student object
+                                                const student = allStudents.find(s => s.studentCode === val);
+                                                if (!student) return;
+
                                                 const currentStudents = parsedData.students || [];
                                                 if (currentStudents.some(s => s.studentCode === val)) {
                                                     message.warning("นักศึกษานี้อยู่ในรายการแล้ว");
                                                     return;
                                                 }
-                                                const s = option.data;
+
                                                 setParsedData({
                                                     ...parsedData,
                                                     students: [...currentStudents, {
-                                                        studentCode: s.studentCode,
-                                                        firstName: s.firstName,
-                                                        lastName: s.lastName,
-                                                        section: s.section ? `${s.section.major?.code || ''} ${s.section.name}` : ''
+                                                        studentCode: student.studentCode,
+                                                        firstName: student.firstName,
+                                                        lastName: student.lastName,
+                                                        section: student.section ? `${student.section.major?.code || ''} ${student.section.name}` : ''
                                                     }]
                                                 });
                                             }}
-                                            value={null}
-                                        >
-                                            {Object.entries(
-                                                allStudents.reduce((groups, student) => {
+                                            treeData={(() => {
+                                                const grouped = allStudents.reduce((groups, student) => {
                                                     const sectionName = student.section
                                                         ? `${student.section.major?.code || ''} ${student.section.name}`
                                                         : 'ไม่มีกลุ่มเรียน';
@@ -866,22 +923,23 @@ export default function SchedulesPage() {
                                                     if (!groups[sectionName]) groups[sectionName] = [];
                                                     groups[sectionName].push(student);
                                                     return groups;
-                                                }, {})
-                                            ).sort().map(([group, students]) => (
-                                                <Select.OptGroup label={group} key={group}>
-                                                    {students.map(s => (
-                                                        <Select.Option
-                                                            key={s.id}
-                                                            value={s.studentCode}
-                                                            label={`${s.studentCode} ${s.firstName} ${s.lastName}`}
-                                                            data={s}
-                                                        >
-                                                            {s.studentCode} {s.firstName} {s.lastName}
-                                                        </Select.Option>
-                                                    ))}
-                                                </Select.OptGroup>
-                                            ))}
-                                        </Select>
+                                                }, {});
+
+                                                return Object.entries(grouped).sort().map(([groupName, students]) => ({
+                                                    title: groupName,
+                                                    value: `section_${groupName}`,
+                                                    selectable: false,
+                                                    key: `section_${groupName}`,
+                                                    children: students.map(s => ({
+                                                        title: `${s.studentCode} ${s.firstName} ${s.lastName}`,
+                                                        value: s.studentCode,
+                                                        key: s.id,
+                                                        isLeaf: true
+                                                    }))
+                                                }));
+                                            })()}
+                                            treeNodeFilterProp="title"
+                                        />
                                     </div>
                                 }
                             />
@@ -946,20 +1004,64 @@ export default function SchedulesPage() {
                                             )
                                         },
                                         {
+                                            title: 'สาขาวิชา',
+                                            dataIndex: 'section',
+                                            width: 120,
+                                            render: (text, record, index) => {
+                                                const { majorCode } = parseSectionString(text);
+                                                return (
+                                                    <Select
+                                                        style={{ width: '100%' }}
+                                                        placeholder="เลือกสาขา"
+                                                        value={majorCode || undefined}
+                                                        onChange={(val) => {
+                                                            const newStudents = [...parsedData.students];
+                                                            const currentSection = newStudents[index].section || '';
+                                                            const { sectionName } = parseSectionString(currentSection);
+                                                            const newSectionStr = val ? (sectionName ? `${val}-${sectionName}` : `${val}-`) : currentSection;
+                                                            newStudents[index] = { ...newStudents[index], section: newSectionStr };
+                                                            setParsedData({ ...parsedData, students: newStudents });
+                                                        }}
+                                                    >
+                                                        {majors.map(m => (
+                                                            <Select.Option key={m.id} value={m.code}>{m.code}</Select.Option>
+                                                        ))}
+                                                    </Select>
+                                                );
+                                            }
+                                        },
+                                        {
                                             title: 'กลุ่มเรียน',
                                             dataIndex: 'section',
-                                            width: 150,
-                                            render: (text, record, index) => (
-                                                <Input
-                                                    size="small"
-                                                    value={text}
-                                                    onChange={(e) => {
-                                                        const newStudents = [...parsedData.students];
-                                                        newStudents[index] = { ...newStudents[index], section: e.target.value };
-                                                        setParsedData({ ...parsedData, students: newStudents });
-                                                    }}
-                                                />
-                                            )
+                                            width: 120,
+                                            render: (text, record, index) => {
+                                                const { majorCode, sectionName } = parseSectionString(text);
+                                                // Filter sections by selected major
+                                                const selectedMajor = majors.find(m => m.code === majorCode);
+                                                const filteredSections = selectedMajor
+                                                    ? sections.filter(s => s.majorId === selectedMajor.id)
+                                                    : [];
+
+                                                return (
+                                                    <Select
+                                                        style={{ width: '100%' }}
+                                                        placeholder="เลือกลุ่ม"
+                                                        value={sectionName || undefined}
+                                                        onChange={(val) => {
+                                                            const newStudents = [...parsedData.students];
+                                                            const currentSection = newStudents[index].section || '';
+                                                            const { majorCode } = parseSectionString(currentSection);
+                                                            const newSectionStr = majorCode ? `${majorCode}-${val}` : val;
+                                                            newStudents[index] = { ...newStudents[index], section: newSectionStr };
+                                                            setParsedData({ ...parsedData, students: newStudents });
+                                                        }}
+                                                    >
+                                                        {filteredSections.map(s => (
+                                                            <Select.Option key={s.id} value={s.name}>{s.name}</Select.Option>
+                                                        ))}
+                                                    </Select>
+                                                );
+                                            }
                                         },
                                         {
                                             title: 'ลบ',

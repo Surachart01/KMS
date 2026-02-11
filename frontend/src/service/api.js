@@ -136,7 +136,9 @@ export const penaltyAPI = {
     manualPenalty: (data) => apiClient.post('/api/penalty/manual', data),
     getLogs: (params) => apiClient.get('/api/penalty/logs', { params }),
     getUserLogs: (userId) => apiClient.get(`/api/penalty/logs/${userId}`),
-    getStats: (params) => apiClient.get('/api/penalty/stats', { params })
+    getStats: (params) => apiClient.get('/api/penalty/stats', { params }),
+    getScores: () => apiClient.get('/api/penalty/scores'),
+    updateScore: (userId, data) => apiClient.put(`/api/penalty/scores/${userId}`, data)
 };
 
 // ================== BOOKINGS API (NEW) ==================
@@ -150,6 +152,15 @@ export const bookingsAPI = {
     getWeeklyStats: () => apiClient.get('/api/bookings/stats/weekly'),
     getMonthlyStats: (month, year) => apiClient.get('/api/bookings/stats/monthly', { params: { month, year } }),
     generate: (data) => apiClient.post('/api/bookings/generate', data)
+};
+
+// ================== AUTHORIZATIONS API (สิทธิ์เบิกกุญแจรายวัน) ==================
+export const authorizationsAPI = {
+    getAll: (params) => apiClient.get('/api/authorizations', { params }),
+    create: (data) => apiClient.post('/api/authorizations', data),
+    delete: (id) => apiClient.delete(`/api/authorizations/${id}`),
+    syncToday: () => apiClient.post('/api/authorizations/sync-today'),
+    syncSchedule: (data) => apiClient.post('/api/authorizations/sync-schedule', data)
 };
 
 // ================== SCHEDULES V2 API (with Room Swap/Move) ==================

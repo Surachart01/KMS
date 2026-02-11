@@ -140,51 +140,59 @@ export default function StaffDashboard() {
     }
 
     return (
-        <div>
-            <Title level={2}>Dashboard</Title>
+        <div className="fade-in">
+            {/* Page Header */}
+            <div className="page-header" style={{ marginBottom: 20, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div>
+                    <Title level={2} style={{ margin: 0 }}>
+                        Dashboard
+                    </Title>
+                    <Text style={{ fontSize: 13, marginTop: 4, display: "block", color: "#64748b" }}>
+                        ภาพรวมระบบจัดการกุญแจ
+                    </Text>
+                </div>
+            </div>
 
             <Row gutter={[16, 16]}>
                 {/* Key Stats */}
                 <Col xs={24} sm={12} lg={6}>
-                    <Card>
-                        <Statistic
-                            title="กุญแจทั้งหมด"
-                            value={stats.totalKeys}
-                            prefix={<KeyOutlined />}
-                            suffix="ดอก"
-                        />
+                    <Card className="stat-card-green">
+                        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                            <div style={{ width: 44, height: 44, borderRadius: 10, background: "rgba(22,163,74,0.1)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                                <KeyOutlined style={{ fontSize: 20, color: "#16a34a" }} />
+                            </div>
+                            <Statistic title="กุญแจทั้งหมด" value={stats.totalKeys} suffix="ดอก" />
+                        </div>
                     </Card>
                 </Col>
                 <Col xs={24} sm={12} lg={6}>
-                    <Card>
-                        <Statistic
-                            title="พร้อมใช้งาน"
-                            value={stats.availableKeys}
-                            valueStyle={{ color: '#3f8600' }}
-                            prefix={<CheckCircleOutlined />}
-                            suffix="ดอก"
-                        />
+                    <Card className="stat-card-green">
+                        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                            <div style={{ width: 44, height: 44, borderRadius: 10, background: "rgba(22,163,74,0.1)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                                <CheckCircleOutlined style={{ fontSize: 20, color: "#16a34a" }} />
+                            </div>
+                            <Statistic title="พร้อมใช้งาน" value={stats.availableKeys} suffix="ดอก" />
+                        </div>
                     </Card>
                 </Col>
                 <Col xs={24} sm={12} lg={6}>
-                    <Card>
-                        <Statistic
-                            title="กำลังถูกยืม"
-                            value={stats.borrowedKeys}
-                            valueStyle={{ color: '#cf1322' }}
-                            prefix={<ClockCircleOutlined />}
-                            suffix="ดอก"
-                        />
+                    <Card className="stat-card-orange">
+                        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                            <div style={{ width: 44, height: 44, borderRadius: 10, background: "rgba(249,115,22,0.1)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                                <ClockCircleOutlined style={{ fontSize: 20, color: "#f97316" }} />
+                            </div>
+                            <Statistic title="กำลังถูกยืม" value={stats.borrowedKeys} suffix="ดอก" />
+                        </div>
                     </Card>
                 </Col>
                 <Col xs={24} sm={12} lg={6}>
-                    <Card>
-                        <Statistic
-                            title="ตารางเรียน"
-                            value={stats.totalSchedules}
-                            prefix={<CalendarOutlined />}
-                            suffix="รายการ"
-                        />
+                    <Card className="stat-card-blue">
+                        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                            <div style={{ width: 44, height: 44, borderRadius: 10, background: "rgba(59,130,246,0.1)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                                <CalendarOutlined style={{ fontSize: 20, color: "#3b82f6" }} />
+                            </div>
+                            <Statistic title="ตารางเรียน" value={stats.totalSchedules} suffix="รายการ" />
+                        </div>
                     </Card>
                 </Col>
             </Row>
@@ -192,35 +200,42 @@ export default function StaffDashboard() {
             <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
                 {/* Users Stats */}
                 <Col xs={24} sm={12} lg={8}>
-                    <Card>
-                        <Statistic
-                            title="นักศึกษา"
-                            value={stats.totalStudents}
-                            prefix={<UserOutlined />}
-                            suffix="คน"
-                        />
+                    <Card className="stat-card-purple">
+                        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                            <div style={{ width: 44, height: 44, borderRadius: 10, background: "rgba(139,92,246,0.1)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                                <UserOutlined style={{ fontSize: 20, color: "#8b5cf6" }} />
+                            </div>
+                            <Statistic title="นักศึกษา" value={stats.totalStudents} suffix="คน" />
+                        </div>
                     </Card>
                 </Col>
                 <Col xs={24} sm={12} lg={8}>
-                    <Card>
-                        <Statistic
-                            title="อาจารย์"
-                            value={stats.totalTeachers}
-                            prefix={<UserOutlined />}
-                            suffix="คน"
-                        />
+                    <Card className="stat-card-blue">
+                        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                            <div style={{ width: 44, height: 44, borderRadius: 10, background: "rgba(59,130,246,0.1)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                                <UserOutlined style={{ fontSize: 20, color: "#3b82f6" }} />
+                            </div>
+                            <Statistic title="อาจารย์" value={stats.totalTeachers} suffix="คน" />
+                        </div>
                     </Card>
                 </Col>
                 <Col xs={24} lg={8}>
-                    <Card title="กุญแจแยกตามตึก">
+                    <Card
+                        title={
+                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                <div style={{ width: 28, height: 28, borderRadius: 6, background: "rgba(22,163,74,0.1)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                    <HomeOutlined style={{ fontSize: 14, color: "#16a34a" }} />
+                                </div>
+                                <span>กุญแจแยกตามตึก</span>
+                            </div>
+                        }
+                        className="feature-card"
+                    >
                         {Object.entries(keysByBuilding).map(([building, data]) => (
-                            <div key={building} style={{ marginBottom: 8 }}>
-                                <Space>
-                                    <HomeOutlined />
-                                    <Text strong>ตึก {building}:</Text>
-                                    <Tag color="green">{data.available} พร้อม</Tag>
-                                    <Tag color="orange">{data.borrowed} ยืม</Tag>
-                                </Space>
+                            <div key={building} style={{ marginBottom: 10, display: "flex", alignItems: "center", gap: 8, padding: "6px 0" }}>
+                                <Text strong style={{ minWidth: 65, color: "#334155" }}>ตึก {building}:</Text>
+                                <Tag color="green" style={{ margin: 0, borderRadius: 12 }}>{data.available} พร้อม</Tag>
+                                <Tag color="orange" style={{ margin: 0, borderRadius: 12 }}>{data.borrowed} ยืม</Tag>
                             </div>
                         ))}
                     </Card>
@@ -229,7 +244,17 @@ export default function StaffDashboard() {
 
             <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
                 <Col span={24}>
-                    <Card title="การยืม-คืนล่าสุด">
+                    <Card
+                        title={
+                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                <div style={{ width: 28, height: 28, borderRadius: 6, background: "rgba(22,163,74,0.1)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                    <ClockCircleOutlined style={{ fontSize: 14, color: "#16a34a" }} />
+                                </div>
+                                <span>การยืม-คืนล่าสุด</span>
+                            </div>
+                        }
+                        className="feature-card"
+                    >
                         <Table
                             columns={bookingColumns}
                             dataSource={recentBookings}

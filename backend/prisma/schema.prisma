@@ -83,7 +83,6 @@ model User {
   bookings        Booking[]
   logs            SystemLog[]
   subjectTeachers SubjectTeacher[]
-  teachingSchedules Schedule[] @relation("TeacherSchedules")
   enrolledSchedules Schedule[] @relation("StudentSchedules")
   penaltyLogs     PenaltyLog[]
   authorizedRooms DailyAuthorization[]
@@ -136,15 +135,9 @@ model Schedule {
   subjectId   String
   subject     Subject  @relation(fields: [subjectId], references: [id])
 
-  /// ห้องเรียน
+  /// ห้องเรียน (FK → Key.roomCode)
   roomCode    String
-
-  /// กลุ่มเรียน / ห้องเรียน (เช่น ปวช.3/1)
-  section     String
-
-  /// อาจารย์ผู้สอนคาบนี้
-  teacherId   String
-  teacher     User     @relation("TeacherSchedules", fields: [teacherId], references: [id])
+  key         Key      @relation(fields: [roomCode], references: [roomCode])
 
   dayOfWeek   Int      // 1-7 (Mon-Sun)
   startTime   DateTime
@@ -159,12 +152,13 @@ model Schedule {
 // ---------- KEYS ----------
 model Key {
   id          String   @id @default(uuid())
-  roomCode    String   // เช่น LAB401
+  roomCode    String   @unique // เช่น LAB401
   slotNumber  Int      // ช่องในตู้
 
   isActive    Boolean  @default(true)
 
   bookings    Booking[]
+  schedules   Schedule[]
 }
 
 // ---------- DAILY BOOKING (Raspberry Pi สร้างทุกวัน) ----------

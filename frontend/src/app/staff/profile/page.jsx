@@ -101,20 +101,22 @@ export default function ProfilePage() {
     };
 
     return (
-        <div style={{ maxWidth: 1000, margin: "0 auto" }}>
-            <Title level={2} style={{ marginBottom: 24 }}>
-                <UserOutlined /> ข้อมูลส่วนตัว
-            </Title>
+        <div className="fade-in" style={{ maxWidth: 1000, margin: "0 auto" }}>
+            <div className="page-header" style={{ marginBottom: 24 }}>
+                <Title level={2} style={{ margin: 0 }}>
+                    <UserOutlined /> ข้อมูลส่วนตัว
+                </Title>
+            </div>
 
             <Row gutter={[24, 24]}>
                 {/* Left Column: User Card */}
                 <Col xs={24} md={8}>
-                    <Card style={{ textAlign: "center" }}>
+                    <Card className="feature-card" style={{ textAlign: "center" }}>
                         <div style={{ marginBottom: 24 }}>
                             <Avatar
                                 size={100}
                                 icon={<UserOutlined />}
-                                style={{ backgroundColor: '#fde3cf', color: '#f56a00' }}
+                                style={{ backgroundColor: '#dcfce7', color: '#16a34a' }}
                             />
                         </div>
                         <Title level={3} style={{ marginBottom: 4 }}>

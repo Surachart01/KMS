@@ -1,6 +1,512 @@
-
 @import "tailwindcss";
 
+:root {
+  --foreground-rgb: 0, 0, 0;
+  --bg-main: #f5f7f6;
+  --green-50: #f0fdf4;
+  --green-100: #dcfce7;
+  --green-600: #16a34a;
+  --green-700: #15803d;
+  --green-800: #166534;
+}
 
+body {
+  color: rgb(var(--foreground-rgb));
+  background: var(--bg-main);
+}
 
+/* ==================== Custom Scrollbar ==================== */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
 
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(0, 0, 0, 0.2);
+}
+
+/* ==================== Card ==================== */
+.ant-card {
+  transition: box-shadow 0.3s ease, transform 0.2s ease !important;
+  border: 1px solid #e8ece9 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+  border-radius: 12px !important;
+  background: #fff !important;
+}
+
+.ant-card:hover {
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.07) !important;
+  transform: translateY(-1px);
+}
+
+.ant-card .ant-card-head {
+  border-bottom: 1px solid #f0f0f0 !important;
+  padding: 14px 20px !important;
+  min-height: auto !important;
+  font-weight: 600 !important;
+  font-size: 15px !important;
+  color: #1e293b !important;
+}
+
+/* ==================== Table ==================== */
+.ant-table-thead>tr>th {
+  font-weight: 600 !important;
+  text-transform: uppercase;
+  font-size: 12px !important;
+  letter-spacing: 0.05em;
+  background: #f8faf9 !important;
+  color: #475569 !important;
+  border-bottom: 2px solid #e2e8f0 !important;
+  padding: 12px 16px !important;
+}
+
+.ant-table-thead>tr>th::before {
+  display: none !important;
+}
+
+.ant-table-wrapper {
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.ant-table-tbody>tr>td {
+  border-bottom: 1px solid #f3f4f6 !important;
+  padding: 12px 16px !important;
+  font-size: 14px !important;
+  color: #1e293b !important;
+  line-height: 1.6 !important;
+}
+
+.ant-table-tbody>tr:hover>td {
+  background: #f9fcfa !important;
+}
+
+.ant-table-tbody>tr:last-child>td {
+  border-bottom: none !important;
+}
+
+/* ==================== Button ==================== */
+.ant-btn-primary {
+  box-shadow: 0 2px 6px rgba(22, 163, 74, 0.2) !important;
+  font-weight: 500 !important;
+  border-radius: 8px !important;
+  font-size: 14px !important;
+}
+
+.ant-btn-primary:hover {
+  box-shadow: 0 4px 12px rgba(22, 163, 74, 0.3) !important;
+}
+
+.ant-btn-default {
+  border-radius: 8px !important;
+  font-weight: 500 !important;
+  font-size: 14px !important;
+}
+
+/* ==================== Stat Cards ==================== */
+.stat-card-green {
+  background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%) !important;
+  border: 1px solid #bbf7d0 !important;
+  border-left: 4px solid #16a34a !important;
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-card-green::after {
+  content: "";
+  position: absolute;
+  top: -20px;
+  right: -20px;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: rgba(22, 163, 74, 0.06);
+}
+
+.stat-card-green .ant-statistic-title {
+  color: #374151 !important;
+  font-weight: 600 !important;
+  font-size: 13px !important;
+}
+
+.stat-card-green .ant-statistic-content-value {
+  color: #14532d !important;
+  font-size: 26px !important;
+}
+
+.stat-card-blue {
+  background: linear-gradient(135deg, #eff6ff 0%, #f0f7ff 100%) !important;
+  border: 1px solid #bfdbfe !important;
+  border-left: 4px solid #3b82f6 !important;
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-card-blue::after {
+  content: "";
+  position: absolute;
+  top: -20px;
+  right: -20px;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: rgba(59, 130, 246, 0.06);
+}
+
+.stat-card-blue .ant-statistic-title {
+  color: #374151 !important;
+  font-weight: 600 !important;
+  font-size: 13px !important;
+}
+
+.stat-card-blue .ant-statistic-content-value {
+  color: #1e3a8a !important;
+  font-size: 26px !important;
+}
+
+.stat-card-orange {
+  background: linear-gradient(135deg, #fff7ed 0%, #fffbf5 100%) !important;
+  border: 1px solid #fed7aa !important;
+  border-left: 4px solid #f97316 !important;
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-card-orange::after {
+  content: "";
+  position: absolute;
+  top: -20px;
+  right: -20px;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: rgba(249, 115, 22, 0.06);
+}
+
+.stat-card-orange .ant-statistic-title {
+  color: #374151 !important;
+  font-weight: 600 !important;
+  font-size: 13px !important;
+}
+
+.stat-card-orange .ant-statistic-content-value {
+  color: #9a3412 !important;
+  font-size: 26px !important;
+}
+
+.stat-card-red {
+  background: linear-gradient(135deg, #fef2f2 0%, #fff5f5 100%) !important;
+  border: 1px solid #fecaca !important;
+  border-left: 4px solid #ef4444 !important;
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-card-red::after {
+  content: "";
+  position: absolute;
+  top: -20px;
+  right: -20px;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: rgba(239, 68, 68, 0.06);
+}
+
+.stat-card-red .ant-statistic-title {
+  color: #374151 !important;
+  font-weight: 600 !important;
+  font-size: 13px !important;
+}
+
+.stat-card-red .ant-statistic-content-value {
+  color: #991b1b !important;
+  font-size: 26px !important;
+}
+
+.stat-card-purple {
+  background: linear-gradient(135deg, #faf5ff 0%, #fbf7ff 100%) !important;
+  border: 1px solid #e9d5ff !important;
+  border-left: 4px solid #8b5cf6 !important;
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-card-purple::after {
+  content: "";
+  position: absolute;
+  top: -20px;
+  right: -20px;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: rgba(139, 92, 246, 0.06);
+}
+
+.stat-card-purple .ant-statistic-title {
+  color: #374151 !important;
+  font-weight: 600 !important;
+  font-size: 13px !important;
+}
+
+.stat-card-purple .ant-statistic-content-value {
+  color: #5b21b6 !important;
+  font-size: 26px !important;
+}
+
+/* ==================== Page Header ==================== */
+.page-header {
+  background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 50%, #f0fdf4 100%);
+  border-radius: 14px;
+  padding: 20px 24px;
+  margin-bottom: 20px;
+  border: 1px solid #bbf7d0;
+  border-left: 4px solid #16a34a;
+  position: relative;
+  overflow: hidden;
+}
+
+.page-header::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 200px;
+  height: 100%;
+  background: linear-gradient(135deg, transparent 0%, rgba(22, 163, 74, 0.04) 100%);
+  border-radius: 0 14px 14px 0;
+}
+
+.page-header h2 {
+  color: #14532d !important;
+  margin: 0 !important;
+  font-size: 20px !important;
+  font-weight: 700 !important;
+}
+
+.page-header .ant-typography {
+  color: #4b5563 !important;
+  font-size: 14px !important;
+}
+
+/* ==================== Feature Cards ==================== */
+.feature-card {
+  border-top: 3px solid #16a34a !important;
+  overflow: hidden;
+  position: relative;
+}
+
+.feature-card::after {
+  content: "";
+  position: absolute;
+  bottom: -30px;
+  right: -30px;
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background: rgba(22, 163, 74, 0.03);
+}
+
+/* ==================== Tab ==================== */
+.ant-tabs-tab {
+  font-weight: 500 !important;
+  padding: 10px 16px !important;
+}
+
+.ant-tabs-tab-active {
+  font-weight: 600 !important;
+}
+
+/* ==================== Tag ==================== */
+.ant-tag {
+  border-radius: 6px !important;
+  font-weight: 500 !important;
+  font-size: 13px !important;
+  padding: 2px 10px !important;
+}
+
+/* ==================== Modal ==================== */
+.ant-modal-content {
+  border-radius: 14px !important;
+  overflow: hidden;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.1) !important;
+}
+
+.ant-modal-header {
+  border-bottom: 1px solid #f0f0f0 !important;
+  padding: 18px 24px !important;
+  background: #fff !important;
+}
+
+.ant-modal-title {
+  font-weight: 600 !important;
+  font-size: 16px !important;
+  color: #111827 !important;
+}
+
+/* ==================== Input ==================== */
+.ant-input,
+.ant-input-affix-wrapper,
+.ant-select-selector,
+.ant-picker {
+  border-radius: 8px !important;
+}
+
+.ant-input:focus,
+.ant-input-affix-wrapper:focus,
+.ant-input-affix-wrapper-focused {
+  box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.08) !important;
+}
+
+/* ==================== Descriptions ==================== */
+.ant-descriptions-bordered .ant-descriptions-item-label {
+  background: #f8faf9 !important;
+  font-weight: 600 !important;
+  color: #374151 !important;
+  font-size: 14px !important;
+}
+
+.ant-descriptions-bordered .ant-descriptions-item-content {
+  color: #1e293b !important;
+  font-size: 14px !important;
+}
+
+/* ==================== Fade In ==================== */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Staggered fade-in for stat rows */
+.fade-in .ant-row:nth-child(2) {
+  animation: fadeIn 0.3s ease-out 0.05s both;
+}
+
+.fade-in .ant-row:nth-child(3) {
+  animation: fadeIn 0.3s ease-out 0.1s both;
+}
+
+.fade-in .ant-row:nth-child(4) {
+  animation: fadeIn 0.3s ease-out 0.15s both;
+}
+
+/* ==================== Divider ==================== */
+.ant-divider {
+  border-color: #e5e7eb !important;
+}
+
+/* ==================== Statistic ==================== */
+.ant-statistic-title {
+  font-weight: 600 !important;
+  color: #4b5563 !important;
+  font-size: 13px !important;
+  margin-bottom: 6px !important;
+}
+
+.ant-statistic-content-value {
+  font-weight: 700 !important;
+}
+
+.ant-statistic-content-suffix {
+  font-size: 14px !important;
+  color: #6b7280 !important;
+  margin-left: 4px !important;
+}
+
+/* ==================== Select Dropdown ==================== */
+.ant-select-dropdown {
+  border-radius: 10px !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08) !important;
+  padding: 4px !important;
+}
+
+.ant-select-item {
+  border-radius: 6px !important;
+  padding: 8px 12px !important;
+}
+
+/* ==================== Popover ==================== */
+.ant-popover-inner {
+  border-radius: 10px !important;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08) !important;
+}
+
+/* ==================== Message ==================== */
+.ant-message-notice-content {
+  border-radius: 8px !important;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* ==================== Pagination ==================== */
+.ant-pagination-item {
+  border-radius: 6px !important;
+  font-weight: 500 !important;
+}
+
+.ant-pagination-item-active {
+  font-weight: 600 !important;
+}
+
+/* ==================== Alert ==================== */
+.ant-alert {
+  border-radius: 10px !important;
+}
+
+/* ==================== Tooltip ==================== */
+.ant-tooltip-inner {
+  border-radius: 6px !important;
+  font-size: 12px !important;
+}
+
+/* ==================== Badge ==================== */
+.ant-badge-count {
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* ==================== Empty ==================== */
+.ant-empty-description {
+  color: #6b7280 !important;
+  font-size: 14px !important;
+}
+
+/* ==================== General Text Readability ==================== */
+.ant-form-item-label>label {
+  font-weight: 500 !important;
+  color: #1e293b !important;
+  font-size: 14px !important;
+}
+
+.ant-select-selection-item {
+  font-size: 14px !important;
+  color: #1e293b !important;
+}
+
+.ant-input {
+  font-size: 14px !important;
+  color: #1e293b !important;
+}
+
+.ant-picker-input>input {
+  font-size: 14px !important;
+  color: #1e293b !important;
+}

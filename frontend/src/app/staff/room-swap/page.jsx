@@ -1,8 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
-    Tabs,
     Table,
     Space,
     Typography,
@@ -12,333 +11,564 @@ import {
     Select,
     message,
     Modal,
-    Alert,
-    Descriptions
+    DatePicker,
+    TimePicker,
+    Popconfirm,
+    Row,
+    Col,
+    Form,
+    Divider,
+    Empty,
+    Spin,
+    Tabs,
+    Statistic,
 } from "antd";
 import {
-    SwapOutlined,
-    ArrowRightOutlined,
-    CheckCircleOutlined,
-    WarningOutlined
+    PlusOutlined,
+    DeleteOutlined,
+    KeyOutlined,
+    UserOutlined,
+    ReloadOutlined,
+    SyncOutlined,
+    SafetyCertificateOutlined,
+    CalendarOutlined,
+    EditOutlined,
 } from "@ant-design/icons";
-import { schedulesAPI } from "@/service/api";
 import dayjs from "dayjs";
-import 'dayjs/locale/th';
+import "dayjs/locale/th";
+import { authorizationsAPI, usersAPI, schedulesAPI } from "@/service/api";
 
-dayjs.locale('th');
+dayjs.locale("th");
 
 const { Title, Text } = Typography;
-const { TabPane } = Tabs;
 
-const DAY_NAMES = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'];
-
-export default function RoomSwapPage() {
+export default function AuthorizationPage() {
+    // Data State
     const [loading, setLoading] = useState(false);
-    const [schedules, setSchedules] = useState([]);
-    const [rooms, setRooms] = useState([]);
+    const [syncLoading, setSyncLoading] = useState(false);
+    const [scheduleAuths, setScheduleAuths] = useState([]);
+    const [manualAuths, setManualAuths] = useState([]);
 
-    // Move Room State
-    const [selectedSchedule, setSelectedSchedule] = useState(null);
-    const [newRoom, setNewRoom] = useState(null);
+    // Students for add modal
+    const [allStudents, setAllStudents] = useState([]);
 
-    // Swap Rooms State
-    const [schedule1, setSchedule1] = useState(null);
-    const [schedule2, setSchedule2] = useState(null);
+    // Filter State
+    const [filterDate, setFilterDate] = useState(dayjs());
+    const [filterRoom, setFilterRoom] = useState(null);
 
-    useEffect(() => {
-        fetchSchedules();
-    }, []);
+    // Unique rooms from data
+    const [uniqueRooms, setUniqueRooms] = useState([]);
 
-    const fetchSchedules = async () => {
+    // Modal State
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [form] = Form.useForm();
+
+    // Active Tab
+    const [activeTab, setActiveTab] = useState("schedule");
+
+    // ==================== Fetch Functions ====================
+
+    const fetchAuthorizations = useCallback(async () => {
+        setLoading(true);
         try {
-            setLoading(true);
-            const response = await schedulesAPI.getAll();
-            const data = response.data.data || [];
-            setSchedules(data);
+            const dateStr = filterDate.format("YYYY-MM-DD");
+
+            const [scheduleRes, manualRes] = await Promise.all([
+                authorizationsAPI.getAll({ date: dateStr, source: "SCHEDULE", roomCode: filterRoom || undefined }),
+                authorizationsAPI.getAll({ date: dateStr, source: "MANUAL", roomCode: filterRoom || undefined }),
+            ]);
+
+            const sData = scheduleRes.data?.data || [];
+            const mData = manualRes.data?.data || [];
+
+            setScheduleAuths(sData);
+            setManualAuths(mData);
 
             // Extract unique rooms
-            const uniqueRooms = [...new Set(data.map(s => s.roomCode))];
-            setRooms(uniqueRooms.sort());
+            const allData = [...sData, ...mData];
+            const rooms = [...new Set(allData.map((a) => a.roomCode))].sort();
+            setUniqueRooms(rooms);
         } catch (error) {
-            console.error("Error fetching schedules:", error);
-            message.error("ไม่สามารถโหลดตารางเรียนได้");
+            console.error("Error fetching authorizations:", error);
+            message.error("ไม่สามารถดึงข้อมูลสิทธิ์ได้");
+        } finally {
+            setLoading(false);
+        }
+    }, [filterDate, filterRoom]);
+
+    const fetchStudents = async () => {
+        try {
+            const res = await usersAPI.getAll({ role: "STUDENT" });
+            setAllStudents(res.data?.data || []);
+        } catch (error) {
+            console.error("Error fetching students:", error);
+        }
+    };
+
+    useEffect(() => {
+        fetchAuthorizations();
+    }, [fetchAuthorizations]);
+
+    useEffect(() => {
+        fetchStudents();
+    }, []);
+
+    // ==================== Handlers ====================
+
+    const handleSyncToday = async () => {
+        setSyncLoading(true);
+        try {
+            const res = await authorizationsAPI.syncToday();
+            const data = res.data;
+            message.success(data.message || "ซิงค์สำเร็จ");
+            // Re-fetch to show new data
+            await fetchAuthorizations();
+        } catch (error) {
+            console.error("Error syncing today:", error);
+            message.error("เกิดข้อผิดพลาดในการซิงค์");
+        } finally {
+            setSyncLoading(false);
+        }
+    };
+
+    const handleAddManual = async (values) => {
+        try {
+            setLoading(true);
+            const dateStr = values.date.format("YYYY-MM-DD");
+
+            await authorizationsAPI.create({
+                userId: values.userId,
+                roomCode: values.roomCode,
+                date: dateStr,
+                startTime: values.date
+                    .hour(values.startTime.hour())
+                    .minute(values.startTime.minute())
+                    .second(0)
+                    .toISOString(),
+                endTime: values.date
+                    .hour(values.endTime.hour())
+                    .minute(values.endTime.minute())
+                    .second(0)
+                    .toISOString(),
+            });
+
+            message.success("เพิ่มสิทธิ์สำเร็จ");
+            setIsModalOpen(false);
+            form.resetFields();
+            await fetchAuthorizations();
+        } catch (error) {
+            console.error("Error adding authorization:", error);
+            if (error.response?.status === 500 && error.response?.data?.message?.includes("Unique")) {
+                message.warning("สิทธิ์นี้มีอยู่แล้ว");
+            } else {
+                message.error("เกิดข้อผิดพลาดในการเพิ่มสิทธิ์");
+            }
         } finally {
             setLoading(false);
         }
     };
 
-    const handleMoveRoom = async () => {
-        if (!selectedSchedule || !newRoom) {
-            message.warning("กรุณาเลือกตารางเรียนและห้องใหม่");
-            return;
+    const handleDelete = async (id) => {
+        try {
+            await authorizationsAPI.delete(id);
+            message.success("ลบสิทธิ์สำเร็จ");
+            await fetchAuthorizations();
+        } catch (error) {
+            console.error("Error deleting authorization:", error);
+            message.error("เกิดข้อผิดพลาดในการลบสิทธิ์");
         }
-
-        if (selectedSchedule.roomCode === newRoom) {
-            message.warning("ห้องใหม่เหมือนกับห้องเดิม");
-            return;
-        }
-
-        Modal.confirm({
-            title: "ยืนยันการย้ายห้อง",
-            content: (
-                <div>
-                    <p><strong>วิชา:</strong> {selectedSchedule.subject?.code} {selectedSchedule.subject?.name}</p>
-                    <p><strong>กลุ่ม:</strong> {selectedSchedule.section}</p>
-                    <p><strong>วัน:</strong> {DAY_NAMES[selectedSchedule.dayOfWeek]}</p>
-                    <p><strong>เวลา:</strong> {dayjs(selectedSchedule.startTime).format("HH:mm")} - {dayjs(selectedSchedule.endTime).format("HH:mm")}</p>
-                    <p><strong>ห้องเดิม:</strong> {selectedSchedule.roomCode} → <strong>ห้องใหม่:</strong> {newRoom}</p>
-                </div>
-            ),
-            okText: "ยืนยัน",
-            cancelText: "ยกเลิก",
-            onOk: async () => {
-                try {
-                    const response = await schedulesAPI.moveRoom(selectedSchedule.id, { newRoomCode: newRoom });
-                    if (response.data.success) {
-                        message.success(response.data.message);
-                        setSelectedSchedule(null);
-                        setNewRoom(null);
-                        fetchSchedules();
-                    } else {
-                        message.error(response.data.error || "ไม่สามารถย้ายห้องได้");
-                    }
-                } catch (error) {
-                    console.error("Error moving room:", error);
-                    message.error(error.response?.data?.error || "เกิดข้อผิดพลาดในการย้ายห้อง");
-                }
-            }
-        });
     };
 
-    const handleSwapRooms = async () => {
-        if (!schedule1 || !schedule2) {
-            message.warning("กรุณาเลือกตารางเรียนทั้ง 2 คาบ");
-            return;
-        }
+    // ==================== Table Columns ====================
 
-        if (schedule1.id === schedule2.id) {
-            message.warning("กรุณาเลือกตารางเรียนที่ต่างกัน");
-            return;
-        }
-
-        Modal.confirm({
-            title: "ยืนยันการสลับห้อง",
-            content: (
-                <div>
-                    <Descriptions column={1} size="small" bordered>
-                        <Descriptions.Item label="คาบที่ 1">
-                            {schedule1.subject?.code} {schedule1.subject?.name} ({schedule1.section}) - ห้อง {schedule1.roomCode}
-                        </Descriptions.Item>
-                        <Descriptions.Item label="คาบที่ 2">
-                            {schedule2.subject?.code} {schedule2.subject?.name} ({schedule2.section}) - ห้อง {schedule2.roomCode}
-                        </Descriptions.Item>
-                    </Descriptions>
-                    <Alert
-                        type="info"
-                        message="หลังสลับ"
-                        description={
-                            <div>
-                                <div>คาบที่ 1: ห้อง {schedule1.roomCode} → <strong>{schedule2.roomCode}</strong></div>
-                                <div>คาบที่ 2: ห้อง {schedule2.roomCode} → <strong>{schedule1.roomCode}</strong></div>
-                            </div>
-                        }
-                        style={{ marginTop: 16 }}
+    const columns = [
+        {
+            title: "ห้อง",
+            dataIndex: "roomCode",
+            key: "roomCode",
+            width: 100,
+            render: (roomCode) => (
+                <Tag color="blue" icon={<KeyOutlined />}>
+                    {roomCode}
+                </Tag>
+            ),
+        },
+        {
+            title: "รหัสนักศึกษา",
+            key: "studentCode",
+            width: 130,
+            render: (_, record) => record.user?.studentCode || "-",
+        },
+        {
+            title: "ชื่อ-นามสกุล",
+            key: "name",
+            render: (_, record) =>
+                record.user
+                    ? `${record.user.firstName} ${record.user.lastName}`
+                    : "-",
+        },
+        {
+            title: "วิชา",
+            key: "subject",
+            render: (_, record) =>
+                record.subject
+                    ? `${record.subject.code} - ${record.subject.name}`
+                    : "-",
+        },
+        {
+            title: "เวลา",
+            key: "time",
+            width: 150,
+            render: (_, record) => (
+                <span>
+                    {dayjs(record.startTime).format("HH:mm")} -{" "}
+                    {dayjs(record.endTime).format("HH:mm")}
+                </span>
+            ),
+        },
+        {
+            title: "จัดการ",
+            key: "action",
+            width: 80,
+            render: (_, record) => (
+                <Popconfirm
+                    title="ยืนยันการลบ"
+                    description="ต้องการลบสิทธิ์นี้หรือไม่?"
+                    onConfirm={() => handleDelete(record.id)}
+                    okText="ลบ"
+                    cancelText="ยกเลิก"
+                >
+                    <Button
+                        type="text"
+                        danger
+                        size="small"
+                        icon={<DeleteOutlined />}
                     />
-                </div>
+                </Popconfirm>
             ),
-            okText: "ยืนยัน",
-            cancelText: "ยกเลิก",
-            onOk: async () => {
-                try {
-                    const response = await schedulesAPI.swapRooms(schedule1.id, schedule2.id);
-                    if (response.data.success) {
-                        message.success(response.data.message);
-                        setSchedule1(null);
-                        setSchedule2(null);
-                        fetchSchedules();
-                    } else {
-                        message.error(response.data.error || "ไม่สามารถสลับห้องได้");
-                    }
-                } catch (error) {
-                    console.error("Error swapping rooms:", error);
-                    message.error(error.response?.data?.error || "เกิดข้อผิดพลาดในการสลับห้อง");
-                }
-            }
-        });
-    };
+        },
+    ];
 
-    const scheduleOptions = schedules.map(s => ({
-        value: s.id,
-        label: `${s.subject?.code} - ${s.section} | ${DAY_NAMES[s.dayOfWeek]} ${dayjs(s.startTime).format("HH:mm")}-${dayjs(s.endTime).format("HH:mm")} | ห้อง ${s.roomCode}`,
-        schedule: s
-    }));
+    // ==================== Render ====================
 
     return (
-        <div>
+        <div className="fade-in">
             <Space direction="vertical" size="large" style={{ width: "100%" }}>
-                <Title level={2}>
-                    <SwapOutlined /> ย้าย/สลับห้องเรียน (Room Swap/Move)
-                </Title>
+                {/* Header */}
+                <Row className="page-header" justify="space-between" align="middle">
+                    <Col>
+                        <Title level={2} style={{ margin: 0 }}>
+                            <SafetyCertificateOutlined /> อนุญาตเบิกกุญแจ
+                        </Title>
+                        <Text type="secondary">
+                            จัดการสิทธิ์การเบิกกุญแจรายวัน — ซิงค์จากตารางสอนหรือเพิ่มด้วยมือ
+                        </Text>
+                    </Col>
+                </Row>
 
-                <Tabs defaultActiveKey="move">
-                    <TabPane tab="ย้ายห้อง (Move)" key="move">
-                        <Card>
-                            <Space direction="vertical" size="large" style={{ width: "100%" }}>
-                                <Alert
-                                    message="คำแนะนำ"
-                                    description="เลือกตารางเรียนที่ต้องการย้าย และเลือกห้องใหม่ที่ต้องการย้ายไป ระบบจะตรวจสอบว่าห้องว่างหรือไม่"
-                                    type="info"
-                                    showIcon
+                {/* Filters */}
+                <Card size="small">
+                    <Row gutter={16} align="middle">
+                        <Col>
+                            <Space>
+                                <CalendarOutlined />
+                                <Text strong>วันที่:</Text>
+                                <DatePicker
+                                    value={filterDate}
+                                    onChange={(d) => setFilterDate(d || dayjs())}
+                                    format="DD/MM/YYYY"
+                                    allowClear={false}
+                                    style={{ width: 160 }}
                                 />
+                            </Space>
+                        </Col>
+                        <Col>
+                            <Space>
+                                <KeyOutlined />
+                                <Text strong>ห้อง:</Text>
+                                <Select
+                                    placeholder="ทุกห้อง"
+                                    value={filterRoom}
+                                    onChange={setFilterRoom}
+                                    style={{ width: 160 }}
+                                    allowClear
+                                    options={uniqueRooms.map((r) => ({
+                                        value: r,
+                                        label: r,
+                                    }))}
+                                />
+                            </Space>
+                        </Col>
+                        <Col>
+                            <Button
+                                icon={<ReloadOutlined />}
+                                onClick={() => {
+                                    setFilterRoom(null);
+                                    setFilterDate(dayjs());
+                                }}
+                            >
+                                รีเซ็ต
+                            </Button>
+                        </Col>
+                    </Row>
+                </Card>
 
-                                <div>
-                                    <Text strong>เลือกตารางเรียน:</Text>
-                                    <Select
-                                        showSearch
-                                        placeholder="ค้นหาตารางเรียน (วิชา, กลุ่ม, วัน, เวลา)"
-                                        style={{ width: "100%", marginTop: 8 }}
-                                        options={scheduleOptions}
-                                        onChange={(value) => {
-                                            const selected = schedules.find(s => s.id === value);
-                                            setSelectedSchedule(selected);
-                                            setNewRoom(null);
-                                        }}
-                                        value={selectedSchedule?.id}
-                                        filterOption={(input, option) =>
-                                            (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-                                        }
-                                    />
+                {/* Stats */}
+                <Row gutter={16}>
+                    <Col span={8}>
+                        <Card size="small" className="stat-card-blue">
+                            <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                                <div style={{ width: 44, height: 44, borderRadius: 10, background: "rgba(59,130,246,0.1)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                                    <CalendarOutlined style={{ fontSize: 20, color: "#3b82f6" }} />
                                 </div>
+                                <Statistic title="สิทธิ์จากตารางสอน" value={scheduleAuths.length} suffix="คน" />
+                            </div>
+                        </Card>
+                    </Col>
+                    <Col span={8}>
+                        <Card size="small" className="stat-card-orange">
+                            <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                                <div style={{ width: 44, height: 44, borderRadius: 10, background: "rgba(249,115,22,0.1)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                                    <EditOutlined style={{ fontSize: 20, color: "#f97316" }} />
+                                </div>
+                                <Statistic title="สิทธิ์เพิ่มเอง" value={manualAuths.length} suffix="คน" />
+                            </div>
+                        </Card>
+                    </Col>
+                    <Col span={8}>
+                        <Card size="small" className="stat-card-green">
+                            <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                                <div style={{ width: 44, height: 44, borderRadius: 10, background: "rgba(22,163,74,0.1)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                                    <SafetyCertificateOutlined style={{ fontSize: 20, color: "#16a34a" }} />
+                                </div>
+                                <Statistic title="รวมทั้งหมด" value={scheduleAuths.length + manualAuths.length} suffix="คน" />
+                            </div>
+                        </Card>
+                    </Col>
+                </Row>
 
-                                {selectedSchedule && (
-                                    <Card title="ตารางเรียนที่เลือก" size="small">
-                                        <Descriptions column={2} size="small">
-                                            <Descriptions.Item label="วิชา">{selectedSchedule.subject?.code} {selectedSchedule.subject?.name}</Descriptions.Item>
-                                            <Descriptions.Item label="กลุ่ม">{selectedSchedule.section}</Descriptions.Item>
-                                            <Descriptions.Item label="วัน">{DAY_NAMES[selectedSchedule.dayOfWeek]}</Descriptions.Item>
-                                            <Descriptions.Item label="เวลา">
-                                                {dayjs(selectedSchedule.startTime).format("HH:mm")} - {dayjs(selectedSchedule.endTime).format("HH:mm")}
-                                            </Descriptions.Item>
-                                            <Descriptions.Item label="ห้องเดิม">
-                                                <Tag color="blue">{selectedSchedule.roomCode}</Tag>
-                                            </Descriptions.Item>
-                                            <Descriptions.Item label="อาจารย์">
-                                                {selectedSchedule.teacher?.firstName} {selectedSchedule.teacher?.lastName}
-                                            </Descriptions.Item>
-                                        </Descriptions>
-                                    </Card>
-                                )}
-
-                                {selectedSchedule && (
-                                    <div>
-                                        <Text strong>เลือกห้องใหม่:</Text>
-                                        <Select
-                                            showSearch
-                                            placeholder="เลือกห้องใหม่"
-                                            style={{ width: "100%", marginTop: 8 }}
-                                            options={rooms.map(r => ({ value: r, label: r }))}
-                                            onChange={setNewRoom}
-                                            value={newRoom}
+                {/* Tabs */}
+                <Card>
+                    <Tabs
+                        activeKey={activeTab}
+                        onChange={setActiveTab}
+                        tabBarExtraContent={
+                            activeTab === "schedule" ? (
+                                <Button
+                                    type="primary"
+                                    icon={<SyncOutlined />}
+                                    onClick={handleSyncToday}
+                                    loading={syncLoading}
+                                >
+                                    ซิงค์วันนี้
+                                </Button>
+                            ) : (
+                                <Button
+                                    type="primary"
+                                    icon={<PlusOutlined />}
+                                    onClick={() => {
+                                        form.setFieldsValue({
+                                            date: filterDate,
+                                            startTime: dayjs().hour(8).minute(0),
+                                            endTime: dayjs().hour(17).minute(0),
+                                        });
+                                        setIsModalOpen(true);
+                                    }}
+                                >
+                                    เพิ่มสิทธิ์
+                                </Button>
+                            )
+                        }
+                        items={[
+                            {
+                                key: "schedule",
+                                label: (
+                                    <span>
+                                        <CalendarOutlined /> จากตารางสอน ({scheduleAuths.length})
+                                    </span>
+                                ),
+                                children: (
+                                    <Spin spinning={loading}>
+                                        <Table
+                                            columns={columns}
+                                            dataSource={scheduleAuths}
+                                            rowKey="id"
+                                            size="small"
+                                            pagination={{
+                                                pageSize: 20,
+                                                showSizeChanger: true,
+                                                showTotal: (total) => `ทั้งหมด ${total} รายการ`,
+                                            }}
+                                            locale={{
+                                                emptyText: (
+                                                    <Empty
+                                                        description='ยังไม่มีสิทธิ์จากตารางสอน กดปุ่ม "ซิงค์วันนี้" เพื่อสร้าง'
+                                                        image={Empty.PRESENTED_IMAGE_SIMPLE}
+                                                    />
+                                                ),
+                                            }}
                                         />
-                                    </div>
-                                )}
-
-                                {selectedSchedule && newRoom && (
-                                    <div style={{ textAlign: "center" }}>
-                                        <Button
-                                            type="primary"
-                                            size="large"
-                                            icon={<ArrowRightOutlined />}
-                                            onClick={handleMoveRoom}
-                                        >
-                                            ยืนยันย้ายห้อง {selectedSchedule.roomCode} → {newRoom}
-                                        </Button>
-                                    </div>
-                                )}
-                            </Space>
-                        </Card>
-                    </TabPane>
-
-                    <TabPane tab="สลับห้อง (Swap)" key="swap">
-                        <Card>
-                            <Space direction="vertical" size="large" style={{ width: "100%" }}>
-                                <Alert
-                                    message="คำแนะนำ"
-                                    description="เลือก 2 ตารางเรียนที่ต้องการสลับห้องกัน ระบบจะสลับห้องระหว่าง 2 คาบนี้"
-                                    type="info"
-                                    showIcon
-                                />
-
-                                <div>
-                                    <Text strong>ตารางที่ 1:</Text>
-                                    <Select
-                                        showSearch
-                                        placeholder="ค้นหาตารางเรียนคาบแรก"
-                                        style={{ width: "100%", marginTop: 8 }}
-                                        options={scheduleOptions}
-                                        onChange={(value) => {
-                                            const selected = schedules.find(s => s.id === value);
-                                            setSchedule1(selected);
-                                        }}
-                                        value={schedule1?.id}
-                                        filterOption={(input, option) =>
-                                            (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-                                        }
-                                    />
-                                </div>
-
-                                <div>
-                                    <Text strong>ตารางที่ 2:</Text>
-                                    <Select
-                                        showSearch
-                                        placeholder="ค้นหาตารางเรียนคาบที่สอง"
-                                        style={{ width: "100%", marginTop: 8 }}
-                                        options={scheduleOptions}
-                                        onChange={(value) => {
-                                            const selected = schedules.find(s => s.id === value);
-                                            setSchedule2(selected);
-                                        }}
-                                        value={schedule2?.id}
-                                        filterOption={(input, option) =>
-                                            (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-                                        }
-                                    />
-                                </div>
-
-                                {schedule1 && schedule2 && (
-                                    <Card title="ตารางที่เลือก" size="small">
-                                        <Descriptions column={1} size="small" bordered>
-                                            <Descriptions.Item label="คาบที่ 1">
-                                                {schedule1.subject?.code} {schedule1.subject?.name} ({schedule1.section}) |
-                                                {DAY_NAMES[schedule1.dayOfWeek]} {dayjs(schedule1.startTime).format("HH:mm")}-{dayjs(schedule1.endTime).format("HH:mm")} |
-                                                ห้อง <Tag color="blue">{schedule1.roomCode}</Tag>
-                                            </Descriptions.Item>
-                                            <Descriptions.Item label="คาบที่ 2">
-                                                {schedule2.subject?.code} {schedule2.subject?.name} ({schedule2.section}) |
-                                                {DAY_NAMES[schedule2.dayOfWeek]} {dayjs(schedule2.startTime).format("HH:mm")}-{dayjs(schedule2.endTime).format("HH:mm")} |
-                                                ห้อง <Tag color="green">{schedule2.roomCode}</Tag>
-                                            </Descriptions.Item>
-                                        </Descriptions>
-                                    </Card>
-                                )}
-
-                                {schedule1 && schedule2 && (
-                                    <div style={{ textAlign: "center" }}>
-                                        <Button
-                                            type="primary"
-                                            size="large"
-                                            icon={<SwapOutlined />}
-                                            onClick={handleSwapRooms}
-                                        >
-                                            ยืนยันสลับห้อง {schedule1.roomCode} ↔ {schedule2.roomCode}
-                                        </Button>
-                                    </div>
-                                )}
-                            </Space>
-                        </Card>
-                    </TabPane>
-                </Tabs>
+                                    </Spin>
+                                ),
+                            },
+                            {
+                                key: "manual",
+                                label: (
+                                    <span>
+                                        <EditOutlined /> เพิ่มเอง ({manualAuths.length})
+                                    </span>
+                                ),
+                                children: (
+                                    <Spin spinning={loading}>
+                                        <Table
+                                            columns={columns}
+                                            dataSource={manualAuths}
+                                            rowKey="id"
+                                            size="small"
+                                            pagination={{
+                                                pageSize: 20,
+                                                showSizeChanger: true,
+                                                showTotal: (total) => `ทั้งหมด ${total} รายการ`,
+                                            }}
+                                            locale={{
+                                                emptyText: (
+                                                    <Empty
+                                                        description="ยังไม่มีสิทธิ์ที่เพิ่มเอง"
+                                                        image={Empty.PRESENTED_IMAGE_SIMPLE}
+                                                    />
+                                                ),
+                                            }}
+                                        />
+                                    </Spin>
+                                ),
+                            },
+                        ]}
+                    />
+                </Card>
             </Space>
+
+            {/* Add Manual Authorization Modal */}
+            <Modal
+                title={
+                    <Space>
+                        <PlusOutlined />
+                        <span>เพิ่มสิทธิ์เบิกกุญแจ</span>
+                    </Space>
+                }
+                open={isModalOpen}
+                onCancel={() => {
+                    setIsModalOpen(false);
+                    form.resetFields();
+                }}
+                footer={null}
+                width={500}
+            >
+                <Form
+                    form={form}
+                    layout="vertical"
+                    onFinish={handleAddManual}
+                >
+                    <Form.Item
+                        name="userId"
+                        label="ผู้ได้รับสิทธิ์"
+                        rules={[{ required: true, message: "กรุณาเลือกนักศึกษา" }]}
+                    >
+                        <Select
+                            placeholder="ค้นหานักศึกษา (รหัส หรือ ชื่อ)"
+                            showSearch
+                            options={allStudents.map((u) => ({
+                                value: u.id,
+                                label: `${u.studentCode} - ${u.firstName} ${u.lastName}`,
+                            }))}
+                            filterOption={(input, option) =>
+                                (option?.label ?? "")
+                                    .toLowerCase()
+                                    .includes(input.toLowerCase())
+                            }
+                        />
+                    </Form.Item>
+
+                    <Form.Item
+                        name="roomCode"
+                        label="ห้อง"
+                        rules={[{ required: true, message: "กรุณาระบุห้อง" }]}
+                    >
+                        <Select
+                            placeholder="พิมพ์รหัสห้อง"
+                            showSearch
+                            allowClear
+                            options={uniqueRooms.map((r) => ({
+                                value: r,
+                                label: r,
+                            }))}
+                            // Allow typing custom room codes
+                            filterOption={(input, option) =>
+                                (option?.label ?? "")
+                                    .toLowerCase()
+                                    .includes(input.toLowerCase())
+                            }
+                        />
+                    </Form.Item>
+
+                    <Form.Item
+                        name="date"
+                        label="วันที่"
+                        rules={[{ required: true, message: "กรุณาเลือกวันที่" }]}
+                    >
+                        <DatePicker
+                            style={{ width: "100%" }}
+                            format="DD/MM/YYYY"
+                        />
+                    </Form.Item>
+
+                    <Row gutter={16}>
+                        <Col span={12}>
+                            <Form.Item
+                                name="startTime"
+                                label="เวลาเริ่ม"
+                                rules={[{ required: true, message: "กรุณาเลือกเวลาเริ่ม" }]}
+                            >
+                                <TimePicker
+                                    style={{ width: "100%" }}
+                                    format="HH:mm"
+                                    minuteStep={15}
+                                />
+                            </Form.Item>
+                        </Col>
+                        <Col span={12}>
+                            <Form.Item
+                                name="endTime"
+                                label="เวลาสิ้นสุด"
+                                rules={[{ required: true, message: "กรุณาเลือกเวลาสิ้นสุด" }]}
+                            >
+                                <TimePicker
+                                    style={{ width: "100%" }}
+                                    format="HH:mm"
+                                    minuteStep={15}
+                                />
+                            </Form.Item>
+                        </Col>
+                    </Row>
+
+                    <Divider />
+
+                    <Form.Item style={{ marginBottom: 0 }}>
+                        <Space style={{ width: "100%", justifyContent: "flex-end" }}>
+                            <Button
+                                onClick={() => {
+                                    setIsModalOpen(false);
+                                    form.resetFields();
+                                }}
+                            >
+                                ยกเลิก
+                            </Button>
+                            <Button type="primary" htmlType="submit" loading={loading}>
+                                เพิ่มสิทธิ์
+                            </Button>
+                        </Space>
+                    </Form.Item>
+                </Form>
+            </Modal>
         </div>
     );
 }
