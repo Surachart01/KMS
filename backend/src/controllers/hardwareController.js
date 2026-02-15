@@ -51,7 +51,8 @@ const calculatePenalty = async (borrowAt, dueAt, returnAt) => {
  */
 const getTodayDate = () => {
     const now = new Date();
-    return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    // ใช้ UTC midnight เพราะ DailyAuthorization.date ถูกเก็บเป็น UTC midnight
+    return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
 };
 
 // ==================== API Endpoints ====================
@@ -192,42 +193,43 @@ export const identifyUser = async (req, res) => {
                 subject: { select: { code: true, name: true } },
             },
         });
+        const resData = {
+            user: {
+                id: user.id,
+                studentCode: user.studentCode,
+                firstName: user.firstName,
+                lastName: user.lastName,
+                role: user.role,
+                score: user.score,
+                isBanned: user.isBanned,
+                major: user.section?.major?.name || null,
+                section: user.section?.name || null,
+            },
+            // สถานะกุญแจที่กำลังเบิกอยู่ (null ถ้าไม่มี)
+            activeBooking: activeBooking
+                ? {
+                    id: activeBooking.id,
+                    roomCode: activeBooking.key.roomCode,
+                    slotNumber: activeBooking.key.slotNumber,
+                    borrowAt: activeBooking.borrowAt,
+                    dueAt: activeBooking.dueAt,
+                    subjectName: activeBooking.subject?.name || null,
+                }
+                : null,
+            // สิทธิ์เบิกกุญแจที่ใช้ได้ตอนนี้
+            authorizedRooms: todayAuthorizations,
+            // สถานะรวม: กำลังเบิกอยู่ หรือ พร้อมเบิก (มีสิทธิ์) หรือ ต้องระบุเหตุผล (ไม่มีสิทธิ์)
+            status: activeBooking
+                ? "HAS_KEY"
+                : todayAuthorizations.length > 0
+                    ? "READY_TO_BORROW"
+                    : "NEED_REASON",
+        };
 
         return res.status(200).json({
             success: true,
             message: "ระบุตัวตนสำเร็จ",
-            data: {
-                user: {
-                    id: user.id,
-                    studentCode: user.studentCode,
-                    firstName: user.firstName,
-                    lastName: user.lastName,
-                    role: user.role,
-                    score: user.score,
-                    isBanned: user.isBanned,
-                    major: user.section?.major?.name || null,
-                    section: user.section?.name || null,
-                },
-                // สถานะกุญแจที่กำลังเบิกอยู่ (null ถ้าไม่มี)
-                activeBooking: activeBooking
-                    ? {
-                        id: activeBooking.id,
-                        roomCode: activeBooking.key.roomCode,
-                        slotNumber: activeBooking.key.slotNumber,
-                        borrowAt: activeBooking.borrowAt,
-                        dueAt: activeBooking.dueAt,
-                        subjectName: activeBooking.subject?.name || null,
-                    }
-                    : null,
-                // สิทธิ์เบิกกุญแจที่ใช้ได้ตอนนี้
-                authorizedRooms: todayAuthorizations,
-                // สถานะรวม: กำลังเบิกอยู่ หรือ พร้อมเบิก หรือ ไม่มีสิทธิ์
-                status: activeBooking
-                    ? "HAS_KEY"
-                    : todayAuthorizations.length > 0
-                        ? "READY_TO_BORROW"
-                        : "NO_AUTHORIZATION",
-            },
+            data: resData,
         });
     } catch (error) {
         console.error("❌ [Hardware] identify: Error:", error);
@@ -253,6 +255,7 @@ export const identifyUser = async (req, res) => {
  */
 export const borrowKey = async (req, res) => {
     try {
+        // Trigger generic restart
         const { studentCode, roomCode } = req.body;
         console.log(`📥 [Hardware] borrow: studentCode=${studentCode}, roomCode=${roomCode}`);
 
@@ -304,6 +307,21 @@ export const borrowKey = async (req, res) => {
         const today = getTodayDate();
         const now = new Date();
 
+        console.log(`🔍 [Hardware] borrow: Checking authorization...`);
+        console.log(`   userId: ${user.id}`);
+        console.log(`   roomCode: ${roomCode}`);
+        console.log(`   today: ${today.toISOString()}`);
+        console.log(`   now: ${now.toISOString()}`);
+
+        // ดึง authorization ทั้งหมดของ user ในวันนี้เพื่อ debug
+        const allAuthsToday = await prisma.dailyAuthorization.findMany({
+            where: {
+                userId: user.id,
+                date: today,
+            },
+        });
+        console.log(`   All auths today: ${JSON.stringify(allAuthsToday, null, 2)}`);
+
         const authorization = await prisma.dailyAuthorization.findFirst({
             where: {
                 userId: user.id,
@@ -314,10 +332,14 @@ export const borrowKey = async (req, res) => {
             },
         });
 
-        if (!authorization) {
+        console.log(`   Authorization found: ${authorization ? JSON.stringify(authorization) : 'NONE'}`);
+
+        // ถ้าไม่มีสิทธิ์ → ต้องมีเหตุผล (Reason) มาด้วย
+        if (!authorization && !req.body.reason) {
             return res.status(403).json({
                 success: false,
-                message: `คุณไม่มีสิทธิ์เบิกกุญแจห้อง ${roomCode} ในเวลานี้`,
+                message: "REQUIRE_REASON", // ส่ง code พิเศษเพื่อให้ Frontend รู้ว่าต้องถามเหตุผล
+                error_code: "REQUIRE_REASON",
             });
         }
 
@@ -333,36 +355,26 @@ export const borrowKey = async (req, res) => {
             });
         }
 
-        // === ขั้นตอนที่ 5: ค้นหา Booking RESERVED ===
-        // หา booking ที่มีสถานะ RESERVED สำหรับห้องนี้ในช่วงเวลาปัจจุบัน
-        const reservedBooking = await prisma.booking.findFirst({
-            where: {
-                keyId: key.id,
-                status: "RESERVED",
-                borrowAt: { lte: now },
-                dueAt: { gt: now },
-            },
-            include: { key: true, subject: true },
-        });
+        // === ขั้นตอนที่ 5: สร้าง Booking (ไม่ต้องจองล่วงหน้า) ===
+        // ถ้าไม่มี authoriztion ใช้เหตุผลที่ส่งมา
+        const bookingSource = authorization ? "FACE_SCANNER" : "FACE_SCANNER_WITH_REASON";
+        const bookingReason = authorization ? null : req.body.reason;
 
-        if (!reservedBooking) {
-            return res.status(404).json({
-                success: false,
-                message: `ไม่พบรายการจองสำหรับห้อง ${roomCode} ในขณะนี้ กรุณาสร้างรายการจองก่อน`,
-            });
-        }
+        // กำหนดเวลาคืน (เช่น 4 ชั่วโมง) หรือตาม Config
+        const dueAt = new Date(now.getTime() + 4 * 60 * 60 * 1000);
 
-        // === ขั้นตอนที่ 6: ดำเนินการเบิกกุญแจ (Transaction) ===
         const ipAddress = req.ip || req.connection?.remoteAddress || null;
 
         const result = await prisma.$transaction(async (tx) => {
-            // อัพเดท Booking: RESERVED → BORROWED
-            const updatedBooking = await tx.booking.update({
-                where: { id: reservedBooking.id },
+            // สร้าง Booking ใหม่เลย (สถานะ BORROWED)
+            const newBooking = await tx.booking.create({
                 data: {
+                    userId: user.id,
+                    keyId: key.id,
                     status: "BORROWED",
-                    userId: user.id, // อัพเดทเป็นคนที่มาเบิกจริง
                     borrowAt: now,
+                    dueAt: dueAt,
+                    reason: bookingReason,
                 },
                 include: { user: true, key: true, subject: true },
             });
@@ -373,18 +385,19 @@ export const borrowKey = async (req, res) => {
                     userId: user.id,
                     action: "HARDWARE_BORROW_KEY",
                     details: JSON.stringify({
-                        bookingId: updatedBooking.id,
+                        bookingId: newBooking.id,
                         roomCode: roomCode,
                         slotNumber: key.slotNumber,
-                        dueAt: updatedBooking.dueAt,
-                        authorizationId: authorization.id,
-                        source: "FACE_SCANNER", // ระบุว่ามาจากเครื่องสแกนหน้า
+                        dueAt: newBooking.dueAt,
+                        authorizationId: authorization?.id || null,
+                        reason: bookingReason,
+                        source: bookingSource,
                     }),
                     ipAddress,
                 },
             });
 
-            return updatedBooking;
+            return newBooking;
         });
 
         console.log(`✅ [Hardware] borrow: สำเร็จ - ${user.firstName} ${user.lastName} เบิกห้อง ${roomCode}`);

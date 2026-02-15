@@ -222,14 +222,17 @@ export const getSchedulesByTeacher = async (req, res) => {
  */
 export const createSchedule = async (req, res) => {
     try {
+        console.log('API Request: createSchedule', req.body);
         const { subjectId, roomCode, dayOfWeek, startTime, endTime } = req.body;
 
-        if (!subjectId || !roomCode || !dayOfWeek || !startTime || !endTime) {
+        if (!subjectId || !roomCode || dayOfWeek === undefined || dayOfWeek === null || !startTime || !endTime) {
+            console.log('Missing required fields:', { subjectId, roomCode, dayOfWeek, startTime, endTime });
             return res.status(400).json({ success: false, message: 'กรุณากรอกข้อมูลให้ครบถ้วน' });
         }
 
         const available = await isRoomAvailable(roomCode, parseInt(dayOfWeek), new Date(startTime), new Date(endTime));
         if (!available) {
+            console.log(`Room ${roomCode} is not available`);
             return res.status(400).json({ success: false, message: `ห้อง ${roomCode} ไม่ว่างในช่วงเวลานี้` });
         }
 
@@ -294,8 +297,7 @@ export const updateSchedule = async (req, res) => {
         const data = {};
         if (subjectId) data.subjectId = subjectId;
         if (roomCode) data.roomCode = roomCode;
-        if (roomCode) data.roomCode = roomCode;
-        if (dayOfWeek) data.dayOfWeek = parseInt(dayOfWeek);
+        if (dayOfWeek !== undefined && dayOfWeek !== null) data.dayOfWeek = parseInt(dayOfWeek);
         if (startTime) data.startTime = new Date(startTime);
         if (endTime) data.endTime = new Date(endTime);
 

@@ -179,6 +179,7 @@ model Booking {
   returnAt      DateTime?
 
   status        BookingStatus @default(BORROWED)
+  reason        String?
 
   lateMinutes   Int      @default(0)
   penaltyScore  Int      @default(0)

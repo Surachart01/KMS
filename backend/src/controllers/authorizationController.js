@@ -248,9 +248,21 @@ export const syncSchedule = async (req, res) => {
             include: { students: true }
         });
 
-        const authorizations = [];
         const current = new Date(startDate);
         const end = new Date(endDate);
+
+        // Delete existing schedule-based authorizations for this range
+        await prisma.dailyAuthorization.deleteMany({
+            where: {
+                date: {
+                    gte: new Date(startDate),
+                    lte: new Date(endDate)
+                },
+                source: 'SCHEDULE'
+            }
+        });
+
+        const authorizations = [];
 
         while (current <= end) {
             const dayOfWeek = current.getDay();
@@ -279,7 +291,7 @@ export const syncSchedule = async (req, res) => {
         });
 
         return res.status(200).json({
-            message: `Synced ${result.count} authorizations`,
+            message: `Synced ${result.count} authorizations (Cleared old schedule data)`,
             count: result.count
         });
     } catch (error) {
@@ -315,6 +327,14 @@ export const syncToday = async (req, res) => {
             });
         }
 
+        // Delete existing schedule-based authorizations for today
+        await prisma.dailyAuthorization.deleteMany({
+            where: {
+                date: today,
+                source: 'SCHEDULE'
+            }
+        });
+
         const authorizations = [];
         for (const schedule of schedules) {
             for (const student of schedule.students || []) {
@@ -337,7 +357,7 @@ export const syncToday = async (req, res) => {
         });
 
         return res.status(200).json({
-            message: `ซิงค์สำเร็จ ${result.count} รายการ จาก ${schedules.length} วิชา`,
+            message: `ซิงค์สำเร็จ ${result.count} รายการ (ลบข้อมูลเก่าแล้ว)`,
             count: result.count,
             scheduleCount: schedules.length
         });
