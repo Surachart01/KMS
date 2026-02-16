@@ -157,6 +157,7 @@ def create_confirm_identity_page(parent, navigate):
         student_id_label.configure(text=student_id)
         if key_data:
             room_label.configure(text=f"🚪 {key_data.get('roomCode', '?')}")
+        set_loading(False)  # Re-enable buttons for new scan
 
     def process_borrow_with_reason(reason):
         set_loading(True)
