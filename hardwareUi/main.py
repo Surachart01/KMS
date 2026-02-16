@@ -1,298 +1,258 @@
 """
 Key Management Desktop Application
-Main entry point with ZKTeco pyzk integration
+Main entry point — functional style
 """
 
 import customtkinter as ctk
 import logging
 import sys
 import os
+import threading
 from dotenv import load_dotenv
-from utils.theme import COLORS, WINDOW
-from utils.adms_server import AdmsServer
-from pages.home_page import HomePage
-from pages.key_list_page import KeyListPage
-from pages.scan_waiting_page import ScanWaitingPage
-from pages.confirm_identity_page import ConfirmIdentityPage
-from pages.success_page import SuccessPage
-from pages.reason_page import ReasonPage
 
-# Load environment variables
+from utils.theme import COLORS, WINDOW
+from utils import adms_server
+from utils import api_client
+from utils import gpio_controller
+
+from pages.home_page import create_home_page
+from pages.key_list_page import create_key_list_page
+from pages.scan_waiting_page import create_scan_waiting_page
+from pages.confirm_identity_page import create_confirm_identity_page
+from pages.reason_page import create_reason_page
+from pages.success_page import create_success_page
+
+# ── Bootstrap ────────────────────────────────────────────────────
 load_dotenv()
 
-# Configure logging - force output to stdout with flush
 logging.basicConfig(
     level=logging.DEBUG,
-    format='%(asctime)s [%(levelname)s] %(name)s: %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S',
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
     stream=sys.stdout,
-    force=True  # Force reconfigure even if already configured
+    force=True,
 )
-
-# Ensure all loggers use this configuration
-logging.getLogger('utils.adms_server').setLevel(logging.DEBUG)
+logging.getLogger("utils.adms_server").setLevel(logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 
-class KeyManagementApp(ctk.CTk):
-    """Main application window"""
-    
-    def __init__(self):
-        super().__init__()
-        
-        # Configure window
-        self.title("🔑 ระบบเบิกกุญแจ - Key Management System")
-        self.geometry(f"{WINDOW['width']}x{WINDOW['height']}")
-        self.minsize(WINDOW["min_width"], WINDOW["min_height"])
-        
-        # Set appearance
-        ctk.set_appearance_mode("dark")
-        ctk.set_default_color_theme("blue")
-        
-        # Configure background
-        self.configure(fg_color=COLORS["bg_primary"])
-        
-        # State
-        self.selected_key = None
-        self.scanned_student_id = None
-        self.adms_server = None
-        
-        # Container for pages
-        self.container = ctk.CTkFrame(self, fg_color=COLORS["bg_primary"])
-        self.container.pack(fill="both", expand=True)
-        self.container.grid_rowconfigure(0, weight=1)
-        self.container.grid_columnconfigure(0, weight=1)
-        
-        # Pages dictionary
-        self.pages = {}
-        
-        # Initialize pages
-        self._init_pages()
-        
-        # Connect to ZKTeco
-        self._connect_zkteco()
-        
-        # Show home page initially
-        self.show_page("home")
-        self.current_page_name = "home"
-        
-        # Handle window close
-        self.protocol("WM_DELETE_WINDOW", self._on_close)
-    
-    def _init_pages(self):
-        """Initialize all pages"""
-        # Home page
-        home_page = HomePage(
-            self.container,
-            navigate_callback=self.show_page
-        )
-        home_page.grid(row=0, column=0, sticky="nsew")
-        self.pages["home"] = home_page
-        
-        # Key list page
-        key_list_page = KeyListPage(
-            self.container,
-            navigate_callback=self.show_page,
-            on_key_selected=self._on_key_selected
-        )
-        key_list_page.grid(row=0, column=0, sticky="nsew")
-        self.pages["key_list"] = key_list_page
-        
-        # Scan waiting page
-        scan_waiting_page = ScanWaitingPage(
-            self.container,
-            navigate_callback=self.show_page
-        )
-        scan_waiting_page.grid(row=0, column=0, sticky="nsew")
-        self.pages["scan_waiting"] = scan_waiting_page
-        
-        # Confirm identity page
-        confirm_identity_page = ConfirmIdentityPage(
-            self.container,
-            navigate_callback=self.show_page
-        )
-        confirm_identity_page.grid(row=0, column=0, sticky="nsew")
-        self.pages["confirm_identity"] = confirm_identity_page
-        
-        # Success page
-        success_page = SuccessPage(
-            self.container,
-            navigate_callback=self.show_page
-        )
-        success_page.grid(row=0, column=0, sticky="nsew")
-        self.pages["success"] = success_page
+# ── Main ─────────────────────────────────────────────────────────
+def main():
+    """Application entry-point (no classes)."""
 
-        # Reason page
-        reason_page = ReasonPage(
-            self.container,
-            navigate_callback=self.show_page,
-            on_confirm_callback=self._on_reason_confirm
-        )
-        reason_page.grid(row=0, column=0, sticky="nsew")
-        self.pages["reason"] = reason_page
-    
-    def _on_reason_confirm(self, reason):
-        """Handle reason confirmation"""
-        logger.info(f"📝 Reason provided: {reason}")
-        
-        # Pass reason back to confirm page to retry borrowing
-        confirm_page = self.pages["confirm_identity"]
-        confirm_page.process_borrow_with_reason(reason)
-    
-    def _handle_return_scan(self, user_id):
-        """Handle scan for returning key"""
-        logger.info(f"🔄 Processing return for user: {user_id}")
-        
-        # Stop animation
-        self.pages["scan_waiting"].stop_animation()
-        
-        # Call API
-        # We need to run this in background to avoid freezing UI
-        import threading
-        from utils.api_client import api_client
-        
-        def run_return():
-            success, result = api_client.return_key(user_id)
-            
-            if success:
-                logger.info(f"✅ Return success: {result}")
-                # Show success page
-                self.after(0, lambda: self._show_return_success(user_id, result))
-            else:
-                logger.error(f"❌ Return failed: {result}")
-                # Show error (reuse scan waiting page to show error or go back)
-                # For now, let's just log and maybe show a popup or go back to home
-                # Or better, show error on scan page?
-                # Simple implementation: Show error popup
-                self.after(0, lambda: self._show_error_popup(result))
-        
-        threading.Thread(target=run_return, daemon=True).start()
+    # --- CTk root window ---
+    root = ctk.CTk()
+    root.title("🔑 ระบบเบิกกุญแจ - Key Management System")
+    root.geometry(f"{WINDOW['width']}x{WINDOW['height']}")
+    root.minsize(WINDOW["min_width"], WINDOW["min_height"])
+    root.overrideredirect(True)  # Remove title bar for kiosk mode
+    ctk.set_appearance_mode("light")
+    ctk.set_default_color_theme("blue")
+    root.configure(fg_color=COLORS["bg_primary"])
 
-    def _show_return_success(self, user_id, result_data):
-        """Show success page for return"""
-        success_page = self.pages["success"]
-        
-        # Extract data from result
-        # result_data might contain 'data': {'lateMinutes': 0, ...}
-        extra_data = result_data.get("data", {})
-        
-        success_page.set_data(user_id, None, mode="return", extra_data=extra_data)
-        self.show_page("success")
-        success_page.start_countdown()
+    # --- Application state ---
+    state = {
+        "selected_key": None,
+        "scanned_student_id": None,
+        "current_page": "home",
+        "adms_running": False,
+    }
 
-    def _show_error_popup(self, message):
-        """Show error popup"""
-        # Extract message from dict if needed
-        if isinstance(message, dict):
-            message = message.get("message", "เกิดข้อผิดพลาด")
-        
-        dialog = ctk.CTkToplevel(self)
-        dialog.title("เกิดข้อผิดพลาด")
-        dialog.geometry("400x200")
-        dialog.transient(self)
-        dialog.grab_set()
-        
-        label = ctk.CTkLabel(dialog, text=f"❌ เกิดข้อผิดพลาด:\n{message}", wraplength=350)
-        label.pack(expand=True, padx=20, pady=20)
-        
-        btn = ctk.CTkButton(dialog, text="ตกลง", command=dialog.destroy)
-        btn.pack(pady=20)
-    
-    def _connect_zkteco(self):
-        """Start ADMS Server for ZKTeco"""
-        port = int(os.getenv("ADMS_PORT", "8089"))
-        
-        self.adms_server = AdmsServer(port=port, callback=self._on_scan_received)
-        if self.adms_server.start():
-            logger.info("✅ ADMS Server started")
+    adms_port = int(os.getenv("ADMS_PORT", "8089"))
+
+    # --- Frame container ---
+    container = ctk.CTkFrame(root, fg_color=COLORS["bg_primary"])
+    container.pack(fill="both", expand=True)
+    container.grid_rowconfigure(0, weight=1)
+    container.grid_columnconfigure(0, weight=1)
+
+    # --- Page registry: name → (frame, actions) ---
+    pages = {}
+
+    # ------------------------------------------------------------------
+    # ADMS helpers — start / stop on demand
+    # ------------------------------------------------------------------
+    def start_adms_for_scan():
+        """Start ADMS server to wait for a face scan"""
+        if state["adms_running"]:
+            logger.info("🔄 ADMS already running, updating callback")
+            adms_server.set_adms_callback(on_scan_received)
+            return
+        if adms_server.start_adms(port=adms_port, callback=on_scan_received):
+            state["adms_running"] = True
+            logger.info("✅ ADMS Server started (waiting for scan)")
         else:
             logger.error("❌ Failed to start ADMS Server")
-    
-    def _on_key_selected(self, key_data):
-        """Handle key selection from key list"""
+
+    def stop_adms_after_scan():
+        """Stop ADMS server after scan received"""
+        if state["adms_running"]:
+            adms_server.stop_adms()
+            state["adms_running"] = False
+            logger.info("🛑 ADMS Server stopped")
+
+    # ------------------------------------------------------------------
+    # show_page — the single navigation function shared by all pages
+    # ------------------------------------------------------------------
+    def show_page(name):
+        # Virtual page: scan_waiting in return mode
+        if name == "scan_waiting_return":
+            f, acts = pages["scan_waiting"]
+            acts["set_mode"]("return")
+            acts["start_animation"]()
+            f.tkraise()
+            state["current_page"] = "scan_waiting"
+            # Start ADMS for return scan
+            start_adms_for_scan()
+            return
+
+        if name not in pages:
+            return
+
+        state["current_page"] = name
+        f, acts = pages[name]
+        f.tkraise()
+
+        # Page-specific side-effects
+        if name == "key_list":
+            acts["load_keys"]()
+        elif name == "success":
+            suc_acts = acts
+            suc_acts["set_data"](state["scanned_student_id"], state["selected_key"])
+            suc_acts["start_countdown"]()
+        elif name == "home":
+            state["selected_key"] = None
+            state["scanned_student_id"] = None
+
+    # ------------------------------------------------------------------
+    # Callbacks wired between pages
+    # ------------------------------------------------------------------
+    def on_key_selected(key_data):
         logger.info(f"🔑 Key selected: {key_data}")
-        self.selected_key = key_data
-        
-        # Go to scan waiting page (reset mode to borrow)
-        scan_page = self.pages["scan_waiting"]
-        scan_page.set_mode("borrow")
-        scan_page.set_selected_key(key_data)
-        self.show_page("scan_waiting")
-        scan_page.start_animation()
-    
-    def _on_scan_received(self, user_id):
-        """Handle scan data received from ZKTeco"""
+        state["selected_key"] = key_data
+
+        _, acts = pages["scan_waiting"]
+        acts["set_mode"]("borrow")
+        acts["set_key"](key_data)
+        show_page("scan_waiting")
+        acts["start_animation"]()
+
+        # Start ADMS to wait for face scan
+        start_adms_for_scan()
+
+    def on_reason_confirm(reason):
+        logger.info(f"📝 Reason provided: {reason}")
+        _, acts = pages["confirm_identity"]
+        acts["process_borrow_with_reason"](reason)
+
+    def handle_return_scan(user_id):
+        logger.info(f"🔄 Processing return for user: {user_id}")
+        _, scan_acts = pages["scan_waiting"]
+        scan_acts["stop_animation"]()
+
+        def run_return():
+            success, result = api_client.return_key(user_id)
+            if success:
+                logger.info(f"✅ Return success: {result}")
+                root.after(0, lambda: show_return_success(user_id, result))
+            else:
+                logger.error(f"❌ Return failed: {result}")
+                root.after(0, lambda: show_error_popup(result))
+
+        threading.Thread(target=run_return, daemon=True).start()
+
+    def show_return_success(user_id, result_data):
+        _, suc_acts = pages["success"]
+        extra = result_data.get("data", {})
+        suc_acts["set_data"](user_id, None, mode="return", extra_data=extra)
+        show_page("success")
+        suc_acts["start_countdown"]()
+
+    def show_error_popup(message):
+        if isinstance(message, dict):
+            message = message.get("message", "เกิดข้อผิดพลาด")
+        dialog = ctk.CTkToplevel(root)
+        dialog.title("เกิดข้อผิดพลาด")
+        dialog.geometry("400x200")
+        dialog.transient(root)
+        dialog.grab_set()
+
+        ctk.CTkLabel(
+            dialog, text=f"❌ เกิดข้อผิดพลาด:\n{message}", wraplength=350
+        ).pack(expand=True, padx=20, pady=20)
+
+        ctk.CTkButton(dialog, text="ตกลง", command=dialog.destroy).pack(pady=20)
+
+    def on_scan_received(user_id):
         logger.info(f"👤 Scan received: User ID = {user_id}")
-        
-        # Check if we are in scanning state
-        if self.current_page_name != "scan_waiting":
-            logger.warning(f"⚠️ Scan ignored (Not in waiting state). Current page: {self.current_page_name}")
+        if state["current_page"] != "scan_waiting":
+            logger.warning(
+                f"⚠️ Scan ignored (Not in waiting state). Current page: {state['current_page']}"
+            )
             return
 
-        self.scanned_student_id = user_id
-        
-        # Check mode from scan waiting page
-        scan_page = self.pages["scan_waiting"]
-        if scan_page.mode == "return":
-            # Handle return scan
-            self.after(0, lambda: self._handle_return_scan(user_id))
+        state["scanned_student_id"] = user_id
+
+        # Stop ADMS — scan received, no longer needed
+        stop_adms_after_scan()
+
+        _, scan_acts = pages["scan_waiting"]
+        if scan_acts["get_mode"]() == "return":
+            root.after(0, lambda: handle_return_scan(user_id))
         else:
-            # Handle borrow scan
-            # Update UI in main thread
-            self.after(0, self._show_confirm_identity)
-    
-    def _show_confirm_identity(self):
-        """Show confirm identity page with scanned data"""
-        # Stop waiting animation
-        self.pages["scan_waiting"].stop_animation()
-        
-        # Set data on confirm page
-        confirm_page = self.pages["confirm_identity"]
-        confirm_page.set_data(self.scanned_student_id, self.selected_key)
-        
-        # Show confirm page
-        self.show_page("confirm_identity")
-    
-    def show_page(self, page_name):
-        """Show the specified page"""
-        
-        # Handle special virtual pages
-        if page_name == "scan_waiting_return":
-            page = self.pages["scan_waiting"]
-            page.set_mode("return")
-            page.start_animation()
-            page.tkraise()
-            self.current_page_name = "scan_waiting"
-            return
-            
-        if page_name in self.pages:
-            self.current_page_name = page_name
-            page = self.pages[page_name]
-            page.tkraise()
-            
-            # Page-specific actions
-            if page_name == "key_list":
-                page._load_keys()
-            elif page_name == "success":
-                # Set success data and start countdown
-                page.set_data(self.scanned_student_id, self.selected_key)
-                page.start_countdown()
-            elif page_name == "home":
-                # Reset state
-                self.selected_key = None
-                self.scanned_student_id = None
-    
-    def _on_close(self):
-        """Handle window close"""
-        if self.adms_server:
-            self.adms_server.stop()
-        self.destroy()
+            root.after(0, show_confirm_identity)
 
+    def show_confirm_identity():
+        _, scan_acts = pages["scan_waiting"]
+        scan_acts["stop_animation"]()
 
-def main():
-    """Main entry point"""
-    app = KeyManagementApp()
-    app.mainloop()
+        _, conf_acts = pages["confirm_identity"]
+        conf_acts["set_data"](state["scanned_student_id"], state["selected_key"])
+        show_page("confirm_identity")
+
+    # ------------------------------------------------------------------
+    # Create pages (order matters: they all stack in the same grid cell)
+    # ------------------------------------------------------------------
+    home_frame, home_acts = create_home_page(container, show_page)
+    home_frame.grid(row=0, column=0, sticky="nsew")
+    pages["home"] = (home_frame, home_acts)
+
+    kl_frame, kl_acts = create_key_list_page(container, show_page, on_key_selected)
+    kl_frame.grid(row=0, column=0, sticky="nsew")
+    pages["key_list"] = (kl_frame, kl_acts)
+
+    sw_frame, sw_acts = create_scan_waiting_page(container, show_page)
+    sw_frame.grid(row=0, column=0, sticky="nsew")
+    pages["scan_waiting"] = (sw_frame, sw_acts)
+
+    ci_frame, ci_acts = create_confirm_identity_page(container, show_page)
+    ci_frame.grid(row=0, column=0, sticky="nsew")
+    pages["confirm_identity"] = (ci_frame, ci_acts)
+
+    suc_frame, suc_acts = create_success_page(container, show_page)
+    suc_frame.grid(row=0, column=0, sticky="nsew")
+    pages["success"] = (suc_frame, suc_acts)
+
+    rsn_frame, rsn_acts = create_reason_page(container, show_page, on_reason_confirm)
+    rsn_frame.grid(row=0, column=0, sticky="nsew")
+    pages["reason"] = (rsn_frame, rsn_acts)
+
+    # ------------------------------------------------------------------
+    # Show home (ADMS NOT started yet — starts on key selection or return)
+    # ------------------------------------------------------------------
+    show_page("home")
+
+    def on_close():
+        stop_adms_after_scan()
+        gpio_controller.cleanup_gpio()
+        root.destroy()
+
+    root.protocol("WM_DELETE_WINDOW", on_close)
+
+    # Attach for test-scan button compatibility
+    root._on_scan_received = on_scan_received
+
+    root.mainloop()
 
 
 if __name__ == "__main__":

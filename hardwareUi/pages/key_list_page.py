@@ -1,283 +1,182 @@
 """
 Key List Page - Display keys fetched from backend API
+Optimized for 7-inch touchscreen (800x480)
 """
 
 import customtkinter as ctk
 from utils.theme import COLORS, FONTS, SPACING
-from utils.api_client import api_client
+from utils import api_client
 import threading
 
 
-class KeyCircle(ctk.CTkFrame):
-    """Circular key item with room code and status"""
-    
-    def __init__(self, parent, key_data, on_click=None, **kwargs):
-        super().__init__(parent, fg_color="transparent", **kwargs)
-        
-        self.key_data = key_data
-        self.on_click = on_click
-        self._create_widgets()
-    
-    def _create_widgets(self):
-        # Get data
-        slot_number = self.key_data.get("slotNumber", "?")
-        room_code = self.key_data.get("roomCode", "Unknown")
-        is_active = self.key_data.get("isAvailable", False)
-        
-        # Circle color based on status
-        circle_color = COLORS["accent_success"] if is_active else COLORS["accent_danger"]
-        border_color = COLORS["btn_teal_hover"] if is_active else COLORS["accent_danger"]
-        
-        # Circle container
-        circle_size = 100
-        self.circle = ctk.CTkFrame(
-            self,
-            width=circle_size,
-            height=circle_size,
-            corner_radius=circle_size // 2,
-            fg_color=circle_color,
-            border_width=3,
-            border_color=border_color
-        )
-        self.circle.pack()
-        self.circle.pack_propagate(False)
-        
-        # Inner content frame
-        inner_frame = ctk.CTkFrame(self.circle, fg_color="transparent")
-        inner_frame.place(relx=0.5, rely=0.5, anchor="center")
-        
-        # Slot number
-        slot_label = ctk.CTkLabel(
-            inner_frame,
-            text=f"#{slot_number}",
-            font=("Helvetica", 24, "bold"),
-            text_color=COLORS["text_primary"]
-        )
-        slot_label.pack()
-        
-        # Room code below circle
-        room_label = ctk.CTkLabel(
-            self,
-            text=room_code,
-            font=FONTS["body_bold"],
-            text_color=COLORS["text_primary"]
-        )
-        room_label.pack(pady=(SPACING["xs"], 0))
-        
-        # Status text
-        status_text = "พร้อมใช้" if is_active else "ไม่พร้อม"
-        status_label = ctk.CTkLabel(
-            self,
-            text=status_text,
-            font=FONTS["small"],
-            text_color=circle_color
-        )
-        status_label.pack()
-        
-        # Bind hover and click events
-        self.circle.bind("<Enter>", self._on_enter)
-        self.circle.bind("<Leave>", self._on_leave)
-        self.circle.bind("<Button-1>", self._on_click)
-        inner_frame.bind("<Button-1>", self._on_click)
-        slot_label.bind("<Button-1>", self._on_click)
-    
-    def _on_enter(self, event):
-        self.circle.configure(border_width=5)
-        self.configure(cursor="hand2")
-    
-    def _on_leave(self, event):
-        self.circle.configure(border_width=3)
-        self.configure(cursor="")
-    
-    def _on_click(self, event):
-        if self.on_click:
-            self.on_click(self.key_data)
+def _create_key_circle(parent, key_data, on_click=None):
+    """Create a compact circular key item."""
+    frame = ctk.CTkFrame(parent, fg_color="transparent")
+
+    is_available = key_data.get("isAvailable", False)
+    room_code = key_data.get("roomCode", "???")
+    slot = key_data.get("slotNumber", "?")
+
+    color = COLORS["accent_primary"] if is_available else COLORS["accent_danger"]
+    hover_color = COLORS["btn_green_hover"] if is_available else "#ef5350"
+    status_text = "ว่าง" if is_available else "ถูกเบิก"
+
+    # Small circle
+    circle = ctk.CTkFrame(
+        frame, width=70, height=70, corner_radius=35,
+        fg_color=color, border_width=2, border_color=hover_color,
+    )
+    circle.pack(pady=(0, 2))
+    circle.pack_propagate(False)
+
+    room_label = ctk.CTkLabel(
+        circle, text=room_code, font=FONTS["body_bold"],
+        text_color=COLORS["text_white"],
+    )
+    room_label.place(relx=0.5, rely=0.38, anchor="center")
+
+    ctk.CTkLabel(
+        circle, text=f"#{slot}", font=("Helvetica", 9),
+        text_color="#e0e0e0",
+    ).place(relx=0.5, rely=0.7, anchor="center")
+
+    # Status
+    status_color = COLORS["accent_primary"] if is_available else COLORS["accent_danger"]
+    ctk.CTkLabel(
+        frame, text=status_text, font=("Helvetica", 9), text_color=status_color,
+    ).pack()
+
+    # Borrower
+    borrower = key_data.get("currentBorrower")
+    if borrower:
+        ctk.CTkLabel(
+            frame, text=f"{borrower.get('studentCode', '?')[:10]}",
+            font=("Helvetica", 8), text_color=COLORS["text_muted"],
+        ).pack()
+
+    # Hover / click
+    def on_enter(_e):
+        if is_available:
+            circle.configure(fg_color=hover_color)
+            frame.configure(cursor="hand2")
+
+    def on_leave(_e):
+        if is_available:
+            circle.configure(fg_color=color)
+            frame.configure(cursor="")
+
+    def handle_click(_e):
+        if is_available and on_click:
+            on_click(key_data)
+
+    for w in (circle, room_label):
+        w.bind("<Enter>", on_enter)
+        w.bind("<Leave>", on_leave)
+        w.bind("<Button-1>", handle_click)
+
+    return frame
 
 
-class KeyListPage(ctk.CTkFrame):
-    """Page to display list of keys from the backend"""
-    
-    def __init__(self, parent, navigate_callback, on_key_selected=None, **kwargs):
-        super().__init__(parent, fg_color=COLORS["bg_primary"], **kwargs)
-        
-        self.navigate = navigate_callback
-        self.on_key_selected = on_key_selected
-        self.keys_data = []
-        
-        self._create_widgets()
-        self._load_keys()
-    
-    def _create_widgets(self):
-        # Header with back button
-        header_frame = ctk.CTkFrame(self, fg_color=COLORS["bg_secondary"], corner_radius=0)
-        header_frame.pack(fill="x")
-        
-        header_inner = ctk.CTkFrame(header_frame, fg_color="transparent")
-        header_inner.pack(fill="x", padx=SPACING["lg"], pady=SPACING["md"])
-        
-        # Back button
-        back_btn = ctk.CTkButton(
-            header_inner,
-            text="← กลับ",
-            font=FONTS["button"],
-            fg_color="transparent",
-            hover_color=COLORS["bg_hover"],
-            text_color=COLORS["text_primary"],
-            width=80,
-            command=lambda: self.navigate("home")
-        )
-        back_btn.pack(side="left")
-        
-        # Title
-        title_label = ctk.CTkLabel(
-            header_inner,
-            text="🔑 รายการกุญแจ",
-            font=FONTS["subtitle"],
-            text_color=COLORS["text_primary"]
-        )
-        title_label.pack(side="left", padx=SPACING["lg"])
-        
-        # Refresh button
-        refresh_btn = ctk.CTkButton(
-            header_inner,
-            text="🔄 รีเฟรช",
-            font=FONTS["button"],
-            fg_color=COLORS["accent_primary"],
-            hover_color=COLORS["btn_blue_hover"],
-            width=100,
-            command=self._load_keys
-        )
-        refresh_btn.pack(side="right")
-        
-        # Content area
-        self.content_frame = ctk.CTkFrame(self, fg_color="transparent")
-        self.content_frame.pack(fill="both", expand=True, padx=SPACING["lg"], pady=SPACING["lg"])
-        
-        # Loading indicator (initially visible)
-        self.loading_frame = ctk.CTkFrame(self.content_frame, fg_color="transparent")
-        self.loading_frame.pack(expand=True)
-        
-        self.loading_label = ctk.CTkLabel(
-            self.loading_frame,
-            text="⏳ กำลังโหลดข้อมูล...",
-            font=FONTS["heading"],
-            text_color=COLORS["text_secondary"]
-        )
-        self.loading_label.pack()
-        
-        # Grid frame for keys (initially hidden)
-        self.grid_frame = ctk.CTkFrame(self.content_frame, fg_color="transparent")
-        
-        # Error frame (initially hidden)
-        self.error_frame = ctk.CTkFrame(self.content_frame, fg_color="transparent")
-        
-        self.error_icon = ctk.CTkLabel(
-            self.error_frame,
-            text="⚠️",
-            font=("Helvetica", 48)
-        )
-        self.error_icon.pack(pady=SPACING["md"])
-        
-        self.error_label = ctk.CTkLabel(
-            self.error_frame,
-            text="",
-            font=FONTS["body"],
-            text_color=COLORS["accent_danger"],
-            wraplength=400
-        )
-        self.error_label.pack()
-        
-        self.retry_btn = ctk.CTkButton(
-            self.error_frame,
-            text="ลองใหม่",
-            font=FONTS["button"],
-            fg_color=COLORS["accent_primary"],
-            hover_color=COLORS["btn_blue_hover"],
-            command=self._load_keys
-        )
-        self.retry_btn.pack(pady=SPACING["lg"])
-    
-    def _load_keys(self):
-        """Load keys from API in a background thread"""
-        self._show_loading()
-        
-        # Check if API is configured
-        if not api_client.is_configured():
-            self._show_error("กรุณากำหนดค่า API_TOKEN ในไฟล์ .env")
+def create_key_list_page(parent, navigate, on_key_selected=None):
+    frame = ctk.CTkFrame(parent, fg_color=COLORS["bg_primary"])
+    keys_data = []
+
+    # --- Header (slim) ---
+    header = ctk.CTkFrame(frame, fg_color=COLORS["header_bg"], corner_radius=0)
+    header.pack(fill="x")
+    header_inner = ctk.CTkFrame(header, fg_color="transparent")
+    header_inner.pack(fill="x", padx=SPACING["md"], pady=SPACING["sm"])
+
+    ctk.CTkButton(
+        header_inner, text="← กลับ", font=FONTS["button"],
+        fg_color=COLORS["accent_danger"], hover_color="#ef5350",
+        text_color=COLORS["text_white"], width=70, height=28,
+        command=lambda: navigate("home"),
+    ).pack(side="left")
+
+    ctk.CTkLabel(
+        header_inner, text="🚪 เลือกห้อง", font=FONTS["subtitle"],
+        text_color=COLORS["text_white"],
+    ).pack(side="left", padx=SPACING["md"])
+
+    ctk.CTkButton(
+        header_inner, text="🔄 รีเฟรช", font=FONTS["small"],
+        fg_color="#4caf50", hover_color="#66bb6a",
+        text_color=COLORS["text_white"],
+        width=70, height=28, command=lambda: load_keys(),
+    ).pack(side="right")
+
+    ctk.CTkFrame(frame, height=2, fg_color=COLORS["accent_success"], corner_radius=1).pack(fill="x")
+
+    # --- Content ---
+    content = ctk.CTkFrame(frame, fg_color="transparent")
+    content.pack(expand=True, fill="both", padx=SPACING["md"], pady=SPACING["sm"])
+
+    status_label = ctk.CTkLabel(
+        content, text="", font=FONTS["small"], text_color=COLORS["text_muted"],
+    )
+    status_label.pack(pady=SPACING["xs"])
+
+    keys_container = ctk.CTkFrame(content, fg_color="transparent")
+    keys_container.pack(expand=True, fill="both")
+
+    # --- Footer ---
+    ctk.CTkLabel(
+        frame, text="กดที่วงกลมเพื่อเลือกห้อง (เฉพาะห้องที่ว่างเท่านั้น)",
+        font=FONTS["small"], text_color=COLORS["text_muted"],
+    ).pack(side="bottom", pady=SPACING["xs"])
+
+    # --- Helpers ---
+    def show_loading():
+        for w in keys_container.winfo_children():
+            w.destroy()
+        status_label.configure(text="⏳ กำลังโหลด...")
+
+    def show_error(msg):
+        for w in keys_container.winfo_children():
+            w.destroy()
+        status_label.configure(text=f"❌ {msg}")
+
+    def show_keys():
+        for w in keys_container.winfo_children():
+            w.destroy()
+
+        data = keys_data[0] if keys_data else {}
+        items = data.get("data", []) if isinstance(data, dict) else data
+        if not items:
+            status_label.configure(text="ไม่พบกุญแจในระบบ")
             return
-        
-        # Load in background thread
-        thread = threading.Thread(target=self._fetch_keys)
-        thread.daemon = True
-        thread.start()
-    
-    def _fetch_keys(self):
-        """Fetch keys from API (runs in background thread)"""
+
+        total = len(items)
+        available = sum(1 for k in items if k.get("isAvailable"))
+        status_label.configure(text=f"กุญแจทั้งหมด: {total} | ว่าง: {available}")
+
+        grid = ctk.CTkFrame(keys_container, fg_color="transparent")
+        grid.place(relx=0.5, rely=0.5, anchor="center")
+
+        for i, kd in enumerate(items):
+            row, col = divmod(i, 5)
+            kc = _create_key_circle(grid, kd, on_click=on_key_click)
+            kc.grid(row=row, column=col, padx=SPACING["md"], pady=SPACING["sm"])
+
+    def on_key_click(key_data_item):
+        if key_data_item.get("isAvailable") and on_key_selected:
+            on_key_selected(key_data_item)
+
+    def fetch_keys():
         success, result = api_client.get_keys()
-        
-        # Update UI in main thread
-        self.after(0, lambda: self._handle_response(success, result))
-    
-    def _handle_response(self, success, result):
-        """Handle API response"""
+        frame.after(0, lambda: handle_response(success, result))
+
+    def handle_response(success, result):
         if success:
-            self.keys_data = result if isinstance(result, list) else result.get("data", [])
-            self._show_keys()
+            keys_data.clear()
+            keys_data.append(result)
+            show_keys()
         else:
-            self._show_error(result)
-    
-    def _show_loading(self):
-        """Show loading state"""
-        self.error_frame.pack_forget()
-        self.grid_frame.pack_forget()
-        self.loading_frame.pack(expand=True)
-    
-    def _show_error(self, message):
-        """Show error state"""
-        self.loading_frame.pack_forget()
-        self.grid_frame.pack_forget()
-        self.error_label.configure(text=message)
-        self.error_frame.pack(expand=True)
-    
-    def _show_keys(self):
-        """Display the keys as circles in a grid (5 per row, 2 rows)"""
-        self.loading_frame.pack_forget()
-        self.error_frame.pack_forget()
-        
-        # Clear existing circles
-        for widget in self.grid_frame.winfo_children():
-            widget.destroy()
-        
-        if not self.keys_data:
-            # Show empty state
-            empty_label = ctk.CTkLabel(
-                self.grid_frame,
-                text="📭 ไม่พบข้อมูลกุญแจ",
-                font=FONTS["heading"],
-                text_color=COLORS["text_secondary"]
-            )
-            empty_label.pack(expand=True, pady=SPACING["xxl"])
-        else:
-            # Configure grid - 5 columns
-            for col in range(5):
-                self.grid_frame.columnconfigure(col, weight=1)
-            
-            # Create key circles in grid (5 per row)
-            for idx, key in enumerate(self.keys_data):
-                row = idx // 5  # 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, ...
-                col = idx % 5   # 0, 1, 2, 3, 4, 0, 1, 2, 3, 4, ...
-                
-                circle = KeyCircle(self.grid_frame, key, on_click=self._on_key_click)
-                circle.grid(
-                    row=row, 
-                    column=col, 
-                    padx=SPACING["md"], 
-                    pady=SPACING["lg"]
-                )
-        
-        self.grid_frame.pack(expand=True)
-    
-    def _on_key_click(self, key_data):
-        """Handle key circle click"""
-        if self.on_key_selected:
-            self.on_key_selected(key_data)
+            show_error(str(result))
+
+    def load_keys():
+        show_loading()
+        threading.Thread(target=fetch_keys, daemon=True).start()
+
+    return frame, {"load_keys": load_keys}

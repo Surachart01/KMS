@@ -1,85 +1,115 @@
 """
 GPIO Controller for Raspberry Pi
-Handles GPIO operations safely, with mock support for non-Pi environments.
+Module-level functions for GPIO operations, with mock support for non-Pi environments.
+Supports per-slot solenoid unlock via a slot→pin mapping.
 """
 
 import logging
-import platform
+import threading
 
-# Configure logging
 logger = logging.getLogger(__name__)
 
-# Constants
-RELAY_PIN = 21
+# Slot → GPIO BCM pin mapping (edit to match your wiring)
+SLOT_PIN_MAP = {
+    1: 21,
+    2: 20,
+    3: 16,
+    4: 12,
+    5: 25,
+}
 
-class GPIOController:
-    """Controller for Raspberry Pi GPIO"""
-    
-    def __init__(self):
-        self.is_rpi = False
-        self.gpio = None
-        self._setup()
-    
-    def _setup(self):
-        """Initialize GPIO"""
+# How long to keep solenoid open (seconds)
+UNLOCK_DURATION = 5
+
+# Module-level state
+_gpio = None
+_is_rpi = False
+
+
+def setup_gpio():
+    """Initialize all GPIO pins used in the slot map"""
+    global _gpio, _is_rpi
+    try:
+        import RPi.GPIO as GPIO
+        _gpio = GPIO
+        _is_rpi = True
+
+        _gpio.setmode(_gpio.BCM)
+        _gpio.setwarnings(False)
+
+        for slot, pin in SLOT_PIN_MAP.items():
+            _gpio.setup(pin, _gpio.OUT)
+            _gpio.output(pin, _gpio.LOW)
+            logger.info(f"  Slot {slot} → GPIO {pin} (LOW)")
+
+        logger.info(f"✅ GPIO Initialized ({len(SLOT_PIN_MAP)} slots)")
+    except (ImportError, RuntimeError):
+        _is_rpi = False
+        logger.warning("⚠️ RPi.GPIO not found. Running in MOCK mode.")
+
+
+def set_high(pin):
+    """Set a single GPIO pin to HIGH"""
+    if _is_rpi and _gpio:
         try:
-            # Check if running on Raspberry Pi
-            # Simple check: try to import RPi.GPIO
-            import RPi.GPIO as GPIO
-            self.gpio = GPIO
-            self.is_rpi = True
-            
-            # Setup GPIO mode
-            self.gpio.setmode(self.gpio.BCM)
-            self.gpio.setwarnings(False)
-            
-            # Setup Relay Pin as Output and set to LOW initially
-            self.gpio.setup(RELAY_PIN, self.gpio.OUT)
-            self.gpio.output(RELAY_PIN, self.gpio.LOW)
-            
-            logger.info(f"✅ GPIO Initialized (Pin {RELAY_PIN} as OUTPUT)")
-            
-        except (ImportError, RuntimeError):
-            # Not running on Pi or library not found
-            self.is_rpi = False
-            logger.warning("⚠️ RPi.GPIO not found. Running in MOCK mode.")
-    
-    def set_high(self):
-        """Set GPIO 21 to HIGH"""
-        if self.is_rpi and self.gpio:
-            try:
-                self.gpio.output(RELAY_PIN, self.gpio.HIGH)
-                logger.info(f"⚡ GPIO {RELAY_PIN} set to HIGH")
-                return True
-            except Exception as e:
-                logger.error(f"❌ GPIO Error: {e}")
-                return False
-        else:
-            logger.info(f"⚡ [MOCK] GPIO {RELAY_PIN} set to HIGH")
+            _gpio.output(pin, _gpio.HIGH)
+            logger.info(f"⚡ GPIO {pin} → HIGH")
             return True
-            
-    def set_low(self):
-        """Set GPIO 21 to LOW"""
-        if self.is_rpi and self.gpio:
-            try:
-                self.gpio.output(RELAY_PIN, self.gpio.LOW)
-                logger.info(f"⚪ GPIO {RELAY_PIN} set to LOW")
-                return True
-            except Exception as e:
-                logger.error(f"❌ GPIO Error: {e}")
-                return False
-        else:
-            logger.info(f"⚪ [MOCK] GPIO {RELAY_PIN} set to LOW")
+        except Exception as e:
+            logger.error(f"❌ GPIO Error: {e}")
+            return False
+    else:
+        logger.info(f"⚡ [MOCK] GPIO {pin} → HIGH")
+        return True
+
+
+def set_low(pin):
+    """Set a single GPIO pin to LOW"""
+    if _is_rpi and _gpio:
+        try:
+            _gpio.output(pin, _gpio.LOW)
+            logger.info(f"⚪ GPIO {pin} → LOW")
             return True
+        except Exception as e:
+            logger.error(f"❌ GPIO Error: {e}")
+            return False
+    else:
+        logger.info(f"⚪ [MOCK] GPIO {pin} → LOW")
+        return True
 
-    def cleanup(self):
-        """Cleanup GPIO resources"""
-        if self.is_rpi and self.gpio:
-            try:
-                self.gpio.cleanup()
-                logger.info("🧹 GPIO Cleaned up")
-            except Exception as e:
-                logger.error(f"❌ GPIO Cleanup Error: {e}")
 
-# Singleton instance
-gpio_controller = GPIOController()
+def unlock_slot(slot_number, duration=UNLOCK_DURATION):
+    """
+    Unlock a solenoid for the given slot, then auto-lock after `duration` seconds.
+    Runs the lock-back in a background thread so the caller is not blocked.
+    """
+    pin = SLOT_PIN_MAP.get(slot_number)
+    if pin is None:
+        logger.error(f"❌ No GPIO pin mapped for slot {slot_number}")
+        return False
+
+    logger.info(f"🔓 Unlocking slot {slot_number} (GPIO {pin}) for {duration}s")
+    set_high(pin)
+
+    def auto_lock():
+        import time
+        time.sleep(duration)
+        set_low(pin)
+        logger.info(f"🔒 Slot {slot_number} (GPIO {pin}) auto-locked")
+
+    threading.Thread(target=auto_lock, daemon=True).start()
+    return True
+
+
+def cleanup_gpio():
+    """Cleanup GPIO resources"""
+    if _is_rpi and _gpio:
+        try:
+            _gpio.cleanup()
+            logger.info("🧹 GPIO Cleaned up")
+        except Exception as e:
+            logger.error(f"❌ GPIO Cleanup Error: {e}")
+
+
+# Auto-setup on import
+setup_gpio()
