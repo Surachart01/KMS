@@ -106,7 +106,6 @@ def create_confirm_identity_page(parent, navigate):
         d.geometry("350x150")
         d.configure(fg_color=COLORS["bg_secondary"])
         d.transient(frame.winfo_toplevel())
-        d.grab_set()
         ctk.CTkLabel(d, text=f"❌ {msg}", wraplength=310,
                      text_color=COLORS["text_primary"]).pack(expand=True, padx=15, pady=15)
         ctk.CTkButton(d, text="ตกลง", fg_color=COLORS["accent_primary"],
@@ -122,30 +121,40 @@ def create_confirm_identity_page(parent, navigate):
             gpio_controller.unlock_slot(slot_number)
         else:
             logger.warning("⚠️ No keySlotNumber in response")
+        set_loading(False)
         navigate("success")
 
     def process_borrow():
         room_code = state["selected_key"].get("roomCode") if state["selected_key"] else ""
         student_code = state["student_id"] or ""
-        success, result = api_client.borrow_key(student_code, room_code)
-        if success:
-            frame.after(0, lambda: _handle_borrow_success(result))
-        else:
-            if isinstance(result, dict) and result.get("error_code") == "REQUIRE_REASON":
-                frame.after(0, navigate, "reason")
+        try:
+            success, result = api_client.borrow_key(student_code, room_code)
+            if success:
+                frame.after(0, lambda: _handle_borrow_success(result))
             else:
-                msg = result.get("message", "เกิดข้อผิดพลาด") if isinstance(result, dict) else str(result)
-                frame.after(0, lambda: show_error(msg))
+                if isinstance(result, dict) and result.get("error_code") == "REQUIRE_REASON":
+                    frame.after(0, lambda: set_loading(False))
+                    frame.after(0, navigate, "reason")
+                else:
+                    msg = result.get("message", "เกิดข้อผิดพลาด") if isinstance(result, dict) else str(result)
+                    frame.after(0, lambda: show_error(msg))
+        except Exception as e:
+            logger.error(f"❌ Borrow error: {e}")
+            frame.after(0, lambda: show_error(str(e)))
 
     def process_borrow_retry(reason):
         room_code = state["selected_key"].get("roomCode") if state["selected_key"] else ""
         student_code = state["student_id"] or ""
-        success, result = api_client.borrow_key(student_code, room_code, reason=reason)
-        if success:
-            frame.after(0, lambda: _handle_borrow_success(result))
-        else:
-            msg = result.get("message", "เกิดข้อผิดพลาด") if isinstance(result, dict) else str(result)
-            frame.after(0, lambda: show_error(msg))
+        try:
+            success, result = api_client.borrow_key(student_code, room_code, reason=reason)
+            if success:
+                frame.after(0, lambda: _handle_borrow_success(result))
+            else:
+                msg = result.get("message", "เกิดข้อผิดพลาด") if isinstance(result, dict) else str(result)
+                frame.after(0, lambda: show_error(msg))
+        except Exception as e:
+            logger.error(f"❌ Borrow retry error: {e}")
+            frame.after(0, lambda: show_error(str(e)))
 
     def on_confirm():
         set_loading(True)
@@ -157,7 +166,7 @@ def create_confirm_identity_page(parent, navigate):
         student_id_label.configure(text=student_id)
         if key_data:
             room_label.configure(text=f"🚪 {key_data.get('roomCode', '?')}")
-        set_loading(False)  # Re-enable buttons for new scan
+        set_loading(False)  # Always re-enable buttons
 
     def process_borrow_with_reason(reason):
         set_loading(True)
