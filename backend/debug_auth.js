@@ -1,82 +1,66 @@
-import { PrismaClient } from "@prisma/client";
-import dotenv from "dotenv";
-
-dotenv.config();
-
+import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
-const STUDENT_CODE = "6702041510164";
-const ROOM_CODE = "44-703";
-
 async function checkAuth() {
-    console.log("🔍 Checking authorization for:");
-    console.log(`- Student: ${STUDENT_CODE}`);
-    console.log(`- Room: ${ROOM_CODE}`);
-    console.log(`- Time: ${new Date().toLocaleString()}`);
+    const studentCode = '6702041510164';
+    const roomCode = '44-703';
 
-    // 1. Check User
-    const user = await prisma.user.findUnique({
-        where: { studentCode: STUDENT_CODE },
-    });
-
+    const user = await prisma.user.findUnique({ where: { studentCode } });
     if (!user) {
-        console.error("❌ User not found!");
+        console.log('❌ User not found');
         return;
     }
-    console.log(`✅ User found: ${user.firstName} ${user.lastName} (ID: ${user.id})`);
+    console.log(`👤 User: ${user.firstName} ${user.lastName} (ID: ${user.id})`);
 
-    // 2. Check DailyAuthorization
     const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-    console.log(`📅 Checking auth for date: ${today.toISOString()}`);
-    console.log(`⏰ Checking time between: ${now.toISOString()}`);
+    // Set today to start of day in LOCAL time (since DB might store local time but normalized to UTC?)
+    // Actually Prisma usually handles Date objects as UTC.
+    // Let's create a date object for "today"
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
 
-    // Find ANY auth for this user today, regardless of time
-    const allAuths = await prisma.dailyAuthorization.findMany({
+    const endOfDay = new Date();
+    endOfDay.setHours(23, 59, 59, 999);
+
+    console.log(`🕒 Now: ${now.toISOString()}`);
+    console.log(`📅 Search Range: ${startOfDay.toISOString()} - ${endOfDay.toISOString()}`);
+
+    const auths = await prisma.dailyAuthorization.findMany({
         where: {
             userId: user.id,
-            date: today,
-        },
-    });
-
-    console.log(`\n📋 Found ${allAuths.length} authorizations for today:`);
-
-    allAuths.forEach(auth => {
-        const isActive = auth.startTime <= now && auth.endTime > now;
-        const isRoomMatch = auth.roomCode === ROOM_CODE;
-
-        console.log(`  - Room: ${auth.roomCode} | Time: ${auth.startTime.toLocaleTimeString()} - ${auth.endTime.toLocaleTimeString()}`);
-        console.log(`    > Matches Room? ${isRoomMatch ? "YES" : "NO"}`);
-        console.log(`    > Active Time? ${isActive ? "YES" : "NO"}`);
-
-        if (isRoomMatch && !isActive) {
-            console.log(`    ⚠️  Room matches but time is invalid! Current time: ${now.toLocaleTimeString()}`);
+            date: {
+                gte: startOfDay,
+                lte: endOfDay
+            }
         }
     });
 
-    // 3. Exact query used in controller
-    const validAuth = await prisma.dailyAuthorization.findFirst({
-        where: {
-            userId: user.id,
-            roomCode: ROOM_CODE,
-            date: today,
-            startTime: { lte: now },
-            endTime: { gt: now },
-        },
+    console.log(`📋 Found ${auths.length} authorizations for today:`);
+
+    auths.forEach(auth => {
+        console.log(`   - Room: ${auth.roomCode}`);
+        console.log(`     Date: ${auth.date.toISOString()}`);
+        console.log(`     Time: ${auth.startTime.toISOString()} - ${auth.endTime.toISOString()}`);
+
+        // Check if Current time is within range
+        // Note: auth.startTime/endTime might have 1970-01-01 date part or full date part depending on how it's stored.
+        // If it's full date, we compare directly.
+
+        const isRoomMatch = auth.roomCode === roomCode;
+        const isDateMatch = auth.date.toISOString().split('T')[0] === now.toISOString().split('T')[0];
+        const isTimeMatch = now >= auth.startTime && now < auth.endTime;
+
+        console.log(`     Match Room? ${isRoomMatch ? '✅' : '❌'}`);
+        console.log(`     Match Date? ${isDateMatch ? '✅' : '❌'}`);
+        console.log(`     Match Time? ${isTimeMatch ? '✅' : '❌'}`);
     });
 
-    console.log("\n--------------------------------");
-    if (validAuth) {
-        console.log("✅ RESULT: Authorization IS VALID according to controller logic.");
-    } else {
-        console.log("❌ RESULT: Authorization is INVALID / NOT FOUND according to controller logic.");
+    if (auths.length === 0) {
+        console.log('⚠️ No authorizations found for today.');
     }
 
+    await prisma.$disconnect();
 }
 
-checkAuth()
-    .catch((e) => console.error(e))
-    .finally(async () => {
-        await prisma.$disconnect();
-    });
+checkAuth();

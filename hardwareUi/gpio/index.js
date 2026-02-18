@@ -1,0 +1,127 @@
+/**
+ * GPIO Service — Node.js process on Raspberry Pi
+ * เชื่อมต่อ backend ผ่าน Socket.IO
+ * รับคำสั่ง gpio:unlock → ควบคุม solenoid → ส่ง slot:unlocked กลับ
+ */
+import { io } from 'socket.io-client';
+import dotenv from 'dotenv';
+
+dotenv.config();
+
+const BACKEND_URL = process.env.BACKEND_URL || 'http://172.20.10.3:4556';
+const UNLOCK_DURATION_MS = 5000; // default 5 วินาที
+
+// ── GPIO Pin Mapping (BCM) ──
+// slot 1 → GPIO 17, slot 2 → GPIO 27, slot 3 → GPIO 22, etc.
+const SLOT_PIN_MAP = {
+    1: 17,
+    2: 27,
+    3: 22,
+    4: 23,
+    5: 24,
+    6: 25,
+};
+
+// ── Detect if running on Raspberry Pi ──
+let Gpio = null;
+let IS_MOCK = true;
+
+try {
+    const onoff = await import('onoff');
+    Gpio = onoff.Gpio;
+    // Check if GPIO is accessible
+    if (Gpio.accessible) {
+        IS_MOCK = false;
+        console.log('🟢 GPIO: Running on Raspberry Pi (real mode)');
+    } else {
+        console.log('🟡 GPIO: onoff loaded but GPIO not accessible (mock mode)');
+    }
+} catch (e) {
+    console.log('🟡 GPIO: onoff not available — running in mock mode');
+}
+
+// ── Unlock solenoid ──
+async function unlockSlot(slotNumber, durationMs) {
+    const pin = SLOT_PIN_MAP[slotNumber];
+    if (!pin) {
+        console.error(`❌ Unknown slot: ${slotNumber}`);
+        return false;
+    }
+
+    console.log(`🔓 Unlocking slot ${slotNumber} (GPIO ${pin}) for ${durationMs}ms`);
+
+    if (IS_MOCK) {
+        // Mock mode — just wait
+        await new Promise((resolve) => setTimeout(resolve, Math.min(durationMs, 2000)));
+        console.log(`✅ [MOCK] Slot ${slotNumber} unlocked`);
+        return true;
+    }
+
+    // Real GPIO mode
+    try {
+        const gpio = new Gpio(pin, 'out');
+        gpio.writeSync(1); // HIGH = solenoid open
+
+        await new Promise((resolve) => setTimeout(resolve, durationMs));
+
+        gpio.writeSync(0); // LOW = solenoid close
+        gpio.unexport();
+        console.log(`✅ Slot ${slotNumber} unlocked successfully`);
+        return true;
+    } catch (err) {
+        console.error(`❌ GPIO error for slot ${slotNumber}:`, err.message);
+        return false;
+    }
+}
+
+// ── Socket.IO Connection ──
+console.log(`🔌 Connecting to backend: ${BACKEND_URL}`);
+const socket = io(BACKEND_URL, {
+    reconnection: true,
+    reconnectionDelay: 2000,
+    reconnectionAttempts: Infinity,
+});
+
+socket.on('connect', () => {
+    console.log(`✅ Connected to backend: ${socket.id}`);
+    socket.emit('join:gpio');
+});
+
+socket.on('disconnect', () => {
+    console.log('⚠️ Disconnected from backend — will retry...');
+});
+
+socket.on('connect_error', (err) => {
+    console.error('❌ Connection error:', err.message);
+});
+
+// ── Listen for unlock commands ──
+socket.on('gpio:unlock', async (data) => {
+    const { slotNumber, duration } = data;
+    const durationMs = (duration || UNLOCK_DURATION_MS / 1000) * 1000;
+
+    console.log(`📩 Received gpio:unlock: slot=${slotNumber}, duration=${durationMs}ms`);
+
+    const success = await unlockSlot(slotNumber, durationMs);
+
+    // Report back to backend
+    socket.emit('slot:unlocked', {
+        slotNumber,
+        success,
+    });
+});
+
+// ── Graceful shutdown ──
+process.on('SIGINT', () => {
+    console.log('\n👋 GPIO Service shutting down...');
+    socket.disconnect();
+    process.exit(0);
+});
+
+process.on('SIGTERM', () => {
+    console.log('👋 GPIO Service terminated');
+    socket.disconnect();
+    process.exit(0);
+});
+
+console.log('⚡ GPIO Service started — waiting for commands...');

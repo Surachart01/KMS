@@ -1,11 +1,13 @@
 // ================================
 // Key Management System - Backend Server
 // ================================
-// Restart trigger 28
+// Restart trigger 29
 
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import { createServer } from 'http';
+import { Server } from 'socket.io';
 import { PrismaClient } from '@prisma/client';
 import authRouter from './src/routes/auth.js';
 import usersRouter from './src/routes/users.js';
@@ -25,9 +27,15 @@ import bookingsRouter from './src/routes/bookings.js';
 import scheduleRoutesRouter from './src/routes/scheduleRoutes.js';
 import authorizationsRouter from './src/routes/authorizations.js';
 import hardwareRoutesRouter from './src/routes/hardwareRoutes.js';
+import { createAdmsRoutes } from './src/routes/admsRoutes.js';
+import * as hardwareController from './src/controllers/hardwareController.js';
 
-// initialize express app and prisma client
+// initialize express app, HTTP server, and Socket.IO
 const app = express();
+const httpServer = createServer(app);
+const io = new Server(httpServer, {
+  cors: { origin: '*', methods: ['GET', 'POST'] },
+});
 
 const prisma = new PrismaClient();
 const port = process.env.PORT || 3000;
@@ -36,6 +44,9 @@ app.use(cors({
 }));
 app.use(express.json());
 dotenv.config();
+
+// Make io accessible to routes that need it
+app.set('io', io);
 
 // ================================
 // API ROUTES DOCUMENTATION
@@ -228,6 +239,16 @@ app.use("/api/authorizations", authorizationsRouter);
 
 app.use("/api/hardware", hardwareRoutesRouter);
 
+// ================================
+// ADMS Routes — ZKTeco ICLOCK Protocol
+// ================================
+/**
+ * /iclock/* - ADMS routes สำหรับรับข้อมูลจาก ZKTeco device
+ * ไม่ต้อง authenticate เพราะ ZKTeco ส่งมาแบบ HTTP ตรงๆ
+ * เมื่อได้ face scan → emit "scan:received" ผ่าน Socket.IO
+ */
+app.use("/iclock", createAdmsRoutes(io));
+
 
 /**
  * ========================================================================
@@ -264,6 +285,130 @@ app.get("/", async (req, res) => {
   }
 });
 
-app.listen(port, '0.0.0.0', () => {
-  console.log(`Server is running on http://localhost:${port} and LAN`);
+// ================================
+// Socket.IO — Kiosk Event Handlers
+// ================================
+io.on('connection', (socket) => {
+  console.log(`🔌 Socket connected: ${socket.id}`);
+
+  // Client joins kiosk room to receive scan events
+  socket.on('join:kiosk', () => {
+    socket.join('kiosk');
+    console.log(`📱 Socket ${socket.id} joined kiosk room`);
+  });
+
+  // Client joins gpio room to receive unlock commands
+  socket.on('join:gpio', () => {
+    socket.join('gpio');
+    console.log(`⚡ Socket ${socket.id} joined gpio room`);
+  });
+
+  // ── user:identify — ระบุตัวตน (เช็คสถานะการยืม) ──
+  socket.on('user:identify', async (studentCode, callback) => {
+    try {
+      const fakeReq = {
+        headers: { authorization: `Bearer ${process.env.HARDWARE_TOKEN}` },
+        body: { studentCode },
+      };
+      const fakeRes = {
+        statusCode: 200,
+        data: null,
+        status(code) { this.statusCode = code; return this; },
+        json(d) { this.data = d; return this; },
+      };
+      await hardwareController.identifyUser(fakeReq, fakeRes);
+      if (typeof callback === 'function') callback(fakeRes.data);
+    } catch (err) {
+      console.error('❌ user:identify error:', err);
+      if (typeof callback === 'function') callback({ success: false, message: err.message });
+    }
+  });
+
+  // ── keys:get — ดึงรายการกุญแจ ──
+  socket.on('keys:get', async (callback) => {
+    try {
+      const fakeRes = {
+        statusCode: 200,
+        data: null,
+        status(code) { this.statusCode = code; return this; },
+        json(d) { this.data = d; return this; },
+      };
+      await hardwareController.getAllKey({ headers: {}, query: {} }, fakeRes);
+      if (typeof callback === 'function') callback(fakeRes.data);
+    } catch (err) {
+      console.error('❌ keys:get error:', err);
+      if (typeof callback === 'function') callback({ success: false, message: err.message });
+    }
+  });
+
+  // ── key:borrow — เบิกกุญแจ ──
+  socket.on('key:borrow', async (data, callback) => {
+    try {
+      const fakeReq = {
+        headers: { authorization: `Bearer ${process.env.HARDWARE_TOKEN}` },
+        body: {
+          studentCode: data.studentCode,
+          roomCode: data.roomCode,
+          reason: data.reason || undefined,
+        },
+      };
+      const fakeRes = {
+        statusCode: 200,
+        data: null,
+        status(code) { this.statusCode = code; return this; },
+        json(d) { this.data = d; return this; },
+      };
+      await hardwareController.borrowKey(fakeReq, fakeRes);
+
+      // ถ้ายืมสำเร็จ → ส่งคำสั่ง unlock ไป GPIO service
+      if (fakeRes.data?.success && fakeRes.data?.data?.keySlotNumber) {
+        io.to('gpio').emit('gpio:unlock', {
+          slotNumber: fakeRes.data.data.keySlotNumber,
+          duration: 5,
+        });
+      }
+
+      if (typeof callback === 'function') callback(fakeRes.data);
+    } catch (err) {
+      console.error('❌ key:borrow error:', err);
+      if (typeof callback === 'function') callback({ success: false, message: err.message });
+    }
+  });
+
+  // ── key:return — คืนกุญแจ ──
+  socket.on('key:return', async (data, callback) => {
+    try {
+      const fakeReq = {
+        headers: { authorization: `Bearer ${process.env.HARDWARE_TOKEN}` },
+        body: { studentCode: data.studentCode },
+      };
+      const fakeRes = {
+        statusCode: 200,
+        data: null,
+        status(code) { this.statusCode = code; return this; },
+        json(d) { this.data = d; return this; },
+      };
+      await hardwareController.returnKey(fakeReq, fakeRes);
+      if (typeof callback === 'function') callback(fakeRes.data);
+    } catch (err) {
+      console.error('❌ key:return error:', err);
+      if (typeof callback === 'function') callback({ success: false, message: err.message });
+    }
+  });
+
+  // ── slot:unlocked — GPIO service ส่งยืนยันว่าปลดล็อคแล้ว ──
+  socket.on('slot:unlocked', (data) => {
+    console.log(`⚡ Slot unlocked: slot=${data.slotNumber}, success=${data.success}`);
+    io.to('kiosk').emit('slot:unlocked', data);
+  });
+
+  socket.on('disconnect', () => {
+    console.log(`🔌 Socket disconnected: ${socket.id}`);
+  });
+});
+
+httpServer.listen(port, '0.0.0.0', () => {
+  console.log(`🚀 Server is running on http://localhost:${port} and LAN`);
+  console.log(`📡 Socket.IO ready on ws://localhost:${port}`);
+  console.log(`🔌 ADMS endpoint: http://localhost:${port}/iclock/cdata`);
 });

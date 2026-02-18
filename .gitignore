@@ -5,6 +5,8 @@ backend/package-lock.json
 
 frontend/node_modules
 
-
-.env
+hardwareUi/node_modules
+hardwareUi/.env
+hardwareUi/yarn.lock
+hardwareUi/package-lock.json
 

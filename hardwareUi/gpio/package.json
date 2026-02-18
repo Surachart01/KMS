@@ -1,0 +1,14 @@
+{
+    "name": "gpio-service",
+    "private": true,
+    "version": "1.0.0",
+    "type": "module",
+    "scripts": {
+        "start": "node index.js"
+    },
+    "dependencies": {
+        "socket.io-client": "^4.8.1",
+        "onoff": "^6.0.3",
+        "dotenv": "^17.2.3"
+    }
+}

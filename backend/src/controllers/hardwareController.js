@@ -49,10 +49,13 @@ const calculatePenalty = async (borrowAt, dueAt, returnAt) => {
  * ดึงข้อมูลวันที่ปัจจุบันในรูปแบบ Date (เฉพาะวันที่ ไม่มีเวลา)
  * ใช้สำหรับเปรียบเทียบกับ DailyAuthorization.date
  */
-const getTodayDate = () => {
+const getTodayRange = () => {
     const now = new Date();
-    // ใช้ UTC midnight เพราะ DailyAuthorization.date ถูกเก็บเป็น UTC midnight
-    return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+    // Start of day in Local Time
+    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+    // End of day in Local Time
+    const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+    return { startOfDay, endOfDay };
 };
 
 // ==================== API Endpoints ====================
@@ -174,13 +177,16 @@ export const identifyUser = async (req, res) => {
         });
 
         // ค้นหาสิทธิ์เบิกกุญแจประจำวัน (DailyAuthorization ของวันนี้)
-        const today = getTodayDate();
+        const { startOfDay, endOfDay } = getTodayRange();
         const now = new Date();
 
         const todayAuthorizations = await prisma.dailyAuthorization.findMany({
             where: {
                 userId: user.id,
-                date: today,
+                date: {
+                    gte: startOfDay,
+                    lte: endOfDay
+                },
                 startTime: { lte: now },
                 endTime: { gt: now },
             },
@@ -304,20 +310,23 @@ export const borrowKey = async (req, res) => {
         }
 
         // === ขั้นตอนที่ 3: ตรวจสิทธิ์จาก DailyAuthorization ===
-        const today = getTodayDate();
+        const { startOfDay, endOfDay } = getTodayRange();
         const now = new Date();
 
         console.log(`🔍 [Hardware] borrow: Checking authorization...`);
         console.log(`   userId: ${user.id}`);
         console.log(`   roomCode: ${roomCode}`);
-        console.log(`   today: ${today.toISOString()}`);
+        console.log(`   range: ${startOfDay.toISOString()} - ${endOfDay.toISOString()}`);
         console.log(`   now: ${now.toISOString()}`);
 
         // ดึง authorization ทั้งหมดของ user ในวันนี้เพื่อ debug
         const allAuthsToday = await prisma.dailyAuthorization.findMany({
             where: {
                 userId: user.id,
-                date: today,
+                date: {
+                    gte: startOfDay,
+                    lte: endOfDay
+                },
             },
         });
         console.log(`   All auths today: ${JSON.stringify(allAuthsToday, null, 2)}`);
@@ -326,7 +335,10 @@ export const borrowKey = async (req, res) => {
             where: {
                 userId: user.id,
                 roomCode: roomCode,
-                date: today,
+                date: {
+                    gte: startOfDay,
+                    lte: endOfDay
+                },
                 startTime: { lte: now },
                 endTime: { gt: now },
             },
@@ -669,7 +681,7 @@ export const swapAuthorization = async (req, res) => {
         }
 
         // === ขั้นตอนที่ 3: ค้นหา DailyAuthorization ที่จะสลับ ===
-        const today = getTodayDate();
+        const { startOfDay, endOfDay } = getTodayRange();
         const now = new Date();
 
         // สิทธิ์ของ A ในห้อง A
@@ -677,7 +689,10 @@ export const swapAuthorization = async (req, res) => {
             where: {
                 userId: userA.id,
                 roomCode: roomCodeA,
-                date: today,
+                date: {
+                    gte: startOfDay,
+                    lte: endOfDay
+                },
                 startTime: { lte: now },
                 endTime: { gt: now },
             },
@@ -688,7 +703,10 @@ export const swapAuthorization = async (req, res) => {
             where: {
                 userId: userB.id,
                 roomCode: roomCodeB,
-                date: today,
+                date: {
+                    gte: startOfDay,
+                    lte: endOfDay
+                },
                 startTime: { lte: now },
                 endTime: { gt: now },
             },
@@ -875,14 +893,17 @@ export const moveAuthorization = async (req, res) => {
         }
 
         // === ขั้นตอนที่ 3: ตรวจสิทธิ์ห้องเดิม ===
-        const today = getTodayDate();
+        const { startOfDay, endOfDay } = getTodayRange();
         const now = new Date();
 
         const currentAuth = await prisma.dailyAuthorization.findFirst({
             where: {
                 userId: user.id,
                 roomCode: fromRoomCode,
-                date: today,
+                date: {
+                    gte: startOfDay,
+                    lte: endOfDay
+                },
                 startTime: { lte: now },
                 endTime: { gt: now },
             },
