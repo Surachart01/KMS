@@ -31,13 +31,11 @@ echo ""
 # === Step 1: Install dependencies ===
 echo "📦 Step 1: Installing dependencies..."
 apt-get update -qq
-# Try chromium-browser, if not found try chromium
-if apt-cache show chromium-browser > /dev/null 2>&1; then
-    BROWSER_PKG="chromium-browser"
-else
-    BROWSER_PKG="chromium"
+# Try installing chromium-browser, if fails, try chromium
+if ! apt-get install -y -qq chromium-browser unclutter xdotool; then
+    echo "⚠️ 'chromium-browser' not found, trying 'chromium'..."
+    apt-get install -y -qq chromium unclutter xdotool
 fi
-apt-get install -y -qq $BROWSER_PKG unclutter xdotool
 
 # === Step 2: Install Node.js dependencies ===
 echo "📦 Step 2: Installing Node.js dependencies..."
