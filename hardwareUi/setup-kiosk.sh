@@ -31,7 +31,13 @@ echo ""
 # === Step 1: Install dependencies ===
 echo "📦 Step 1: Installing dependencies..."
 apt-get update -qq
-apt-get install -y -qq chromium-browser unclutter xdotool
+# Try chromium-browser, if not found try chromium
+if apt-cache show chromium-browser > /dev/null 2>&1; then
+    BROWSER_PKG="chromium-browser"
+else
+    BROWSER_PKG="chromium"
+fi
+apt-get install -y -qq $BROWSER_PKG unclutter xdotool
 
 # === Step 2: Install Node.js dependencies ===
 echo "📦 Step 2: Installing Node.js dependencies..."
@@ -138,7 +144,13 @@ xset s noblank
 xset -dpms
 
 # เปิด Chromium kiosk mode
-chromium-browser \
+if command -v chromium-browser >/dev/null 2>&1; then
+  BROWSER="chromium-browser"
+else
+  BROWSER="chromium"
+fi
+
+$BROWSER \
     --kiosk \
     --noerrdialogs \
     --disable-infobars \
@@ -200,21 +212,6 @@ echo "Commands:"
 echo "  sudo systemctl start kiosk-ui    # Start UI server"
 echo "  sudo systemctl start kiosk-gpio  # Start GPIO"
 echo "  sudo systemctl start kiosk-nfc   # Start NFC"
-echo "  sudo systemctl status kiosk-ui   # Check status"
-
-echo ""
-echo "============================================="
-echo "✅ Kiosk Mode Setup Complete!"
-echo "============================================="
-echo ""
-echo "Services created:"
-echo "  • kiosk-ui.service   (Vite dev server)"
-echo "  • kiosk-gpio.service (GPIO controller)"
-echo "  • Chromium autostart (kiosk mode)"
-echo ""
-echo "Commands:"
-echo "  sudo systemctl start kiosk-ui    # Start UI server"
-echo "  sudo systemctl start kiosk-gpio  # Start GPIO"
 echo "  sudo systemctl status kiosk-ui   # Check status"
 echo ""
 echo "🔄 Reboot to test: sudo reboot"
