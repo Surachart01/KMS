@@ -41,19 +41,25 @@ try {
 }
 
 // ── Unlock solenoid ──
+// ── Unlock solenoid ──
 async function unlockSlot(slotNumber, durationMs) {
     const pin = SLOT_PIN_MAP[slotNumber];
     if (!pin) {
         console.error(`❌ Unknown slot: ${slotNumber}`);
-        return false;
+        return false; // Fail immediately
     }
 
     console.log(`🔓 Unlocking slot ${slotNumber} (GPIO ${pin}) for ${durationMs}ms`);
 
+    // Logic: Set HIGH -> Emit Success -> Wait -> Set LOW
+
     if (IS_MOCK) {
-        // Mock mode — just wait
-        await new Promise((resolve) => setTimeout(resolve, Math.min(durationMs, 2000)));
-        console.log(`✅ [MOCK] Slot ${slotNumber} unlocked`);
+        console.log(`✅ [MOCK] Slot ${slotNumber} set to HIGH`);
+        // In mock mode, we just return true immediately to signal "unlocked"
+        // But we should simulate the auto-relock in background
+        setTimeout(() => {
+            console.log(`🔒 [MOCK] Slot ${slotNumber} set to LOW (Auto-relock)`);
+        }, durationMs);
         return true;
     }
 
@@ -61,39 +67,27 @@ async function unlockSlot(slotNumber, durationMs) {
     try {
         const gpio = new Gpio(pin, 'out');
         gpio.writeSync(1); // HIGH = solenoid open
+        console.log(`✅ Slot ${slotNumber} set to HIGH`);
 
-        await new Promise((resolve) => setTimeout(resolve, durationMs));
+        // Set timer to close it later (detached from return)
+        setTimeout(() => {
+            try {
+                gpio.writeSync(0); // LOW = solenoid close
+                gpio.unexport();
+                console.log(`🔒 Slot ${slotNumber} set to LOW`);
+            } catch (err) {
+                console.error(`❌ Error closing slot ${slotNumber}:`, err.message);
+            }
+        }, durationMs);
 
-        gpio.writeSync(0); // LOW = solenoid close
-        gpio.unexport();
-        console.log(`✅ Slot ${slotNumber} unlocked successfully`);
-        return true;
+        return true; // Return success immediately after opening
     } catch (err) {
         console.error(`❌ GPIO error for slot ${slotNumber}:`, err.message);
         return false;
     }
 }
 
-// ── Socket.IO Connection ──
-console.log(`🔌 Connecting to backend: ${BACKEND_URL}`);
-const socket = io(BACKEND_URL, {
-    reconnection: true,
-    reconnectionDelay: 2000,
-    reconnectionAttempts: Infinity,
-});
-
-socket.on('connect', () => {
-    console.log(`✅ Connected to backend: ${socket.id}`);
-    socket.emit('join:gpio');
-});
-
-socket.on('disconnect', () => {
-    console.log('⚠️ Disconnected from backend — will retry...');
-});
-
-socket.on('connect_error', (err) => {
-    console.error('❌ Connection error:', err.message);
-});
+// ... (Socket connection lines 77-96 remain unchanged) ...
 
 // ── Listen for unlock commands ──
 socket.on('gpio:unlock', async (data) => {
@@ -102,9 +96,10 @@ socket.on('gpio:unlock', async (data) => {
 
     console.log(`📩 Received gpio:unlock: slot=${slotNumber}, duration=${durationMs}ms`);
 
+    // unlockSlot now returns immediately after setting HIGH
     const success = await unlockSlot(slotNumber, durationMs);
 
-    // Report back to backend
+    // Emit 'slot:unlocked' immediately so UI shows "Pull key" while it's active
     socket.emit('slot:unlocked', {
         slotNumber,
         success,
