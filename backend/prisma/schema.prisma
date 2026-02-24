@@ -154,6 +154,7 @@ model Key {
   id          String   @id @default(uuid())
   roomCode    String   @unique // เช่น LAB401
   slotNumber  Int      // ช่องในตู้
+  nfcUid      String?  @unique // UID ของ NFC tag ที่ติดบนกุญแจ
 
   isActive    Boolean  @default(true)
 

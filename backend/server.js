@@ -494,9 +494,7 @@ io.on('connection', (socket) => {
   socket.on('key:pulled', async (data) => {
     const { slotNumber, bookingId } = data;
     console.log(`✅ key:pulled: slot=${slotNumber}, bookingId=${bookingId}`);
-    // forward ไปยัง UI
     io.to('kiosk').emit('key:pulled', { slotNumber, bookingId });
-    // TODO: บันทึกสถานะ booking ว่า confirmed (ถ้ายังไม่ได้ทำตอน borrowKey)
   });
 
   // ── borrow:cancelled — ไม่ดึงกุญแจออกภายในเวลา → ยกเลิกการเบิก ──
@@ -505,15 +503,35 @@ io.on('connection', (socket) => {
     console.log(`❌ borrow:cancelled: slot=${slotNumber}, bookingId=${bookingId}`);
     try {
       if (bookingId) {
-        // ลบ booking ออกจาก DB (ไม่มี status CANCELLED ใน enum)
         await prisma.booking.delete({ where: { id: bookingId } });
         console.log(`🗑️  Booking ${bookingId} deleted (borrow cancelled)`);
       }
     } catch (err) {
       console.error('❌ Cancel booking error:', err.message);
     }
-    // forward ไปยัง UI
     io.to('kiosk').emit('borrow:cancelled', { slotNumber, bookingId });
+  });
+
+  // ── nfc:register-mode — Staff สั่งให้ RPi อยู่ใน mode รับ UID ครั้งเดียว ──
+  // Hardware จะ emit nfc:tag event กลับมา ซึ่ง backend จะ forward ให้ staff client นั้น
+  socket.on('nfc:register-mode', (data) => {
+    const { slotNumber } = data;
+    console.log(`🏷️  NFC register mode: staff ${socket.id} waiting for slot ${slotNumber ?? 'any'}`);
+    // บอก hardware ให้รู้ว่ากำลัง register
+    io.to('gpio').emit('nfc:register-mode', { slotNumber, staffSocketId: socket.id });
+  });
+
+  // ── nfc:tag — Hardware scan → ถ้าอยู่ใน register mode ให้ forward กลับไปที่ staff client ──
+  socket.on('nfc:tag', (data) => {
+    const { slotNumber, uid, staffSocketId } = data;
+    console.log(`🏷️  nfc:tag received: uid=${uid}, slot=${slotNumber}`);
+    if (staffSocketId) {
+      // forward UID กลับไปยัง staff browser ที่รอรับ
+      io.to(staffSocketId).emit('nfc:uid-captured', { uid, slotNumber });
+    } else {
+      // normal flow (key return detection)
+      io.to('kiosk').emit('nfc:tag', data);
+    }
   });
 
   socket.on('disconnect', () => {

@@ -39,6 +39,7 @@ export const getAllKeys = async (req, res) => {
                 roomCode: k.roomCode,
                 slotNumber: k.slotNumber,
                 isActive: k.isActive,
+                nfcUid: k.nfcUid,
                 status // Derived status for frontend
             };
         });
@@ -175,7 +176,7 @@ export const createKey = async (req, res) => {
 export const updateKey = async (req, res) => {
     try {
         const { id } = req.params;
-        const { roomCode, slotNumber, isActive } = req.body;
+        const { roomCode, slotNumber, isActive, nfcUid } = req.body;
 
         // Validations if changing slot/room
         // Skip for brevity, relying on user or constraints (none in schema except types)
@@ -185,9 +186,11 @@ export const updateKey = async (req, res) => {
                 id: id
             },
             data: {
-                roomCode,
-                slotNumber: slotNumber !== undefined ? parseInt(slotNumber) : undefined,
-                isActive
+                ...(roomCode !== undefined && { roomCode }),
+                ...(slotNumber !== undefined && { slotNumber: parseInt(slotNumber) }),
+                ...(isActive !== undefined && { isActive }),
+                // nfcUid: null จะล้างค่า, nfcUid: 'xxx' จะบันทึก, undefined จะไม่เปลี่ยน
+                ...(nfcUid !== undefined && { nfcUid: nfcUid || null }),
             }
         });
 
