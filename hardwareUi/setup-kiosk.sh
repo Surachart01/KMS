@@ -69,39 +69,18 @@ Environment=PATH=/usr/local/bin:/usr/bin:/bin
 WantedBy=multi-user.target
 EOF
 
-# === Step 4: Create systemd service for GPIO ===
-echo "⚙️  Step 4: Creating gpio service..."
-cat > /etc/systemd/system/kiosk-gpio.service << EOF
+# === Step 4: Create systemd service for Hardware (NFC + GPIO combined) ===
+echo "⚙️  Step 4: Creating kiosk-hardware service (NFC + GPIO)..."
+cat > /etc/systemd/system/kiosk-hardware.service << EOF
 [Unit]
-Description=GPIO Service - Solenoid Controller
+Description=Hardware Service - NFC Reader + Solenoid Controller
 After=network.target kiosk-ui.service
 
 [Service]
 Type=simple
 User=${USER_NAME}
 WorkingDirectory=${GPIO_DIR}
-ExecStart=/usr/bin/node index.js
-Restart=always
-RestartSec=5
-Environment=NODE_ENV=production
-Environment=PATH=/usr/local/bin:/usr/bin:/bin
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-# === Step 5: Create systemd service for NFC ===
-echo "⚙️  Step 5: Creating nfc service..."
-cat > /etc/systemd/system/kiosk-nfc.service << EOF
-[Unit]
-Description=NFC Service - Multi-Reader Polling
-After=network.target kiosk-ui.service
-
-[Service]
-Type=simple
-User=${USER_NAME}
-WorkingDirectory=${GPIO_DIR}
-ExecStart=/usr/bin/node nfc.js
+ExecStart=/usr/bin/node hardware.js
 Restart=always
 RestartSec=5
 Environment=NODE_ENV=production
@@ -198,8 +177,7 @@ fi
 echo "🚀 Step 9: Enabling services..."
 systemctl daemon-reload
 systemctl enable kiosk-ui.service
-systemctl enable kiosk-gpio.service
-systemctl enable kiosk-nfc.service
+systemctl enable kiosk-hardware.service
 
 echo ""
 echo "============================================="
@@ -207,16 +185,14 @@ echo "✅ Kiosk Mode Setup Complete!"
 echo "============================================="
 echo ""
 echo "Services created:"
-echo "  • kiosk-ui.service   (Vite dev server)"
-echo "  • kiosk-gpio.service (GPIO controller)"
-echo "  • kiosk-nfc.service  (NFC polling)"
-echo "  • Chromium autostart (kiosk mode)"
+echo "  • kiosk-ui.service       (Vite dev server)"
+echo "  • kiosk-hardware.service (NFC + GPIO combined)"
+echo "  • Chromium autostart     (kiosk mode)"
 echo ""
 echo "Commands:"
-echo "  sudo systemctl start kiosk-ui    # Start UI server"
-echo "  sudo systemctl start kiosk-gpio  # Start GPIO"
-echo "  sudo systemctl start kiosk-nfc   # Start NFC"
-echo "  sudo systemctl status kiosk-ui   # Check status"
+echo "  sudo systemctl start kiosk-ui          # Start UI server"
+echo "  sudo systemctl start kiosk-hardware    # Start Hardware (NFC+GPIO)"
+echo "  sudo systemctl status kiosk-hardware   # Check status"
 echo ""
 echo "🔄 Reboot to test: sudo reboot"
 echo ""

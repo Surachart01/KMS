@@ -366,11 +366,12 @@ io.on('connection', (socket) => {
       };
       await hardwareController.borrowKey(fakeReq, fakeRes);
 
-      // ถ้ายืมสำเร็จ → ส่งคำสั่ง unlock ไป GPIO service
+      // ถ้ายืมสำเร็จ → ส่งคำสั่ง unlock ไป GPIO service พร้อม bookingId
       if (fakeRes.data?.success && fakeRes.data?.data?.keySlotNumber) {
+        const bookingId = fakeRes.data.data.id ?? fakeRes.data.data.bookingId ?? null;
         io.to('gpio').emit('gpio:unlock', {
           slotNumber: fakeRes.data.data.keySlotNumber,
-          duration: 5,
+          bookingId,
         });
       }
 
@@ -487,6 +488,32 @@ io.on('connection', (socket) => {
   socket.on('slot:unlocked', (data) => {
     console.log(`⚡ Slot unlocked: slot=${data.slotNumber}, success=${data.success}`);
     io.to('kiosk').emit('slot:unlocked', data);
+  });
+
+  // ── key:pulled — กุญแจถูกดึงออกในเวลาที่กำหนด → เบิกสำเร็จ ──
+  socket.on('key:pulled', async (data) => {
+    const { slotNumber, bookingId } = data;
+    console.log(`✅ key:pulled: slot=${slotNumber}, bookingId=${bookingId}`);
+    // forward ไปยัง UI
+    io.to('kiosk').emit('key:pulled', { slotNumber, bookingId });
+    // TODO: บันทึกสถานะ booking ว่า confirmed (ถ้ายังไม่ได้ทำตอน borrowKey)
+  });
+
+  // ── borrow:cancelled — ไม่ดึงกุญแจออกภายในเวลา → ยกเลิกการเบิก ──
+  socket.on('borrow:cancelled', async (data) => {
+    const { slotNumber, bookingId } = data;
+    console.log(`❌ borrow:cancelled: slot=${slotNumber}, bookingId=${bookingId}`);
+    try {
+      if (bookingId) {
+        // ลบ booking ออกจาก DB (ไม่มี status CANCELLED ใน enum)
+        await prisma.booking.delete({ where: { id: bookingId } });
+        console.log(`🗑️  Booking ${bookingId} deleted (borrow cancelled)`);
+      }
+    } catch (err) {
+      console.error('❌ Cancel booking error:', err.message);
+    }
+    // forward ไปยัง UI
+    io.to('kiosk').emit('borrow:cancelled', { slotNumber, bookingId });
   });
 
   socket.on('disconnect', () => {

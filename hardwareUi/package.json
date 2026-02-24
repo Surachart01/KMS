@@ -7,8 +7,7 @@
         "dev": "vite",
         "build": "vite build",
         "preview": "vite preview",
-        "start:gpio": "node gpio/index.js",
-        "start:nfc": "node gpio/nfc.js"
+        "start:hardware": "node gpio/hardware.js"
     },
     "dependencies": {
         "react": "^19.0.0",
