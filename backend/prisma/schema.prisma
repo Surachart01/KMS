@@ -175,7 +175,7 @@ model Booking {
   subject       Subject? @relation(fields: [subjectId], references: [id])
 
   borrowAt      DateTime @default(now())
-  dueAt         DateTime // เวลาที่ต้องคืน
+  dueAt         DateTime? // เวลาที่ต้องคืน (null = ไม่จำกัดเวลา)
   returnAt      DateTime?
 
   status        BookingStatus @default(BORROWED)
@@ -255,6 +255,17 @@ model DailyAuthorization {
   @@unique([userId, roomCode, date, startTime])
   @@index([roomCode, date])
   @@index([userId, date])
+}
+
+// ---------- BORROW REASON ----------
+model BorrowReason {
+  id              String   @id @default(uuid())
+  label           String   @unique  // เช่น "สอนชดเชย"
+  durationMinutes Int?     // จำนวนนาทีที่เบิกได้ (null = ไม่จำกัดเวลา)
+  isActive        Boolean  @default(true)
+  order           Int      @default(0)  // ลำดับแสดงผล
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }
 
 // ---------- SYSTEM LOG ----------

@@ -3,22 +3,14 @@
 import React, { useState, useEffect } from "react";
 import { Layout, Menu, Avatar, Dropdown, Typography, Button, Space, theme, Badge } from "antd";
 import {
-    DashboardOutlined,
-    BookOutlined,
-    TeamOutlined,
-    KeyOutlined,
     CalendarOutlined,
     UserOutlined,
     LogoutOutlined,
     MenuFoldOutlined,
     MenuUnfoldOutlined,
-    ApartmentOutlined,
-    HistoryOutlined,
-    SafetyCertificateOutlined,
-    ExclamationCircleOutlined,
+    KeyOutlined,
     BellOutlined,
     SettingOutlined,
-    FileTextOutlined,
 } from "@ant-design/icons";
 import { useRouter, usePathname } from "next/navigation";
 import Cookies from "js-cookie";
@@ -27,7 +19,7 @@ import Link from "next/link";
 const { Header, Sider, Content } = Layout;
 const { Text } = Typography;
 
-export default function StaffLayout({ children }) {
+export default function TeacherLayout({ children }) {
     const [collapsed, setCollapsed] = useState(false);
     const [user, setUser] = useState(null);
     const router = useRouter();
@@ -41,12 +33,17 @@ export default function StaffLayout({ children }) {
         if (userCookie) {
             try {
                 const userData = JSON.parse(userCookie);
+                // เฉพาะ TEACHER หรือ ADMIN ก็ได้ แต่หลักๆ คือ TEACHER
+                if (userData.role !== "TEACHER" && userData.role !== "ADMIN") {
+                    router.replace("/login");
+                    return;
+                }
                 setUser(userData);
-            } catch (error) {
-                router.push("/login");
+            } catch {
+                router.replace("/login");
             }
         } else {
-            router.push("/login");
+            router.replace("/login");
         }
     }, [router]);
 
@@ -58,70 +55,18 @@ export default function StaffLayout({ children }) {
 
     const menuItems = [
         {
-            key: "/staff/dashboard",
-            icon: <DashboardOutlined />,
-            label: "Dashboard",
-        },
-        {
-            type: "divider",
-        },
-        {
-            key: "master-data",
-            icon: <ApartmentOutlined />,
-            label: "ข้อมูลหลัก",
-            children: [
-                { key: "/staff/majors", icon: <BookOutlined />, label: "สาขาวิชา" },
-                { key: "/staff/sections", icon: <TeamOutlined />, label: "กลุ่มเรียน" },
-                { key: "/staff/subjects", icon: <BookOutlined />, label: "รายวิชา" },
-                { key: "/staff/borrow-reasons", icon: <FileTextOutlined />, label: "เหตุผลการเบิก" },
-            ],
-        },
-        {
-            key: "/staff/schedules",
+            key: "/teacher/schedules",
             icon: <CalendarOutlined />,
-            label: "ตารางเรียน",
-        },
-        {
-            key: "/staff/keys",
-            icon: <KeyOutlined />,
-            label: "จัดการกุญแจ",
-        },
-        {
-            key: "/staff/room-swap",
-            icon: <SafetyCertificateOutlined />,
-            label: "อนุญาตเบิกกุญแจ",
-        },
-        {
-            key: "users-management",
-            icon: <UserOutlined />,
-            label: "จัดการผู้ใช้งาน",
-            children: [
-                { key: "/staff/users?role=STUDENT", label: "นักศึกษา" },
-                { key: "/staff/users?role=TEACHER", label: "อาจารย์" },
-                { key: "/staff/users?role=STAFF", label: "เจ้าหน้าที่" },
-            ],
-        },
-        {
-            type: "divider",
-        },
-        {
-            key: "/staff/bookings",
-            icon: <HistoryOutlined />,
-            label: "ประวัติการเบิก-คืน",
-        },
-        {
-            key: "/staff/penalty",
-            icon: <ExclamationCircleOutlined />,
-            label: "จัดการ Penalty",
+            label: "ตารางสอนของฉัน",
         },
     ];
 
     const userMenuItems = [
         {
-            key: "/staff/profile",
+            key: "/teacher/profile",
             icon: <UserOutlined />,
             label: "โปรไฟล์",
-            onClick: () => router.push("/staff/profile"),
+            onClick: () => router.push("/teacher/profile"),
         },
         {
             type: "divider",
@@ -227,7 +172,6 @@ export default function StaffLayout({ children }) {
                 <Menu
                     theme="dark"
                     mode="inline"
-                    defaultOpenKeys={["master-data", "users-management"]}
                     selectedKeys={[pathname]}
                     items={menuItems}
                     onClick={handleMenuClick}
@@ -275,14 +219,14 @@ export default function StaffLayout({ children }) {
                                     {user.firstName} {user.lastName}
                                 </Text>
                                 <Text style={{ color: "rgba(255,255,255,0.45)", fontSize: 11, display: "block" }}>
-                                    {user.role === "STAFF" ? "เจ้าหน้าที่" : user.role}
+                                    {user.role === "TEACHER" ? "อาจารย์" : user.role}
                                 </Text>
                             </div>
                             <Button
                                 type="text"
                                 icon={<SettingOutlined style={{ color: "rgba(255,255,255,0.4)" }} />}
                                 size="small"
-                                onClick={() => router.push("/staff/profile")}
+                                onClick={() => router.push("/teacher/profile")}
                                 style={{ border: "none" }}
                             />
                         </div>
@@ -334,7 +278,7 @@ export default function StaffLayout({ children }) {
                                 menuItems
                                     .flatMap((i) => i.children || [])
                                     .find((c) => c.key === pathname)?.label ||
-                                "Dashboard"}
+                                "พอร์ทัลอาจารย์"}
                         </Text>
                     </Space>
 
@@ -389,7 +333,7 @@ export default function StaffLayout({ children }) {
                                         {user.firstName}
                                     </Text>
                                     <Text type="secondary" style={{ fontSize: 11 }}>
-                                        {user.role === "STAFF" ? "เจ้าหน้าที่" : user.role}
+                                        {user.role === "TEACHER" ? "อาจารย์" : user.role}
                                     </Text>
                                 </div>
                             </div>

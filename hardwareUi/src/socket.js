@@ -60,3 +60,27 @@ export function returnKey(studentCode) {
         });
     });
 }
+
+export function swapKey(studentCodeA, roomCodeA, studentCodeB, roomCodeB) {
+    return new Promise((resolve) => {
+        socket.emit('key:swap', { studentCodeA, roomCodeA, studentCodeB, roomCodeB }, (response) => {
+            resolve(response);
+        });
+    });
+}
+
+export function moveKey(studentCode, fromRoomCode, toRoomCode) {
+    return new Promise((resolve) => {
+        socket.emit('key:move', { studentCode, fromRoomCode, toRoomCode }, (response) => {
+            resolve(response);
+        });
+    });
+}
+
+export function transferKey(studentCodeA, studentCodeB) {
+    return new Promise((resolve) => {
+        socket.emit('key:transfer', { studentCodeA, studentCodeB }, (response) => {
+            resolve(response);
+        });
+    });
+}

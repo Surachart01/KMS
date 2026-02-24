@@ -177,5 +177,15 @@ export const schedulesV2API = {
     checkPermission: (studentCode, roomCode) => apiClient.post('/api/v2/schedules/check-permission', { studentCode, roomCode })
 };
 
-export default apiClient;
+// ================== TEACHER PORTAL API ==================
+export const teacherAPI = {
+    getMe: () => apiClient.get('/api/teacher/me'),
+    getMySubjects: () => apiClient.get('/api/teacher/my-subjects'),
+    getMySchedules: () => apiClient.get('/api/teacher/my-schedules'),
+    createSchedule: (data) => apiClient.post('/api/teacher/schedules', data),
+    updateSchedule: (id, data) => apiClient.put(`/api/teacher/schedules/${id}`, data),
+    deleteSchedule: (id) => apiClient.delete(`/api/teacher/schedules/${id}`),
+    importRepclasslist: (data) => apiClient.post('/api/teacher/schedules/import-repclasslist', data)
+};
 
+export default apiClient;

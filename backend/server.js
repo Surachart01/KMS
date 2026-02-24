@@ -28,6 +28,8 @@ import scheduleRoutesRouter from './src/routes/scheduleRoutes.js';
 import authorizationsRouter from './src/routes/authorizations.js';
 import hardwareRoutesRouter from './src/routes/hardwareRoutes.js';
 import { createAdmsRoutes } from './src/routes/admsRoutes.js';
+import borrowReasonsRouter from './src/routes/borrowReasons.js';
+import teacherRouter from './src/routes/teacherRoutes.js';
 import * as hardwareController from './src/controllers/hardwareController.js';
 
 // initialize express app, HTTP server, and Socket.IO
@@ -237,6 +239,10 @@ app.use("/api/bookings", bookingsRouter);
  */
 app.use("/api/authorizations", authorizationsRouter);
 
+app.use("/api/borrow-reasons", borrowReasonsRouter);
+
+app.use("/api/teacher", teacherRouter);
+
 app.use("/api/hardware", hardwareRoutesRouter);
 
 // ================================
@@ -392,6 +398,87 @@ io.on('connection', (socket) => {
       if (typeof callback === 'function') callback(fakeRes.data);
     } catch (err) {
       console.error('❌ key:return error:', err);
+      if (typeof callback === 'function') callback({ success: false, message: err.message });
+    }
+  });
+
+  // ── key:swap — สลับสิทธิ์กุญแจระหว่าง 2 คน ──
+  socket.on('key:swap', async (data, callback) => {
+    try {
+      const fakeReq = {
+        headers: { authorization: `Bearer ${process.env.HARDWARE_TOKEN}` },
+        body: {
+          studentCodeA: data.studentCodeA,
+          roomCodeA: data.roomCodeA,
+          studentCodeB: data.studentCodeB,
+          roomCodeB: data.roomCodeB,
+        },
+        ip: null,
+        connection: { remoteAddress: null },
+      };
+      const fakeRes = {
+        statusCode: 200,
+        data: null,
+        status(code) { this.statusCode = code; return this; },
+        json(d) { this.data = d; return this; },
+      };
+      await hardwareController.swapAuthorization(fakeReq, fakeRes);
+      if (typeof callback === 'function') callback(fakeRes.data);
+    } catch (err) {
+      console.error('❌ key:swap error:', err);
+      if (typeof callback === 'function') callback({ success: false, message: err.message });
+    }
+  });
+
+  // ── key:move — ย้ายห้องของคนเดียว ──
+  socket.on('key:move', async (data, callback) => {
+    try {
+      const fakeReq = {
+        headers: { authorization: `Bearer ${process.env.HARDWARE_TOKEN}` },
+        body: {
+          studentCode: data.studentCode,
+          fromRoomCode: data.fromRoomCode,
+          toRoomCode: data.toRoomCode,
+        },
+        ip: null,
+        connection: { remoteAddress: null },
+      };
+      const fakeRes = {
+        statusCode: 200,
+        data: null,
+        status(code) { this.statusCode = code; return this; },
+        json(d) { this.data = d; return this; },
+      };
+      await hardwareController.moveAuthorization(fakeReq, fakeRes);
+      if (typeof callback === 'function') callback(fakeRes.data);
+    } catch (err) {
+      console.error('❌ key:move error:', err);
+      if (typeof callback === 'function') callback({ success: false, message: err.message });
+    }
+  });
+
+  // ── key:transfer — ย้ายสิทธิ์กุญแจจากคนที่ 1 (ผู้โอน) ให้คนที่ 2 (ผู้รับ) ──
+  socket.on('key:transfer', async (data, callback) => {
+    try {
+      const fakeReq = {
+        headers: { authorization: `Bearer ${process.env.HARDWARE_TOKEN}` },
+        body: {
+          studentCodeA: data.studentCodeA,
+          studentCodeB: data.studentCodeB,
+        },
+        ip: null,
+        connection: { remoteAddress: null },
+      };
+      const fakeRes = {
+        statusCode: 200,
+        data: null,
+        status(code) { this.statusCode = code; return this; },
+        json(d) { this.data = d; return this; },
+      };
+      await hardwareController.transferAuthorization(fakeReq, fakeRes);
+      if (typeof callback === 'function') callback(fakeRes.data);
+    } catch (err) {
+      console.error('❌ key:transfer error:', err);
       if (typeof callback === 'function') callback({ success: false, message: err.message });
     }
   });

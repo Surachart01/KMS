@@ -22,6 +22,7 @@ router.post("/return", hardwareMiddleware, hardwareController.returnKey);       
 
 // --- สลับ-ย้ายสิทธิ์ ---
 router.post("/swap", hardwareMiddleware, hardwareController.swapAuthorization);             // สลับสิทธิ์กุญแจ 2 คน
+router.post("/transfer", hardwareMiddleware, hardwareController.transferAuthorization);     // ย้ายสิทธิ์กุญแจระหว่าง 2 คน
 router.post("/move", hardwareMiddleware, hardwareController.moveAuthorization);             // ย้ายสิทธิ์กุญแจ (คนเดียว)
 
 export default router;

@@ -1,22 +1,39 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+
+const FALLBACK_REASONS = ['สอนชดเชย', 'กิจกรรมพิเศษ', 'ซ่อมบำรุง', 'ประชุม', 'อื่นๆ'];
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4556';
 
 /**
  * หน้ากรอกเหตุผล — เมื่อไม่มีสิทธิ์ตาม DailyAuthorization
+ * ดึงรายการเหตุผลจาก API แทน hardcode
  */
-const REASONS = [
-    'สอนชดเชย',
-    'กิจกรรมพิเศษ',
-    'ซ่อมบำรุง',
-    'ประชุม',
-    'อื่นๆ',
-];
-
 export default function ReasonPage({ roomCode, onSubmit, onCancel, loading }) {
+    const [reasons, setReasons] = useState(FALLBACK_REASONS);
+    const [loadingReasons, setLoadingReasons] = useState(true);
     const [selected, setSelected] = useState('');
     const [customReason, setCustomReason] = useState('');
 
+    useEffect(() => {
+        const fetchReasons = async () => {
+            try {
+                const res = await fetch(`${API_URL}/api/borrow-reasons?isActive=true`);
+                const json = await res.json();
+                if (json.success && json.data?.length > 0) {
+                    setReasons(json.data.map((r) => r.label));
+                }
+            } catch {
+                // ใช้ fallback ถ้า fetch ไม่ได้
+            } finally {
+                setLoadingReasons(false);
+            }
+        };
+        fetchReasons();
+    }, []);
+
+    const isOther = selected === 'อื่นๆ';
+
     const handleSubmit = () => {
-        const reason = selected === 'อื่นๆ' ? customReason : selected;
+        const reason = isOther ? customReason : selected;
         if (reason.trim()) {
             onSubmit(reason);
         }
@@ -27,19 +44,25 @@ export default function ReasonPage({ roomCode, onSubmit, onCancel, loading }) {
             <h2 className="reason-title">กรุณาระบุเหตุผลการเบิกกุญแจ</h2>
             <p className="reason-subtitle">ห้อง {roomCode} — ไม่มีสิทธิ์ตามตารางเรียน</p>
 
-            <div className="reason-options">
-                {REASONS.map((r) => (
-                    <button
-                        key={r}
-                        className={`reason-chip ${selected === r ? 'active' : ''}`}
-                        onClick={() => setSelected(r)}
-                    >
-                        {r}
-                    </button>
-                ))}
-            </div>
+            {loadingReasons ? (
+                <div className="reason-options" style={{ justifyContent: 'center' }}>
+                    <p style={{ color: 'var(--text-muted)' }}>กำลังโหลด...</p>
+                </div>
+            ) : (
+                <div className="reason-options">
+                    {reasons.map((r) => (
+                        <button
+                            key={r}
+                            className={`reason-chip ${selected === r ? 'active' : ''}`}
+                            onClick={() => setSelected(r)}
+                        >
+                            {r}
+                        </button>
+                    ))}
+                </div>
+            )}
 
-            {selected === 'อื่นๆ' && (
+            {isOther && (
                 <input
                     className="reason-input"
                     type="text"
@@ -54,7 +77,7 @@ export default function ReasonPage({ roomCode, onSubmit, onCancel, loading }) {
                 <button
                     className="btn btn-primary"
                     onClick={handleSubmit}
-                    disabled={loading || !selected || (selected === 'อื่นๆ' && !customReason.trim())}
+                    disabled={loading || !selected || (isOther && !customReason.trim())}
                 >
                     ยืนยัน
                 </button>

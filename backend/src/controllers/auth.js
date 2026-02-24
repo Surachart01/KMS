@@ -47,9 +47,9 @@ export const login = async (req, res) => {
             return res.status(401).json({ "message": "อีเมลหรือรหัสผ่านไม่ถูกต้อง" });
         }
 
-        // เช็ค Role: อนุญาตเฉพาะ Staff เท่านั้นสำหรับหน้า Backoffice
-        if (user.role !== 'STAFF') {
-            return res.status(403).json({ "message": "คุณไม่มีสิทธิ์เข้าใช้งานระบบ (สำหรับเจ้าหน้าที่เท่านั้น)" });
+        // เช็ค Role: อนุญาตเฉพาะ Staff, Teacher, Admin เท่านั้นสำหรับหน้า Backoffice
+        if (!['STAFF', 'TEACHER', 'ADMIN'].includes(user.role)) {
+            return res.status(403).json({ "message": "คุณไม่มีสิทธิ์เข้าใช้งานระบบ" });
         }
         const EXP = remember ? '7d' : '1d';
         // 4. สร้าง JWT Token

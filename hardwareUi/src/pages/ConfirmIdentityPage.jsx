@@ -6,46 +6,52 @@ export default function ConfirmIdentityPage({ mode, user, roomCode, onConfirm, o
 
     return (
         <div className="page confirm-page">
-            <div className="confirm-card">
-                {/* Avatar / Icon */}
-                <div className="user-avatar">
-                    <span className="avatar-icon">👤</span>
+            <div className="confirm-card modern-card">
+                <div className="confirm-header">
+                    <div className="confirm-avatar-circle">
+                        <span className="avatar-icon">👤</span>
+                    </div>
+                    <h2 className="confirm-title">
+                        {isReturn ? "ยืนยันการคืนกุญแจ" : "ยืนยันการเบิกกุญแจ"}
+                    </h2>
                 </div>
 
-                {/* Confirm Title */}
-                <h2 className="confirm-title">
-                    {isReturn ? "ยืนยันการคืนกุญแจ" : "ยืนยันการเบิกกุญแจ"}
-                </h2>
+                <div className="confirm-details-box">
+                    <div className="detail-row">
+                        <div className="detail-icon">🆔</div>
+                        <div className="detail-text">
+                            <span className="detail-label">รหัสนักศึกษา</span>
+                            <span className="detail-value">{user?.userId || '-'}</span>
+                        </div>
+                    </div>
 
-                {/* User Info */}
-                <div className="confirm-info">
-                    <p className="info-label">รหัสนักศึกษา</p>
-                    <p className="info-value">{user?.userId || '-'}</p>
-                </div>
+                    <div className="detail-divider"></div>
 
-                {/* Room Info */}
-                <div className="confirm-info">
-                    <p className="info-label">
-                        {isReturn ? "ต้องการคืนกุญแจห้อง" : "ต้องการเบิกกุญแจห้อง"}
-                    </p>
-                    <p className="confirm-room">{roomCode || '-'}</p>
+                    <div className="detail-row">
+                        <div className="detail-icon">{isReturn ? '🚪' : '🔑'}</div>
+                        <div className="detail-text">
+                            <span className="detail-label">
+                                {isReturn ? "ห้องเรียนที่คืน" : "ห้องเรียนที่เบิก"}
+                            </span>
+                            <span className="detail-room-badge">{roomCode || '-'}</span>
+                        </div>
+                    </div>
                 </div>
 
                 {/* Actions */}
                 <div className="confirm-actions">
                     <button
-                        className="btn btn-primary btn-lg"
+                        className="btn btn-primary btn-lg pulse"
                         onClick={onConfirm}
                         disabled={loading}
                     >
                         {loading
                             ? "กำลังทำรายการ..."
-                            : (isReturn ? "ยืนยันการคืน" : "ยืนยันการเบิก")
+                            : (isReturn ? "✓ ยืนยันการคืน" : "✓ ยืนยันการเบิก")
                         }
                     </button>
-
                     <button
-                        className="btn btn-secondary"
+                        className="btn btn-secondary btn-lg"
                         onClick={onCancel}
                         disabled={loading}
                     >

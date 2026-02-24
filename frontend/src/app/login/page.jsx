@@ -44,9 +44,16 @@ export default function LoginPage() {
         }
         notification.success({
           title: "เข้าสู่ระบบสำเร็จ",
-          description: `ยินดีต้อนรับ ${res.data.user.first_name} ${res.data.user.last_name}`,
+          description: `ยินดีต้อนรับ ${res.data.user.firstName} ${res.data.user.lastName}`,
         });
-        router.push("/staff/dashboard");
+
+        if (res.data.role === 'TEACHER') {
+          router.push("/teacher");
+        } else if (res.data.role === 'STUDENT') {
+          router.push("/student");
+        } else {
+          router.push("/staff/dashboard");
+        }
       } else {
         notification.error({
           title: "เข้าสู่ระบบไม่สำเร็จ",

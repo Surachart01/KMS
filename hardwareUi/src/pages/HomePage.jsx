@@ -1,7 +1,4 @@
-/**
- * หน้าหลัก — แสดงสถานะและเมนู
- */
-export default function HomePage({ onBorrow, onReturn, loading }) {
+export default function HomePage({ onBorrow, onReturn, onTransfer, onSwap, onMove, loading }) {
     if (loading) {
         return (
             <div className="page home-page loading">
@@ -21,16 +18,53 @@ export default function HomePage({ onBorrow, onReturn, loading }) {
                 <p>Key Management System</p>
             </div>
 
-            <div className="home-actions">
-                <button className="btn btn-primary btn-lg pulse" onClick={onBorrow}>
-                    🔑 เบิกกุญแจ
+            {/* ── Primary Actions (The 90% Use Case) ── */}
+            <div className="home-primary-actions">
+                <button className="btn-card btn-card-primary pulse" onClick={onBorrow}>
+                    <div className="btn-card-icon">🔑</div>
+                    <div className="btn-card-content">
+                        <h2>เบิกกุญแจ</h2>
+                        <span className="btn-card-desc">สำหรับผู้มีตาราง / มีสิทธิ์</span>
+                    </div>
                 </button>
-                <button className="btn btn-secondary btn-lg" onClick={onReturn}>
-                    ↩️ คืนกุญแจ
+
+                <button className="btn-card btn-card-secondary" onClick={onReturn}>
+                    <div className="btn-card-icon">↩️</div>
+                    <div className="btn-card-content">
+                        <h2>คืนกุญแจ</h2>
+                        <span className="btn-card-desc">เมื่อใช้งานห้องเสร็จสิ้น</span>
+                    </div>
                 </button>
             </div>
 
-            <p className="home-instruction">กดปุ่มด้านบนเพื่อเริ่มต้นใช้งาน</p>
+            {/* ── Secondary Actions (The 10% Use Case) ── */}
+            <div className="home-secondary-actions">
+                <button className="btn-minimal btn-swap" onClick={onSwap}>
+                    <span className="minimal-icon">🔄</span>
+                    <div className="minimal-text">
+                        <span>สลับห้อง</span>
+                        <small>กับเพื่อน</small>
+                    </div>
+                </button>
+                <button className="btn-minimal btn-move" onClick={onMove}>
+                    <span className="minimal-icon">➡️</span>
+                    <div className="minimal-text">
+                        <span>ย้ายห้อง</span>
+                        <small>เปลี่ยนห้องใหม่</small>
+                    </div>
+                </button>
+                <button className="btn-minimal btn-transfer" onClick={onTransfer}>
+                    <span className="minimal-icon">📋</span>
+                    <div className="minimal-text">
+                        <span>โอนสิทธิ์</span>
+                        <small>มอบให้คนอื่น</small>
+                    </div>
+                </button>
+            </div>
+
+            <p className="home-instruction" style={{ marginTop: 'auto', marginBottom: '10px' }}>
+                กดปุ่มเพื่อเริ่มต้นใช้งาน
+            </p>
         </div>
     );
 }

@@ -2,6 +2,9 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
+// อนุญาตให้เบิกกุญแจล่วงหน้าได้ 30 นาทีก่อนคาบเรียน
+const EARLY_BORROW_MINUTES = 30;
+
 // ==================== ฟังก์ชันช่วยเหลือ (Helper Functions) ====================
 
 /**
@@ -16,6 +19,11 @@ const prisma = new PrismaClient();
  * @returns {{ lateMinutes: number, penaltyScore: number, isLate: boolean }}
  */
 const calculatePenalty = async (borrowAt, dueAt, returnAt) => {
+    // ถ้าไม่มี dueAt (ไม่จำกัดเวลา) → ไม่มีค่าปรับ
+    if (!dueAt) {
+        return { lateMinutes: 0, penaltyScore: 0, isLate: false };
+    }
+
     // ดึงการตั้งค่า Penalty ที่ใช้งานอยู่ (เอาอันล่าสุด)
     const config = await prisma.penaltyConfig.findFirst({
         where: { isActive: true },
@@ -180,6 +188,9 @@ export const identifyUser = async (req, res) => {
         const { startOfDay, endOfDay } = getTodayRange();
         const now = new Date();
 
+        // อนุญาตให้เบิกล่วงหน้าได้ EARLY_BORROW_MINUTES (30 นาที)
+        const earlyBuffer = new Date(now.getTime() + EARLY_BORROW_MINUTES * 60 * 1000);
+
         const todayAuthorizations = await prisma.dailyAuthorization.findMany({
             where: {
                 userId: user.id,
@@ -187,7 +198,7 @@ export const identifyUser = async (req, res) => {
                     gte: startOfDay,
                     lte: endOfDay
                 },
-                startTime: { lte: now },
+                startTime: { lte: earlyBuffer }, // เบิกได้ก่อน 30 นาที
                 endTime: { gt: now },
             },
             select: {
@@ -331,6 +342,9 @@ export const borrowKey = async (req, res) => {
         });
         console.log(`   All auths today: ${JSON.stringify(allAuthsToday, null, 2)}`);
 
+        // อนุญาตให้เบิกล่วงหน้าได้ EARLY_BORROW_MINUTES (30 นาที)
+        const earlyBuffer = new Date(now.getTime() + EARLY_BORROW_MINUTES * 60 * 1000);
+
         const authorization = await prisma.dailyAuthorization.findFirst({
             where: {
                 userId: user.id,
@@ -339,7 +353,7 @@ export const borrowKey = async (req, res) => {
                     gte: startOfDay,
                     lte: endOfDay
                 },
-                startTime: { lte: now },
+                startTime: { lte: earlyBuffer }, // เบิกได้ก่อน 30 นาที
                 endTime: { gt: now },
             },
         });
@@ -372,8 +386,28 @@ export const borrowKey = async (req, res) => {
         const bookingSource = authorization ? "FACE_SCANNER" : "FACE_SCANNER_WITH_REASON";
         const bookingReason = authorization ? null : req.body.reason;
 
-        // กำหนดเวลาคืน (เช่น 4 ชั่วโมง) หรือตาม Config
-        const dueAt = new Date(now.getTime() + 4 * 60 * 60 * 1000);
+        // กำหนดเวลาคืนตาม BorrowReason.durationMinutes
+        // - null = ไม่จำกัดเวลา (กรณีเบิกด้วยเหตุผลที่ไม่กำหนด duration)
+        // - default 4 ชั่วโมง สำหรับเบิกปกติ (มีสิทธิ์)
+        let dueAt;
+        if (bookingReason) {
+            // เบิกด้วยเหตุผล → ดึง durationMinutes จาก DB
+            try {
+                const matchedReason = await prisma.borrowReason.findFirst({
+                    where: { label: bookingReason, isActive: true },
+                });
+                if (matchedReason && matchedReason.durationMinutes != null) {
+                    dueAt = new Date(now.getTime() + matchedReason.durationMinutes * 60 * 1000);
+                } else {
+                    dueAt = null; // ไม่จำกัดเวลา
+                }
+            } catch (_) {
+                dueAt = new Date(now.getTime() + 4 * 60 * 60 * 1000); // fallback 4 ชม.
+            }
+        } else {
+            // เบิกปกติ (มีสิทธิ์) → 4 ชั่วโมง
+            dueAt = new Date(now.getTime() + 4 * 60 * 60 * 1000);
+        }
 
         const ipAddress = req.ip || req.connection?.remoteAddress || null;
 
@@ -1010,6 +1044,169 @@ export const moveAuthorization = async (req, res) => {
         });
     } catch (error) {
         console.error("❌ [Hardware] move: Error:", error);
+        return res.status(500).json({
+            success: false,
+            message: "เกิดข้อผิดพลาดในการย้ายสิทธิ์กุญแจ",
+        });
+    }
+};
+
+/**
+ * POST /api/hardware/transfer
+ * ย้ายสิทธิ์กุญแจจากคนที่ 1 (ผู้โอน) ให้คนที่ 2 (ผู้รับ)
+ * 
+ * ใช้กรณี: นักศึกษา A มีสิทธิ์ห้อง X ต้องการโอนให้ B ที่กำลังจะเรียนในห้องนั้น
+ * 
+ * ขั้นตอน:
+ * 1. ตรวจสอบผู้ใช้ทั้ง 2 คน
+ * 2. ค้นหาสิทธิ์ปัจจุบันของ A (ห้องที่ A มีสิทธิ์)
+ * 3. ตรวจว่า B มีคาบเรียน (DailyAuthorization) ในช่วงเวลา 30 นาที
+ * 4. โอน DailyAuthorization ของ A → B (A เสียสิทธิ์, B ได้สิทธิ์ห้อง A)
+ * 5. บันทึก SystemLog
+ * 
+ * Body: { studentCodeA: string, studentCodeB: string }
+ */
+export const transferAuthorization = async (req, res) => {
+    try {
+        const { studentCodeA, studentCodeB } = req.body;
+        console.log(`🔀 [Hardware] transfer: ${studentCodeA} → ${studentCodeB}`);
+
+        if (!studentCodeA || !studentCodeB) {
+            return res.status(400).json({
+                success: false,
+                message: "กรุณาระบุ studentCodeA (ผู้โอน) และ studentCodeB (ผู้รับ)",
+            });
+        }
+
+        if (studentCodeA === studentCodeB) {
+            return res.status(400).json({
+                success: false,
+                message: "ผู้โอนและผู้รับต้องไม่ใช่คนเดียวกัน",
+            });
+        }
+
+        // === ขั้นตอนที่ 1: ค้นหาผู้ใช้ ===
+        const userA = await prisma.user.findUnique({ where: { studentCode: studentCodeA } });
+        const userB = await prisma.user.findUnique({ where: { studentCode: studentCodeB } });
+
+        if (!userA) return res.status(404).json({ success: false, message: `ไม่พบผู้ใช้ ${studentCodeA} ในระบบ` });
+        if (!userB) return res.status(404).json({ success: false, message: `ไม่พบผู้ใช้ ${studentCodeB} ในระบบ` });
+
+        if (userA.isBanned) return res.status(403).json({ success: false, message: `${userA.firstName} ถูกระงับการใช้งาน` });
+        if (userB.isBanned) return res.status(403).json({ success: false, message: `${userB.firstName} ถูกระงับการใช้งาน` });
+
+        const { startOfDay, endOfDay } = getTodayRange();
+        const now = new Date();
+        const earlyBuffer = new Date(now.getTime() + EARLY_BORROW_MINUTES * 60 * 1000);
+
+        // === ขั้นตอนที่ 2: หาสิทธิ์ปัจจุบันของ A ===
+        const authA = await prisma.dailyAuthorization.findFirst({
+            where: {
+                userId: userA.id,
+                date: { gte: startOfDay, lte: endOfDay },
+                startTime: { lte: earlyBuffer },
+                endTime: { gt: now },
+            },
+        });
+
+        if (!authA) {
+            return res.status(404).json({
+                success: false,
+                message: `${userA.firstName} ไม่มีสิทธิ์ห้องที่จะโอนในขณะนี้`,
+            });
+        }
+
+        // === ขั้นตอนที่ 3: ตรวจว่า B มีคาบเรียนภายใน 30 นาที ===
+        const authB = await prisma.dailyAuthorization.findFirst({
+            where: {
+                userId: userB.id,
+                date: { gte: startOfDay, lte: endOfDay },
+                startTime: { lte: earlyBuffer },
+                endTime: { gt: now },
+            },
+        });
+
+        if (!authB) {
+            return res.status(403).json({
+                success: false,
+                message: `${userB.firstName} ไม่มีคาบเรียนภายใน 30 นาทีนี้ ไม่สามารถรับสิทธิ์ได้`,
+            });
+        }
+
+        // ตรวจว่า A ยังไม่ได้เบิกกุญแจ
+        const aBorrowed = await prisma.booking.findFirst({ where: { userId: userA.id, status: "BORROWED" } });
+        if (aBorrowed) {
+            return res.status(400).json({
+                success: false,
+                message: `${userA.firstName} กำลังเบิกกุญแจอยู่ ต้องคืนก่อนจึงจะโอนสิทธิ์ได้`,
+            });
+        }
+
+        const roomCode = authA.roomCode;
+        const ipAddress = req.ip || req.connection?.remoteAddress || null;
+
+        // === ขั้นตอนที่ 4: โอน DailyAuthorization ===
+        await prisma.$transaction(async (tx) => {
+            // ลบสิทธิ์ของ A สำหรับห้องนี้
+            await tx.dailyAuthorization.delete({ where: { id: authA.id } });
+
+            // ตรวจสอบว่า B มีสิทธิ์ในห้องนี้เวลานี้อยู่แล้วหรือไม่
+            const existingAuthB = await tx.dailyAuthorization.findFirst({
+                where: {
+                    userId: userB.id,
+                    roomCode: roomCode,
+                    date: authA.date,
+                    startTime: authA.startTime
+                }
+            });
+
+            // ถ้ายังไม่มี ค่อยสร้างให้ B
+            if (!existingAuthB) {
+                await tx.dailyAuthorization.create({
+                    data: {
+                        userId: userB.id,
+                        roomCode: roomCode,
+                        date: authA.date,
+                        startTime: authA.startTime,
+                        endTime: authA.endTime,
+                        source: "MANUAL",
+                        scheduleId: authA.scheduleId,
+                        subjectId: authA.subjectId,
+                        createdBy: "HARDWARE_TRANSFER",
+                    },
+                });
+            }
+
+            // === ขั้นตอนที่ 5: บันทึก SystemLog ===
+            await tx.systemLog.create({
+                data: {
+                    userId: userA.id,
+                    action: "HARDWARE_TRANSFER_AUTHORIZATION",
+                    details: JSON.stringify({
+                        transferType: "TRANSFER",
+                        giverStudentCode: studentCodeA,
+                        receiverStudentCode: studentCodeB,
+                        roomCode: roomCode,
+                        source: "FACE_SCANNER",
+                    }),
+                    ipAddress,
+                },
+            });
+        });
+
+        console.log(`✅ [Hardware] transfer: สำเร็จ - ${userA.firstName} โอนห้อง ${roomCode} ให้ ${userB.firstName}`);
+
+        return res.status(200).json({
+            success: true,
+            message: `ย้ายสิทธิ์สำเร็จ: ${userA.firstName} โอนห้อง ${roomCode} ให้ ${userB.firstName}`,
+            data: {
+                roomCode,
+                giver: { studentCode: studentCodeA, firstName: userA.firstName, lastName: userA.lastName },
+                receiver: { studentCode: studentCodeB, firstName: userB.firstName, lastName: userB.lastName },
+            },
+        });
+    } catch (error) {
+        console.error("❌ [Hardware] transfer: Error:", error);
         return res.status(500).json({
             success: false,
             message: "เกิดข้อผิดพลาดในการย้ายสิทธิ์กุญแจ",
