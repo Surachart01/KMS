@@ -109,6 +109,8 @@ const socket = io(BACKEND_URL, {
 
 socket.on('connect', () => {
     console.log(`✅ Connected to backend: ${socket.id}`);
+    // ต้องขอเข้าห้อง gpio เพื่อรับคำสั่งเปิดตู้จาก backend 
+    socket.emit('join:gpio');
 });
 
 socket.on('disconnect', () => {
