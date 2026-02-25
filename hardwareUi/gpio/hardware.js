@@ -66,6 +66,7 @@ import { exec } from 'child_process';
 
 let Mfrc522 = null;
 let IS_MOCK = true;
+let isUnlocking = false; // Flag to pause NFC polling during relay operation
 
 async function setupHardware() {
     // Check if pinctrl is available
@@ -141,7 +142,9 @@ async function unlockSlot(slotNumber) {
     }
 
     return new Promise((resolve) => {
+        isUnlocking = true; // Pause NFC polling temporarily
         exec(`pinctrl set ${pin} dh`, (err) => {
+            isUnlocking = false; // Resume NFC polling
             if (err) {
                 console.error(`❌ GPIO error slot ${slotNumber}:`, err.message);
                 resolve(false);
@@ -316,6 +319,9 @@ function startNfcPolling() {
     const totalSlots = Object.keys(SLOT_CS_MAP).length;
 
     setInterval(() => {
+        // Pause NFC polling if we are currently trying to unlock a slot
+        if (isUnlocking) return;
+
         // ข้าม slot ที่กำลัง key-pull check อยู่
         if (pullCheckingSlots.has(currentSlot)) {
             currentSlot = (currentSlot % totalSlots) + 1;
