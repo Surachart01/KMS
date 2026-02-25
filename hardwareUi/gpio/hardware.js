@@ -62,23 +62,30 @@ const SLOT_CS_MAP = {
 // Hardware Detection (onoff + mfrc522-rpi)
 // ─────────────────────────────────────────────
 
-let Gpio = null;
+const { exec } = require('child_process');
+
 let Mfrc522 = null;
 let IS_MOCK = true;
 
 async function setupHardware() {
-    try {
-        const onoff = await import('onoff');
-        Gpio = onoff.Gpio;
-        if (Gpio.accessible) {
-            IS_MOCK = false;
-            console.log('🟢 GPIO: Real mode (Raspberry Pi detected)');
-        } else {
-            console.log('🟡 GPIO: onoff loaded but not accessible → mock mode');
-        }
-    } catch {
-        console.log('🟡 GPIO: onoff not found → mock mode');
-    }
+    // Check if pinctrl is available
+    await new Promise((resolve) => {
+        exec('command -v pinctrl', (error) => {
+            if (error) {
+                console.log('🟡 GPIO: pinctrl tool not found → mock mode');
+                IS_MOCK = true;
+            } else {
+                console.log('🟢 GPIO: Real mode (Raspberry Pi 5 detected via pinctrl)');
+                IS_MOCK = false;
+
+                // Set all pins as output low
+                for (const pin of Object.values(SLOT_PIN_MAP)) {
+                    exec(`pinctrl set ${pin} op dl`);
+                }
+            }
+            resolve();
+        });
+    });
 
     if (!IS_MOCK) {
         try {
@@ -127,19 +134,21 @@ async function unlockSlot(slotNumber) {
     console.log(`🔓 Unlocking slot ${slotNumber} (GPIO ${pin})`);
 
     if (IS_MOCK) {
-        console.log(`✅ [MOCK] Slot ${slotNumber} → HIGH`);
+        console.log(`✅ [MOCK] Slot ${slotNumber} (Pin ${pin}) → HIGH`);
         return true;
     }
 
-    try {
-        const relay = new Gpio(pin, 'out');
-        relay.writeSync(1); // HIGH = solenoid เปิด
-        console.log(`✅ Slot ${slotNumber} → HIGH`);
-        return true;
-    } catch (err) {
-        console.error(`❌ GPIO error slot ${slotNumber}:`, err.message);
-        return false;
-    }
+    return new Promise((resolve) => {
+        exec(`pinctrl set ${pin} dh`, (err) => {
+            if (err) {
+                console.error(`❌ GPIO error slot ${slotNumber}:`, err.message);
+                resolve(false);
+            } else {
+                console.log(`✅ Slot ${slotNumber} (Pin ${pin}) → HIGH`);
+                resolve(true);
+            }
+        });
+    });
 }
 
 // ปิด solenoid (LOW)
@@ -148,18 +157,17 @@ function lockSlot(slotNumber) {
     if (!pin) return;
 
     if (IS_MOCK) {
-        console.log(`🔒 [MOCK] Slot ${slotNumber} → LOW`);
+        console.log(`🔒 [MOCK] Slot ${slotNumber} (Pin ${pin}) → LOW`);
         return;
     }
 
-    try {
-        const relay = new Gpio(pin, 'out');
-        relay.writeSync(0); // LOW = solenoid ปิด
-        relay.unexport();
-        console.log(`🔒 Slot ${slotNumber} → LOW`);
-    } catch (err) {
-        console.error(`❌ Lock error slot ${slotNumber}:`, err.message);
-    }
+    exec(`pinctrl set ${pin} dl`, (err) => {
+        if (err) {
+            console.error(`❌ Lock error slot ${slotNumber}:`, err.message);
+        } else {
+            console.log(`🔒 Slot ${slotNumber} (Pin ${pin}) → LOW`);
+        }
+    });
 }
 
 // อ่าน NFC tag ที่ slot ใดสักตัว → คืน uid หรือ null
