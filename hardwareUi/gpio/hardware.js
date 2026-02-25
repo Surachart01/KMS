@@ -62,7 +62,7 @@ const SLOT_CS_MAP = {
 // Hardware Detection (onoff + mfrc522-rpi)
 // ─────────────────────────────────────────────
 
-const { exec } = require('child_process');
+import { exec } from 'child_process';
 
 let Mfrc522 = null;
 let IS_MOCK = true;

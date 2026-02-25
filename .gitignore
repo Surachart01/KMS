@@ -9,4 +9,6 @@ hardwareUi/node_modules
 hardwareUi/.env
 hardwareUi/yarn.lock
 hardwareUi/package-lock.json
-
+hardwareUi/gpio/node_modules
+hardwareUi/gpio/yarn.lock
+hardwareUi/gpio/package-lock.json
