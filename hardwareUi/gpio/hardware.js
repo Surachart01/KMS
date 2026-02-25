@@ -19,7 +19,7 @@ dotenv.config();
 
 const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:4556';
 const NFC_POLLING_INTERVAL_MS = 200; // loop NFC ทุก 200ms
-const KEY_PULL_TIMEOUT_S = 15;       // รอดึงกุญแจสูงสุด 15 วินาที
+const KEY_PULL_TIMEOUT_S = 10;       // รอดึงกุญแจสูงสุด 10 วินาที
 const KEY_PULL_CHECK_INTERVAL_MS = 1000; // poll NFC ทุก 1 วินาที
 
 // slots ที่กำลังรอดึงกุญแจออก (ห้าม NFC polling loop ทั่วไปรบกวน)
