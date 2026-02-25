@@ -225,6 +225,7 @@ function startKeyPullCheck(slotNumber, bookingId) {
                 clearInterval(mockInterval);
                 pullCheckingSlots.delete(slotNumber);
                 console.log(`✅ [MOCK] Key pulled from slot ${slotNumber}!`);
+                lockSlot(slotNumber);
                 socket.emit('key:pulled', { slotNumber, bookingId });
                 return;
             }
@@ -250,6 +251,7 @@ function startKeyPullCheck(slotNumber, bookingId) {
             clearInterval(interval);
             pullCheckingSlots.delete(slotNumber);
             console.log(`✅ Key pulled from slot ${slotNumber}!`);
+            lockSlot(slotNumber);
             socket.emit('key:pulled', { slotNumber, bookingId });
             return;
         }
