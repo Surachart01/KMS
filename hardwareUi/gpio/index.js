@@ -20,6 +20,10 @@ const SLOT_PIN_MAP = {
     4: 23,
     5: 24,
     6: 25,
+    7: 14,   // Pin 8  — ⚠️ UART TX (ต้อง disable serial ใน raspi-config)
+    8: 15,   // Pin 10 — ⚠️ UART RX (ต้อง disable serial ใน raspi-config)
+    9: 18,   // Pin 12
+    10: 0,   // Pin 27
 };
 
 // ── Detect if running on Raspberry Pi ──

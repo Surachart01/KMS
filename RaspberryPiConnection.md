@@ -228,14 +228,19 @@ node nfc.js
 
 ### Relay Pins (Solenoid)
 | Slot | GPIO    | Physical |
-|------|---------|---------|
-| 1    | GPIO 17 | Pin 11  |
-| 2    | GPIO 27 | Pin 13  |
-| 3    | GPIO 22 | Pin 15  |
-| 4    | GPIO 23 | Pin 16  |
-| 5    | GPIO 24 | Pin 18  |
-| 6    | GPIO 25 | Pin 22  |
-| 7-10 | ต้องเพิ่มใน `SLOT_PIN_MAP` ใน `index.js` | |
+|------|---------| ---------|
+| 1    | GPIO 17 | Pin 11   |
+| 2    | GPIO 27 | Pin 13   |
+| 3    | GPIO 22 | Pin 15   |
+| 4    | GPIO 23 | Pin 16   |
+| 5    | GPIO 24 | Pin 18   |
+| 6    | GPIO 25 | Pin 22   |
+| 7    | GPIO 14 | Pin 8    |
+| 8    | GPIO 15 | Pin 10   |
+| 9    | GPIO 18 | Pin 12   |
+| 10   | GPIO 0  | Pin 27   |
+
+> ⚠️ GPIO 14, 15 ใช้เป็น UART — ต้อง disable ใน `raspi-config → Interface → Serial Port → No`
 
 ---
 
@@ -243,9 +248,10 @@ node nfc.js
 
 | รายการ | สถานะ | ไฟล์ที่เกี่ยวข้อง |
 |--------|-------|-----------------|
-| เพิ่ม Relay Slot 7-10 ใน `SLOT_PIN_MAP` | ⏳ ต้องทำ | `gpio/index.js` |
+| ~~เพิ่ม Relay Slot 7-10 ใน `SLOT_PIN_MAP`~~ | ✅ เสร็จแล้ว | `gpio/index.js`, `gpio/hardware.js` |
 | Implement NFC read UID จริง (uncomment + ใช้ `mfrc522-rpi`) | ⏳ ต้องทำ | `gpio/nfc.js` |
 | แก้ path ใน `setup-kiosk.sh` (`hardwareUi` → `hardwareUI`) | ⚠️ ตรวจสอบ | `setup-kiosk.sh` line 19 |
 | ตั้งค่า IP Backend ใน `.env` ทั้งสองไฟล์ | ⚠️ ตรวจสอบ | `.env`, `gpio/.env` |
 | เปิด SPI ใน `raspi-config` | ⏳ ต้องทำ (RPi) | - |
+| Disable Serial Port ใน `raspi-config` (GPIO 14, 15) | ⏳ ต้องทำ (RPi) | - |
 | ติดตั้ง Node.js 20 LTS บน RPi | ⏳ ต้องทำ (RPi) | - |

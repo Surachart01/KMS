@@ -18,41 +18,18 @@ const POLLING_INTERVAL_MS = 200; // Check loop delay
 
 // ── GPIO Chip Select Mapping (BCM) ──
 // Map Slot 1..10 to GPIO Pins for CS (SDA)
+// ไม่ซ้ำกับ Relay pins (17,27,22,23,24,25,14,15,18,0) หรือ SPI (10,9,11)
 const SLOT_CS_MAP = {
-    1: 5,   // Example GPIO 5
-    2: 6,   // Example GPIO 6
-    3: 13,
-    4: 19,
-    5: 26,
-    6: 12,
-    7: 16,
-    8: 20,
-    9: 21,
-    10: 24 // Note: Check overlaps with Solenoid map!
-};
-
-// Note: Solenoid map in index.js uses: 17, 27, 22, 23, 24, 25
-// Warning: GPIO 24 is duplicated in my example example! 
-// Valid BCM pins on RPi 4/5: 2,3,4,17,27,22,10,9,11,0,5,6,13,19,26,14,15,18,23,24,25,8,7,1,12,16,20,21
-// SPI0 uses: 10(MOSI), 9(MISO), 11(SCK), 8(CE0 - unused here), 7(CE1 - unused here)
-// Solenoids (6 slots): 17, 27, 22, 23, 24, 25
-// Available for NFC CS (need 10): 
-// 0, 1 (Reserved EEPROM?) -> Avoid
-// 2, 3 (I2C) -> Can use as GPIO if not using I2C
-// 5, 6, 13, 19, 26, 12, 16, 20, 21, 4
-// Let's re-map safely.
-
-const SAFE_CS_MAP = {
-    1: 4,
-    2: 5,
-    3: 6,
-    4: 12,
-    5: 13,
-    6: 16,
-    7: 19,
-    8: 20,
-    9: 21,
-    10: 26
+    1: 4,    // Pin 7
+    2: 5,    // Pin 29
+    3: 6,    // Pin 31
+    4: 12,   // Pin 32
+    5: 13,   // Pin 33
+    6: 16,   // Pin 36
+    7: 19,   // Pin 35
+    8: 20,   // Pin 38
+    9: 21,   // Pin 40
+    10: 26,  // Pin 37
 };
 
 let Gpio = null;
@@ -113,7 +90,7 @@ async function startPolling() {
 
     // Setup CS Pins
     const csPins = {};
-    for (const [slot, pin] of Object.entries(SAFE_CS_MAP)) {
+    for (const [slot, pin] of Object.entries(SLOT_CS_MAP)) {
         csPins[slot] = new Gpio(pin, 'out');
         csPins[slot].writeSync(1); // Set High (Inactive)
     }

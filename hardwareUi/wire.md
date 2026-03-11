@@ -22,114 +22,282 @@
 
 ---
 
-## 1. SPI Bus — ใช้ร่วมกันทุก RC522 (6 เส้น)
+## อุปกรณ์ที่ต้องใช้
 
-| สัญญาณ | GPIO | Physical Pin | ต่อที่ RC522 |
-|--------|------|--------------|-------------|
-| MOSI   | GPIO 10 | **Pin 19** | MOSI ทุกตัว |
-| MISO   | GPIO 9  | **Pin 21** | MISO ทุกตัว |
-| SCK    | GPIO 11 | **Pin 23** | SCK ทุกตัว  |
-| RST    | GPIO 2  | **Pin 3**  | RST ทุกตัว  |
-| 3.3V   | —       | **Pin 1**  | VCC ทุกตัว  |
-| GND    | —       | **Pin 6**  | GND ทุกตัว  |
-
-> สาย MOSI/MISO/SCK/RST/VCC/GND ต่อแบบ **parallel** ไปทุก RC522 พร้อมกัน
-
----
-
-## 2. NFC CS (SDA) Pins — แยกทีละตัว (10 เส้น)
-
-| Slot | GPIO    | Physical Pin | RC522 SDA |
-|------|---------|--------------|-----------|
-| 1    | GPIO 4  | Pin 7        | SDA       |
-| 2    | GPIO 5  | Pin 29       | SDA       |
-| 3    | GPIO 6  | Pin 31       | SDA       |
-| 4    | GPIO 12 | Pin 32       | SDA       |
-| 5    | GPIO 13 | Pin 33       | SDA       |
-| 6    | GPIO 16 | Pin 36       | SDA       |
-| 7    | GPIO 19 | Pin 35       | SDA       |
-| 8    | GPIO 20 | Pin 38       | SDA       |
-| 9    | GPIO 21 | Pin 40       | SDA       |
-| 10   | GPIO 26 | Pin 37       | SDA       |
-
-> แต่ละตัวต้องใช้ GPIO แยกกัน — ห้ามต่อรวม
+| # | อุปกรณ์ | จำนวน | หมายเหตุ |
+|---|---------|-------|----------|
+| 1 | Raspberry Pi 5 | 1 | พร้อม SD Card + OS |
+| 2 | RC522 NFC Module | 10 | MFRC522 13.56MHz |
+| 3 | Relay Module 10CH | 1 | Active LOW/HIGH (5V) |
+| 4 | Solenoid Lock 12V | 10 | ล็อคแบบ Electromagnetic |
+| 5 | 12V DC Power Supply | 1 | ≥3A (300mA × 10 ตัว) |
+| 6 | สายจัมเปอร์ Female-Female | ~40 เส้น | สำหรับ GPIO |
+| 7 | สายไฟ 12V (แดง/ดำ) | ~20 เส้น | สำหรับ Solenoid |
+| 8 | Breadboard (optional) | 1-2 | สำหรับ split สาย SPI bus |
 
 ---
 
-## 3. Relay Pins — ควบคุม Solenoid (12 เส้น)
-
-| Slot  | GPIO    | Physical Pin | Relay IN |
-|-------|---------|--------------|----------|
-| 1     | GPIO 17 | Pin 11       | IN1      |
-| 2     | GPIO 27 | Pin 13       | IN2      |
-| 3     | GPIO 22 | Pin 15       | IN3      |
-| 4     | GPIO 23 | Pin 16       | IN4      |
-| 5     | GPIO 24 | Pin 18       | IN5      |
-| 6     | GPIO 25 | Pin 22       | IN6      |
-| 7     | GPIO 14 | Pin 8        | IN7      |
-| 8     | GPIO 15 | Pin 10       | IN8      |
-| 9     | GPIO 18 | Pin 12       | IN9      |
-| 10    | GPIO 0  | Pin 27       | IN10     |
-| VCC   | 5V      | Pin 2        | VCC      |
-| GND   | GND     | Pin 9        | GND      |
-
-> ⚠️ GPIO 14, 15 ใช้เป็น UART — ต้อง disable ใน `raspi-config → Interface → Serial Port → No`
-
----
-
-## 4. Solenoid — ต้องใช้ไฟ 12V DC ภายนอก
+## Raspberry Pi 5 — GPIO Pinout Reference
 
 ```
-12V DC (+) ──────────► COM (Relay)
-                        NO  (Relay) ──► Solenoid (+)
-                                        Solenoid (-) ──► 12V DC (-)
-```
-
-> ⚠️ ห้ามต่อ Solenoid กับไฟจาก RPi โดยตรง — ต้องผ่าน Relay เท่านั้น
-
----
-
-## 5. สรุป Raspberry Pi GPIO ที่ใช้ทั้งหมด
-
-```
-Pin  1 (3.3V) ── NFC VCC
-Pin  2 (5V)   ── Relay VCC
-Pin  3 (GPIO2)── NFC RST
-Pin  6 (GND)  ── NFC GND
-Pin  7 (GPIO4)── CS slot 1
-Pin  8 (GPIO14)─ Relay slot 7
-Pin  9 (GND)  ── Relay GND
-Pin 10 (GPIO15)─ Relay slot 8
-Pin 11 (GPIO17)─ Relay slot 1
-Pin 12 (GPIO18)─ Relay slot 9
-Pin 13 (GPIO27)─ Relay slot 2
-Pin 15 (GPIO22)─ Relay slot 3
-Pin 16 (GPIO23)─ Relay slot 4
-Pin 18 (GPIO24)─ Relay slot 5
-Pin 19 (GPIO10)─ NFC MOSI
-Pin 21 (GPIO9) ─ NFC MISO
-Pin 22 (GPIO25)─ Relay slot 6
-Pin 23 (GPIO11)─ NFC SCK
-Pin 27 (GPIO0) ─ Relay slot 10
-Pin 29 (GPIO5) ─ CS slot 2
-Pin 31 (GPIO6) ─ CS slot 3
-Pin 32 (GPIO12)─ CS slot 4
-Pin 33 (GPIO13)─ CS slot 5
-Pin 35 (GPIO19)─ CS slot 7
-Pin 36 (GPIO16)─ CS slot 6
-Pin 37 (GPIO26)─ CS slot 10
-Pin 38 (GPIO20)─ CS slot 8
-Pin 40 (GPIO21)─ CS slot 9
+                    ┌─────────┐
+           3.3V  1 ●│ ■ ■ │● 2   5V
+  (NFC RST) GP2  3 ●│ ■ ■ │● 4   5V
+            GP3  5 ●│ ■ ■ │● 6   GND
+  (CS  S1)  GP4  7 ●│ ■ ■ │● 8   GP14  (Relay S7)
+            GND  9 ●│ ■ ■ │● 10  GP15  (Relay S8)
+  (Relay S1)GP17 11 ●│ ■ ■ │● 12  GP18  (Relay S9)
+  (Relay S2)GP27 13 ●│ ■ ■ │● 14  GND
+  (Relay S3)GP22 15 ●│ ■ ■ │● 16  GP23  (Relay S4)
+           3.3V 17 ●│ ■ ■ │● 18  GP24  (Relay S5)
+  (SPI MOSI)GP10 19 ●│ ■ ■ │● 20  GND
+  (SPI MISO)GP9  21 ●│ ■ ■ │● 22  GP25  (Relay S6)
+  (SPI SCK) GP11 23 ●│ ■ ■ │● 24  GP8
+            GP7  25 ●│ ■ ■ │● 26  GP7
+  (Relay S10)GP0 27 ●│ ■ ■ │● 28  GP1
+  (CS  S2)  GP5 29 ●│ ■ ■ │● 30  GND
+  (CS  S3)  GP6 31 ●│ ■ ■ │● 32  GP12  (CS  S4)
+  (CS  S5) GP13 33 ●│ ■ ■ │● 34  GND
+  (CS  S7) GP19 35 ●│ ■ ■ │● 36  GP16  (CS  S6)
+  (CS S10) GP26 37 ●│ ■ ■ │● 38  GP20  (CS  S8)
+            GND 39 ●│ ■ ■ │● 40  GP21  (CS  S9)
+                    └─────────┘
+              (มองจากด้านบน, USB อยู่ด้านล่าง)
 ```
 
 ---
 
-## 6. นับสายทั้งหมด
+## ขั้นตอนที่ 1: ตั้งค่า Raspberry Pi ก่อนต่อสาย
 
-| ส่วน | จำนวนสาย |
-|------|---------|
-| SPI Bus (MOSI/MISO/SCK/RST/VCC/GND) | 6 เส้น (shared bus) |
-| NFC CS แยกทีละตัว ×10 | 10 เส้น |
-| Relay GPIO ×10 + VCC + GND | 12 เส้น |
-| Solenoid → Relay (NO/COM) ×10 | 10 เส้น |
-| **รวม** | **~38 เส้น** |
+ก่อนต่อสายใดๆ ต้องตั้งค่า RPi ก่อน:
+
+```bash
+sudo raspi-config
+```
+
+1. **เปิด SPI** → `Interface Options → SPI → Enable`
+2. **ปิด Serial Port** → `Interface Options → Serial Port → No`
+   - ⚠️ จำเป็นต้องปิด เพราะ GPIO 14, 15 ถูกใช้เป็น Relay slot 7, 8
+3. Reboot: `sudo reboot`
+
+ตรวจสอบ SPI:
+```bash
+ls /dev/spi*   # ควรเห็น /dev/spidev0.0
+```
+
+---
+
+## ขั้นตอนที่ 2: ต่อสาย SPI Bus (shared ทุก RC522)
+
+> 🔵 ต่อ **6 เส้น** จาก RPi ไปยัง RC522 **ทุกตัว** (parallel)
+> ใช้ breadboard เพื่อ split สัญญาณไปหลายตัวได้ง่าย
+
+```
+RPi                     Breadboard              RC522 ทุกตัว (×10)
+─────                   ──────────              ──────────────────
+Pin 19 (GPIO10) ──────► MOSI rail  ──────────► MOSI
+Pin 21 (GPIO9)  ──────► MISO rail  ──────────► MISO
+Pin 23 (GPIO11) ──────► SCK  rail  ──────────► SCK
+Pin 3  (GPIO2)  ──────► RST  rail  ──────────► RST
+Pin 1  (3.3V)   ──────► VCC  rail  ──────────► VCC (3.3V)
+Pin 6  (GND)    ──────► GND  rail  ──────────► GND
+```
+
+### วิธีต่อ:
+
+1. เสียบสาย **Pin 19** จาก RPi ไปยัง breadboard ราง MOSI
+2. จาก breadboard ราง MOSI ลากสายไปยังขา **MOSI** ของ RC522 ทั้ง 10 ตัว
+3. ทำเหมือนกันกับ MISO (Pin 21), SCK (Pin 23), RST (Pin 3)
+4. ต่อ **Pin 1 (3.3V)** ไปราง VCC บน breadboard แล้วลากไป VCC ของ RC522 ทุกตัว
+5. ต่อ **Pin 6 (GND)** ไปราง GND บน breadboard แล้วลากไป GND ของ RC522 ทุกตัว
+
+> ⚠️ **ใช้ไฟ 3.3V เท่านั้น!** อย่าใช้ 5V กับ RC522 เพราะจะพังได้
+
+---
+
+## ขั้นตอนที่ 3: ต่อสาย NFC CS (SDA) — แยกทีละตัว
+
+> 🟢 ต่อ **10 เส้น** — แต่ละ RC522 ต้องใช้ GPIO แยกกัน (Chip Select)
+
+```
+RPi Pin              RC522 ตัวที่    ขาที่ต่อ
+────────             ──────────     ────────
+Pin 7  (GPIO 4)  ──► RC522 #1  ──► SDA
+Pin 29 (GPIO 5)  ──► RC522 #2  ──► SDA
+Pin 31 (GPIO 6)  ──► RC522 #3  ──► SDA
+Pin 32 (GPIO 12) ──► RC522 #4  ──► SDA
+Pin 33 (GPIO 13) ──► RC522 #5  ──► SDA
+Pin 36 (GPIO 16) ──► RC522 #6  ──► SDA
+Pin 35 (GPIO 19) ──► RC522 #7  ──► SDA
+Pin 38 (GPIO 20) ──► RC522 #8  ──► SDA
+Pin 40 (GPIO 21) ──► RC522 #9  ──► SDA
+Pin 37 (GPIO 26) ──► RC522 #10 ──► SDA
+```
+
+### วิธีต่อ:
+
+1. ใช้สายจัมเปอร์ Female-Female **1 เส้นต่อ 1 ตัว**
+2. เสียบปลายด้านหนึ่งที่ **Physical Pin** บน RPi Header
+3. เสียบอีกปลายที่ขา **SDA** ของ RC522 ตัวนั้นๆ
+4. **ห้ามต่อ SDA รวมกัน** — ต้องแยกทีละตัวเพราะใช้เลือก module ที่จะสื่อสาร
+
+### สรุปการต่อ RC522 แต่ละตัว (รวม 8 ขา/ตัว):
+
+```
+RC522 ตัวที่ N:
+  ┌─────────┐
+  │  RC522  │
+  │         │
+  │ VCC ────│──► 3.3V rail (shared)
+  │ GND ────│──► GND  rail (shared)
+  │ RST ────│──► RST  rail (shared, GPIO 2)
+  │ MISO ───│──► MISO rail (shared, GPIO 9)
+  │ MOSI ───│──► MOSI rail (shared, GPIO 10)
+  │ SCK ────│──► SCK  rail (shared, GPIO 11)
+  │ SDA ────│──► GPIO ที่กำหนดให้ slot N (แยกเฉพาะตัว)
+  │ IRQ ────│──► ไม่ต้องต่อ (ไม่ใช้)
+  └─────────┘
+```
+
+---
+
+## ขั้นตอนที่ 4: ต่อสาย Relay Module
+
+> 🔴 ต่อ **12 เส้น** (10 สัญญาณ + VCC + GND) จาก RPi ไปยัง Relay Module
+
+```
+RPi Pin               Relay Module
+────────              ────────────
+Pin 2  (5V)      ──► VCC
+Pin 9  (GND)     ──► GND
+Pin 11 (GPIO 17) ──► IN1  (Slot 1)
+Pin 13 (GPIO 27) ──► IN2  (Slot 2)
+Pin 15 (GPIO 22) ──► IN3  (Slot 3)
+Pin 16 (GPIO 23) ──► IN4  (Slot 4)
+Pin 18 (GPIO 24) ──► IN5  (Slot 5)
+Pin 22 (GPIO 25) ──► IN6  (Slot 6)
+Pin 8  (GPIO 14) ──► IN7  (Slot 7)  ⚠️ UART TX
+Pin 10 (GPIO 15) ──► IN8  (Slot 8)  ⚠️ UART RX
+Pin 12 (GPIO 18) ──► IN9  (Slot 9)
+Pin 27 (GPIO 0)  ──► IN10 (Slot 10)
+```
+
+### วิธีต่อ:
+
+1. ต่อ **Pin 2 (5V)** ไปยังขา **VCC** บน Relay Module
+2. ต่อ **Pin 9 (GND)** ไปยังขา **GND** บน Relay Module
+3. ต่อ GPIO แต่ละตัวไปยัง **IN1-IN10** ตามตาราง (11 เส้น)
+4. **ตรวจสอบ Jumper**: Relay Module ส่วนใหญ่จะมี jumper เลือก VCC-JD
+   - ถ้า Relay ใช้ไฟ **5V จาก RPi** → ให้ jumper VCC-JD ไว้
+   - ถ้าใช้ **ไฟภายนอก** แยก → ถอด jumper แล้วต่อ VCC-JD กับไฟ 5V ภายนอก
+
+> ⚠️ **GPIO 14, 15** ปกติเป็น UART TX/RX
+> ต้อง **disable Serial Port** ใน raspi-config ก่อนใช้งาน (ทำในขั้นตอนที่ 1 แล้ว)
+
+---
+
+## ขั้นตอนที่ 5: ต่อ Solenoid เข้ากับ Relay
+
+> 🟡 ต่อ **ไฟ 12V DC ภายนอก** ผ่าน Relay ไปยัง Solenoid ×10
+
+### วงจรต่อ Solenoid แต่ละตัว:
+
+```
+                    Relay Module
+                    ┌──────────────┐
+12V DC (+) ────────►│ COM (Common) │
+                    │              │
+                    │ NO  (Normal  │──────► Solenoid (+)
+                    │      Open)   │
+                    │              │       Solenoid (-)
+                    │ NC  (Normal  │        │
+                    │      Close)  │        │
+                    └──────────────┘        │
+                                            │
+12V DC (-) ◄────────────────────────────────┘
+```
+
+### วิธีต่อ (ทำซ้ำ 10 ชุด):
+
+1. ต่อสาย **12V DC (+) แดง** เข้าขา **COM** ของ Relay ช่องนั้น
+2. ต่อสายจากขา **NO** ของ Relay ไปยังขา **(+)** ของ Solenoid
+3. ต่อขา **(-)** ของ Solenoid กลับไปที่ **12V DC (-) ดำ**
+4. ทำซ้ำสำหรับ Relay ช่อง 1-10 กับ Solenoid ตัวที่ 1-10
+
+> ⚠️ **ห้ามต่อ Solenoid กับไฟจาก RPi โดยตรง — ต้องผ่าน Relay เท่านั้น!**
+
+> 💡 **ใช้ NO (Normal Open)** = ปกติ solenoid จะ **ล็อค** อยู่
+> เมื่อ Relay เปิด (GPIO HIGH) → วงจร NO จะต่อ → Solenoid ปลดล็อค
+
+### เลือก Power Supply:
+
+| Solenoid | กระแส/ตัว | 10 ตัว | Power Supply แนะนำ |
+|----------|-----------|--------|---------------------|
+| 12V DC   | ~300mA    | ~3A    | 12V 5A (มี margin) |
+
+---
+
+## สรุป Pin ทั้งหมดที่ใช้
+
+```
+Pin  1 (3.3V)  ── NFC VCC (shared)
+Pin  2 (5V)    ── Relay VCC
+Pin  3 (GPIO2) ── NFC RST (shared)
+Pin  6 (GND)   ── NFC GND (shared)
+Pin  7 (GPIO4) ── CS slot 1
+Pin  8 (GPIO14)── Relay slot 7  ⚠️
+Pin  9 (GND)   ── Relay GND
+Pin 10 (GPIO15)── Relay slot 8  ⚠️
+Pin 11 (GPIO17)── Relay slot 1
+Pin 12 (GPIO18)── Relay slot 9
+Pin 13 (GPIO27)── Relay slot 2
+Pin 15 (GPIO22)── Relay slot 3
+Pin 16 (GPIO23)── Relay slot 4
+Pin 18 (GPIO24)── Relay slot 5
+Pin 19 (GPIO10)── NFC MOSI (shared)
+Pin 21 (GPIO9) ── NFC MISO (shared)
+Pin 22 (GPIO25)── Relay slot 6
+Pin 23 (GPIO11)── NFC SCK (shared)
+Pin 27 (GPIO0) ── Relay slot 10
+Pin 29 (GPIO5) ── CS slot 2
+Pin 31 (GPIO6) ── CS slot 3
+Pin 32 (GPIO12)── CS slot 4
+Pin 33 (GPIO13)── CS slot 5
+Pin 35 (GPIO19)── CS slot 7
+Pin 36 (GPIO16)── CS slot 6
+Pin 37 (GPIO26)── CS slot 10
+Pin 38 (GPIO20)── CS slot 8
+Pin 40 (GPIO21)── CS slot 9
+```
+
+**Pin ที่ไม่ได้ใช้:** 4, 5, 14, 17, 20, 24, 25, 26, 28, 30, 34, 39
+
+---
+
+## นับสายทั้งหมด
+
+| ส่วน | จำนวนสาย | ประเภทสาย |
+|------|---------|-----------|
+| SPI Bus (MOSI/MISO/SCK/RST/VCC/GND) | 6 เส้น (shared) | จัมเปอร์ F-F |
+| NFC CS แยกทีละตัว ×10 | 10 เส้น | จัมเปอร์ F-F |
+| Relay GPIO ×10 + VCC + GND | 12 เส้น | จัมเปอร์ F-F |
+| Solenoid ↔ Relay (NO + COM) ×10 | 20 เส้น | สายไฟ 12V |
+| 12V DC Power → Relay COM ×10 | -(รวมข้างบน) | สายไฟ 12V |
+| **รวมสายจัมเปอร์ (RPi → อุปกรณ์)** | **~28 เส้น** | |
+| **รวมสายไฟ 12V (Relay → Solenoid)** | **~20 เส้น** | |
+| **รวมทั้งหมด** | **~48 เส้น** | |
+
+---
+
+## ลำดับการต่อสายที่แนะนำ
+
+1. 🔌 **ปิดไฟ RPi ก่อนต่อสาย** — ห้ามต่อขณะเปิดเครื่อง
+2. 🔵 ต่อ SPI Bus (6 เส้น shared) — MOSI, MISO, SCK, RST, VCC, GND
+3. 🟢 ต่อ NFC CS/SDA (10 เส้น แยกตัว) — ตรวจ slot ให้ตรงกับ GPIO
+4. 🔴 ต่อ Relay Module (12 เส้น) — VCC, GND, IN1-IN10
+5. 🟡 ต่อ Solenoid ↔ Relay (20 เส้น) — COM, NO, 12V DC
+6. ✅ ตรวจสอบทุกจุดต่ออีกครั้ง
+7. ⚡ เปิดเครื่อง RPi + เปิดไฟ 12V DC
+8. 🧪 ทดสอบ: `sudo systemctl start kiosk-hardware && journalctl -u kiosk-hardware -f`
+
+> 💡 **Tips**: ติดป้ายหมายเลข slot ที่สายแต่ละเส้นเพื่อง่ายต่อการ debug

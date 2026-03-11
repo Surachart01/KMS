@@ -37,11 +37,10 @@ const SLOT_PIN_MAP = {
     4: 23,
     5: 24,
     6: 25,
-    // เพิ่ม slot 7-10 ตาม wiring จริง
-    // 7: 14,
-    // 8: 15,
-    // 9: 18,
-    // 10: 0,
+    7: 14,   // Pin 8  — ⚠️ UART TX (ต้อง disable serial ใน raspi-config)
+    8: 15,   // Pin 10 — ⚠️ UART RX (ต้อง disable serial ใน raspi-config)
+    9: 18,   // Pin 12
+    10: 0,   // Pin 27
 };
 
 /** CS (SDA) pin ของ RC522 แต่ละ slot (BCM numbering) */
