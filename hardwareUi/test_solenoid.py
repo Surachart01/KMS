@@ -13,8 +13,8 @@ import signal
 import sys
 import time
 
-# GPIO Chip — Raspberry Pi 5 ใช้ gpiochip4
-CHIP_NAME = "gpiochip4"
+# GPIO Chip — Raspberry Pi 5 ใช้ /dev/gpiochip4 (บาง OS อาจเป็น gpiochip0)
+CHIP_PATHS = ["/dev/gpiochip4", "/dev/gpiochip0"]
 
 # Relay Pin Map (BCM) — ตรงกับ SLOT_PIN_MAP ใน hardware.js
 SLOT_PIN_MAP = {
@@ -39,8 +39,21 @@ def setup_gpio():
     """เปิด GPIO chip และ request ทุก pin เป็น output"""
     global chip, lines
 
-    chip = gpiod.Chip(CHIP_NAME)
-    print(f"📟 เปิด GPIO chip: {CHIP_NAME}")
+    # Auto-detect GPIO chip
+    for path in CHIP_PATHS:
+        try:
+            chip = gpiod.Chip(path)
+            print(f"📟 เปิด GPIO chip: {path}")
+            break
+        except (FileNotFoundError, OSError):
+            print(f"⚠️  {path} ไม่พบ — ลองตัวถัดไป...")
+    else:
+        # แสดง chip ที่มีอยู่จริง
+        import glob
+        available = glob.glob("/dev/gpiochip*")
+        print(f"❌ ไม่พบ GPIO chip! มีอยู่ในระบบ: {available}")
+        print("   ลองแก้ CHIP_PATHS ในไฟล์นี้ให้ตรง")
+        sys.exit(1)
 
     for slot, pin in sorted(SLOT_PIN_MAP.items()):
         config = gpiod.LineSettings(
