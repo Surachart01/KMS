@@ -43,17 +43,17 @@ export default function StaffLayout({ children }) {
                 const userData = JSON.parse(userCookie);
                 setUser(userData);
             } catch (error) {
-                router.push("/login");
+                router.push("/");
             }
         } else {
-            router.push("/login");
+            router.push("/");
         }
     }, [router]);
 
     const handleLogout = () => {
         Cookies.remove("token");
         Cookies.remove("user");
-        router.push("/login");
+        router.push("/");
     };
 
     const menuItems = [

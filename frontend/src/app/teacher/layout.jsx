@@ -35,15 +35,15 @@ export default function TeacherLayout({ children }) {
                 const userData = JSON.parse(userCookie);
                 // เฉพาะ TEACHER หรือ ADMIN ก็ได้ แต่หลักๆ คือ TEACHER
                 if (userData.role !== "TEACHER" && userData.role !== "ADMIN") {
-                    router.replace("/login");
+                    router.replace("/");
                     return;
                 }
                 setUser(userData);
             } catch {
-                router.replace("/login");
+                router.replace("/");
             }
         } else {
-            router.replace("/login");
+            router.replace("/");
         }
     }, [router]);
 

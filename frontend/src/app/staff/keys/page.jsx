@@ -27,6 +27,7 @@ import {
     CopyOutlined,
     CheckCircleOutlined,
     CloseCircleOutlined,
+    SendOutlined,
 } from "@ant-design/icons";
 import { keysAPI } from "@/service/api";
 
@@ -55,6 +56,7 @@ export default function KeysPage() {
     const [nfcTargetKey, setNfcTargetKey] = useState(null);
     const [nfcUidInput, setNfcUidInput] = useState("");
     const [copied, setCopied] = useState(false);
+    const [writingNfc, setWritingNfc] = useState(false);
 
     useEffect(() => { fetchKeys(); }, []);
 
@@ -120,6 +122,21 @@ export default function KeysPage() {
         } catch (e) { message.error(e.response?.data?.message || "ไม่สามารถบันทึก UID ได้"); }
     };
 
+    const handleWriteNfc = async () => {
+        if (!nfcUidInput.trim() || !nfcTargetKey?.id) return;
+        setWritingNfc(true);
+        try {
+            const res = await keysAPI.writeNfc(nfcTargetKey.id, nfcUidInput.trim());
+            message.success(res.data?.message || "เขียน NFC สำเร็จ!");
+            setNfcModalVisible(false);
+            fetchKeys();
+        } catch (e) {
+            message.error(e.response?.data?.message || "เขียน NFC ไม่สำเร็จ");
+        } finally {
+            setWritingNfc(false);
+        }
+    };
+
     const handleClearNfcUid = async () => {
         try {
             await keysAPI.update(nfcTargetKey.id, { nfcUid: null });
@@ -183,7 +200,7 @@ export default function KeysPage() {
                     <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd} size="large">เพิ่มกุญแจ</Button>
                 </div>
                 <Card className="feature-card">
-                    <Table columns={columns} dataSource={keys} rowKey="id" loading={loading} pagination={{ pageSize: 10 }} />
+                    <Table columns={columns} dataSource={keys} rowKey="id" loading={loading} pagination={{ defaultPageSize: 10 }} />
                 </Card>
             </Space>
 
@@ -213,6 +230,11 @@ export default function KeysPage() {
                         </Popconfirm>
                     ),
                     <Button key="cancel" onClick={() => setNfcModalVisible(false)}>ยกเลิก</Button>,
+                    <Button key="write" icon={<SendOutlined />} onClick={handleWriteNfc}
+                        disabled={!nfcUidInput.trim() || writingNfc}
+                        loading={writingNfc}
+                        style={{ background: '#1890ff', color: 'white', borderColor: '#1890ff' }}
+                    >{writingNfc ? 'กำลังเขียน...' : 'เขียนลง NFC'}</Button>,
                     <Button key="save" type="primary" onClick={handleSaveNfcUid} disabled={!nfcUidInput.trim()}>บันทึก</Button>,
                 ]}
                 width={460}

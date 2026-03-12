@@ -535,6 +535,13 @@ io.on('connection', (socket) => {
     }
   });
 
+  // ── nfc:write-result — RPi ส่งผลเขียน NFC กลับ ──
+  socket.on('nfc:write-result', (data) => {
+    console.log(`🏷️  nfc:write-result: slot=${data.slotNumber}, success=${data.success}`);
+    // forward ไปยัง io level เพื่อให้ controller key.js รับได้
+    io.emit('nfc:write-result', data);
+  });
+
   socket.on('disconnect', () => {
     console.log(`🔌 Socket disconnected: ${socket.id}`);
   });

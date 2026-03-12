@@ -242,3 +242,82 @@ export const deleteKey = async (req, res) => {
         return res.status(500).json({ message: "เกิดข้อผิดพลาดในการลบข้อมูล" });
     }
 };
+
+/**
+ * POST /api/keys/:id/nfc-write
+ * สั่ง RPi เขียน NFC UID ลง tag ที่ช่อง slotNumber ของกุญแจนั้น
+ * Body: { uid: string }
+ */
+export const writeNfcTag = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { uid } = req.body;
+
+        if (!uid || !uid.trim()) {
+            return res.status(400).json({ message: "กรุณาระบุ NFC UID" });
+        }
+
+        // หากุญแจเพื่อเอา slotNumber
+        const key = await prisma.key.findUnique({ where: { id } });
+        if (!key) {
+            return res.status(404).json({ message: "ไม่พบกุญแจ" });
+        }
+
+        // ส่งคำสั่ง write ไป RPi ผ่าน Socket.IO
+        const io = req.app.get('io');
+        if (!io) {
+            return res.status(500).json({ message: "Socket.IO ยังไม่พร้อม" });
+        }
+
+        // emit ไป gpio room แล้วรอ result (timeout 15 วินาที)
+        const writePromise = new Promise((resolve) => {
+            const timeout = setTimeout(() => {
+                resolve({ success: false, message: "หมดเวลารอ RPi ตอบกลับ (15 วินาที)" });
+            }, 15000);
+
+            // ฟัง result จาก RPi (ครั้งเดียว)
+            const handler = (data) => {
+                if (data.slotNumber === key.slotNumber) {
+                    clearTimeout(timeout);
+                    io.removeListener('nfc:write-result', handler);
+                    resolve(data);
+                }
+            };
+
+            // ฟังจากทุก socket ใน gpio room
+            io.on('nfc:write-result', handler);
+
+            // ส่งคำสั่ง write ไป RPi
+            io.to('gpio').emit('nfc:write', {
+                slotNumber: key.slotNumber,
+                uid: uid.trim(),
+                roomCode: key.roomCode,
+            });
+
+            console.log(`🏷️ [NFC Write] สั่ง RPi เขียน UID ${uid} ลง slot ${key.slotNumber} (${key.roomCode})`);
+        });
+
+        const result = await writePromise;
+
+        if (result.success) {
+            // เขียนสำเร็จ → บันทึก UID ลง DB ด้วย
+            await prisma.key.update({
+                where: { id },
+                data: { nfcUid: uid.trim() },
+            });
+
+            return res.status(200).json({
+                message: `เขียน NFC UID สำเร็จ (ห้อง ${key.roomCode}, ช่อง ${key.slotNumber})`,
+                data: { uid: uid.trim(), slotNumber: key.slotNumber },
+            });
+        } else {
+            return res.status(500).json({
+                message: result.message || "เขียน NFC ไม่สำเร็จ",
+            });
+        }
+    } catch (error) {
+        console.error("Error writing NFC:", error);
+        return res.status(500).json({ message: "เกิดข้อผิดพลาดในการเขียน NFC" });
+    }
+};
+

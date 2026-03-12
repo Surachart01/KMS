@@ -395,7 +395,7 @@ export default function AuthorizationPage() {
                                             rowKey="id"
                                             size="small"
                                             pagination={{
-                                                pageSize: 20,
+                                                defaultPageSize: 20,
                                                 showSizeChanger: true,
                                                 showTotal: (total) => `ทั้งหมด ${total} รายการ`,
                                             }}

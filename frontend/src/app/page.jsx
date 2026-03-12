@@ -9,6 +9,7 @@ import { CloudCog } from "lucide-react";
 const { Title, Text } = Typography;
 import { useRouter } from "next/navigation";
 import Cookies from "js-cookie";
+import { jwtDecode } from "jwt-decode";
 
 export default function LoginPage() {
   const [loading, setLoading] = useState(false);
@@ -25,6 +26,40 @@ export default function LoginPage() {
       return () => clearTimeout(timer);
     }
   }, [countdown]);
+
+  // Check if already logged in
+  useEffect(() => {
+    const token = Cookies.get("token");
+    const userStr = Cookies.get("user");
+
+    if (token && userStr) {
+      try {
+        const decoded = jwtDecode(token);
+        const currentTime = Date.now() / 1000;
+
+        if (decoded.exp && decoded.exp > currentTime) {
+          const user = JSON.parse(userStr);
+          if (user.role === 'TEACHER') {
+            router.replace("/teacher");
+          } else if (user.role === 'STUDENT') {
+            router.replace("/student");
+          } else {
+            router.replace("/staff/dashboard");
+          }
+        } else {
+          // Token expired
+          console.warn("Token expired");
+          Cookies.remove("token");
+          Cookies.remove("user");
+        }
+      } catch (e) {
+        // Invalid token or cookie
+        console.error("Invalid token or user cookie", e);
+        Cookies.remove("token");
+        Cookies.remove("user");
+      }
+    }
+  }, [router]);
 
 
 

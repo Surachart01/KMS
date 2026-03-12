@@ -439,7 +439,7 @@ export default function TeacherSchedulesPage() {
                             columns={columns}
                             dataSource={schedules}
                             rowKey="id"
-                            pagination={{ pageSize: 20 }}
+                            pagination={{ defaultPageSize: 20 }}
                             size="middle"
                             defaultSortOrder="ascend"
                         />

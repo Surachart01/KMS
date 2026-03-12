@@ -40,13 +40,12 @@ body,
 #root {
     width: 100%;
     height: 100%;
-    overflow: hidden;
     font-family: var(--font);
     background: linear-gradient(135deg, var(--surface-2) 0%, var(--surface) 50%, var(--surface-3) 100%);
     color: var(--text);
     -webkit-font-smoothing: antialiased;
-    user-select: none;
     cursor: default;
+    touch-action: pan-y;
 }
 
 .app {

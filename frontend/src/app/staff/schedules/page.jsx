@@ -526,7 +526,7 @@ export default function SchedulesPage() {
                         dataSource={schedules}
                         loading={loading}
                         rowKey="id"
-                        pagination={{ pageSize: 20 }}
+                        pagination={{ defaultPageSize: 20 }}
                     />
                 </Card>
             </Space>

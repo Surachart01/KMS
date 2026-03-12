@@ -13,15 +13,6 @@ import { borrowReasonsAPI } from "@/service/api";
 
 const { Title } = Typography;
 
-function formatDuration(minutes) {
-    if (minutes == null || minutes === 0) return null; // ไม่จำกัด
-    const h = Math.floor(minutes / 60);
-    const m = minutes % 60;
-    if (h > 0 && m > 0) return `${h} ชม. ${m} น.`;
-    if (h > 0) return `${h} ชม.`;
-    return `${m} น.`;
-}
-
 export default function BorrowReasonsPage() {
     const [reasons, setReasons] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -47,7 +38,7 @@ export default function BorrowReasonsPage() {
     const handleAdd = () => {
         setEditingReason(null);
         form.resetFields();
-        form.setFieldsValue({ isActive: true, order: (reasons.length + 1) * 10, durationMinutes: 120 });
+        form.setFieldsValue({ isActive: true, order: (reasons.length + 1) * 10 });
         setModalVisible(true);
     };
 
@@ -57,7 +48,6 @@ export default function BorrowReasonsPage() {
             label: record.label,
             order: record.order,
             isActive: record.isActive,
-            durationMinutes: record.durationMinutes ?? 120,
         });
         setModalVisible(true);
     };
@@ -119,18 +109,7 @@ export default function BorrowReasonsPage() {
                 </Space>
             ),
         },
-        {
-            title: "เวลาเบิกได้",
-            dataIndex: "durationMinutes",
-            key: "durationMinutes",
-            width: 140,
-            align: "center",
-            render: (minutes) => {
-                const label = formatDuration(minutes);
-                if (!label) return <Tag color="green">∞ ไม่จำกัด</Tag>;
-                return <Tag color="blue">⏱ {label}</Tag>;
-            },
-        },
+
         {
             title: "สถานะ",
             dataIndex: "isActive",
@@ -191,7 +170,7 @@ export default function BorrowReasonsPage() {
                         dataSource={reasons}
                         rowKey="id"
                         loading={loading}
-                        pagination={{ pageSize: 20 }}
+                        pagination={{ defaultPageSize: 20 }}
                         size="middle"
                         locale={{ emptyText: "ยังไม่มีเหตุผล" }}
                     />
@@ -216,20 +195,7 @@ export default function BorrowReasonsPage() {
                         <Input placeholder="เช่น สอนชดเชย, ซ่อมบำรุง, ประชุม" maxLength={100} showCount />
                     </Form.Item>
 
-                    <Form.Item
-                        name="durationMinutes"
-                        label="เวลาที่เบิกได้ (นาที)"
-                        extra="เช่น 60 = 1 ชั่วโมง, 120 = 2 ชั่วโมง — ถ้าไม่กรอก = ไม่จำกัดเวลา"
-                    >
-                        <InputNumber
-                            style={{ width: "100%" }}
-                            min={15}
-                            max={480}
-                            step={15}
-                            addonAfter="นาที"
-                            placeholder="120"
-                        />
-                    </Form.Item>
+
 
                     <Form.Item name="order" label="ลำดับแสดงผล (น้อย = ขึ้นก่อน)">
                         <InputNumber style={{ width: "100%" }} min={0} max={999} />

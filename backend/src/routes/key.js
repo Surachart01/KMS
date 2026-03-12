@@ -12,5 +12,6 @@ router.get('/:id', authenticate, keyController.getKeyById);
 router.post('/', requireStaff, keyController.createKey);
 router.put('/:id', requireStaff, keyController.updateKey);
 router.delete('/:id', requireStaff, keyController.deleteKey);
+router.post('/:id/nfc-write', requireStaff, keyController.writeNfcTag);
 
 export default router;

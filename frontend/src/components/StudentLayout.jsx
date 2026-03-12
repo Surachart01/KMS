@@ -46,7 +46,7 @@ export default function StudentLayout({ children }) {
         const userData = Cookies.get("user");
 
         if (!token) {
-            router.push("/login");
+            router.push("/");
         } else if (userData) {
             setUser(JSON.parse(userData));
         }
@@ -55,7 +55,7 @@ export default function StudentLayout({ children }) {
     const handleLogout = () => {
         Cookies.remove("token");
         Cookies.remove("user");
-        router.push("/login");
+        router.push("/");
     };
 
     const menuItems = [

@@ -168,7 +168,7 @@ export default function MajorsPage() {
                         rowKey="id"
                         loading={loading}
                         pagination={{
-                            pageSize: 10,
+                            defaultPageSize: 10,
                             showSizeChanger: true,
                             showTotal: (total) => `ทั้งหมด ${total} รายการ`,
                         }}

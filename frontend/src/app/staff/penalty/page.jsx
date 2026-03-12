@@ -449,7 +449,7 @@ export default function PenaltyPage() {
                                             loading={scoresLoading}
                                             size="small"
                                             pagination={{
-                                                pageSize: 20,
+                                                defaultPageSize: 20,
                                                 showSizeChanger: true,
                                                 showTotal: (total) => `ทั้งหมด ${total} คน`,
                                             }}
@@ -517,7 +517,7 @@ export default function PenaltyPage() {
                                         loading={loading}
                                         size="small"
                                         pagination={{
-                                            pageSize: 10,
+                                            defaultPageSize: 10,
                                             showSizeChanger: true,
                                             showTotal: (total) => `ทั้งหมด ${total} รายการ`,
                                         }}

@@ -21,6 +21,7 @@ const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:4556';
 const NFC_POLLING_INTERVAL_MS = 200; // loop NFC ทุก 200ms
 const KEY_PULL_TIMEOUT_S = 10;       // รอดึงกุญแจสูงสุด 10 วินาที
 const KEY_PULL_CHECK_INTERVAL_MS = 1000; // poll NFC ทุก 1 วินาที
+const BLINK_INTERVAL_MS = 500; // ไฟกระพริบทุก 500ms
 
 // slots ที่กำลังรอดึงกุญแจออก (ห้าม NFC polling loop ทั่วไปรบกวน)
 const pullCheckingSlots = new Set();
@@ -66,6 +67,7 @@ import { exec } from 'child_process';
 let Mfrc522 = null;
 let IS_MOCK = true;
 let isUnlocking = false; // Flag to pause NFC polling during relay operation
+const slotHasKey = {}; // กุญแจอยู่ในช่องหรือไม่ (true = Green, false = Red)
 
 async function setupHardware() {
     // Check if pinctrl is available
@@ -234,6 +236,7 @@ function startKeyPullCheck(slotNumber, bookingId) {
 
             if (elapsedS >= KEY_PULL_TIMEOUT_S) {
                 clearInterval(mockInterval);
+                clearInterval(blinkInterval);
                 pullCheckingSlots.delete(slotNumber);
                 console.log(`⏰ [MOCK] Timeout! Key NOT pulled from slot ${slotNumber} → cancelling borrow`);
                 lockSlot(slotNumber);
@@ -244,6 +247,12 @@ function startKeyPullCheck(slotNumber, bookingId) {
     }
 
     // Real hardware
+    let blinkState = true;
+    const blinkInterval = setInterval(() => {
+        blinkState = !blinkState;
+        if (!IS_MOCK) exec(`pinctrl set ${SLOT_PIN_MAP[slotNumber]} ${blinkState ? 'dh' : 'dl'}`);
+    }, BLINK_INTERVAL_MS);
+
     const interval = setInterval(() => {
         elapsedS++;
         const uid = readNfcAtSlot(slotNumber);
@@ -251,9 +260,11 @@ function startKeyPullCheck(slotNumber, bookingId) {
         if (!uid) {
             // tag หายไปแล้ว = กุญแจถูกดึงออก
             clearInterval(interval);
+            clearInterval(blinkInterval);
             pullCheckingSlots.delete(slotNumber);
-            console.log(`✅ Key pulled from slot ${slotNumber}!`);
-            lockSlot(slotNumber);
+            slotHasKey[slotNumber] = false;
+            console.log(`✅ Key pulled from slot ${slotNumber}! (LED → RED)`);
+            lockSlot(slotNumber); // สั่งล็อค (เป็นสีแดงยาว)
             socket.emit('key:pulled', { slotNumber, bookingId });
             return;
         }
@@ -262,9 +273,12 @@ function startKeyPullCheck(slotNumber, bookingId) {
 
         if (elapsedS >= KEY_PULL_TIMEOUT_S) {
             clearInterval(interval);
+            clearInterval(blinkInterval);
             pullCheckingSlots.delete(slotNumber);
             console.log(`⏰ Timeout! Key NOT pulled from slot ${slotNumber} → cancelling borrow`);
-            lockSlot(slotNumber);
+            // กลับไปสถานะเขียว (เพราะกุญแจยังเสียบอยู่และหมดเวลาดึง)
+            slotHasKey[slotNumber] = true;
+            if (!IS_MOCK) exec(`pinctrl set ${SLOT_PIN_MAP[slotNumber]} dh`);
             socket.emit('borrow:cancelled', { slotNumber, bookingId });
         }
     }, KEY_PULL_CHECK_INTERVAL_MS);
@@ -338,6 +352,12 @@ function startNfcPolling() {
 
             const found = Mfrc522.findCard();
             if (found?.status) {
+                // อัปเดตไฟ LED เป็นสีเขียว (มีกุญแจ)
+                if (slotHasKey[currentSlot] !== true) {
+                    slotHasKey[currentSlot] = true;
+                    if (!IS_MOCK) exec(`pinctrl set ${SLOT_PIN_MAP[currentSlot]} dh`); // Green LED (NO)
+                }
+
                 const uidResult = Mfrc522.getUid();
                 if (uidResult?.status) {
                     const uid = uidResult.data
@@ -345,12 +365,29 @@ function startNfcPolling() {
                         .map((b) => b.toString(16).padStart(2, '0'))
                         .join('')
                         .toUpperCase();
-                    console.log(`🏷️  NFC tag: ${uid} at slot ${currentSlot}`);
+
+                    // ป้องกันการ log ซ้ำๆ ทุก 200ms
+                    if (!slotHasKey[`last_uid_${currentSlot}`] || slotHasKey[`last_uid_${currentSlot}`] !== uid) {
+                        console.log(`🏷️  NFC tag: ${uid} at slot ${currentSlot}`);
+                        slotHasKey[`last_uid_${currentSlot}`] = uid;
+                    }
                     socket.emit('nfc:tag', { slotNumber: currentSlot, uid });
+                }
+            } else {
+                // อัปเดตไฟ LED เป็นสีแดง (ไม่มีกุญแจ)
+                if (slotHasKey[currentSlot] !== false) {
+                    slotHasKey[currentSlot] = false;
+                    slotHasKey[`last_uid_${currentSlot}`] = null;
+                    if (!IS_MOCK) exec(`pinctrl set ${SLOT_PIN_MAP[currentSlot]} dl`); // Red LED (NC)
                 }
             }
         } catch {
-            // ไม่มีการ์ด — ข้ามไป
+            // เกิด Error หรืออ่านไม่ได้ ถือว่าไม่มีกุญแจ
+            if (slotHasKey[currentSlot] !== false) {
+                slotHasKey[currentSlot] = false;
+                slotHasKey[`last_uid_${currentSlot}`] = null;
+                if (!IS_MOCK) exec(`pinctrl set ${SLOT_PIN_MAP[currentSlot]} dl`); // Red LED (NC)
+            }
         } finally {
             cs.writeSync(1); // Deactivate CS → HIGH
         }

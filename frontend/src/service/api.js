@@ -69,7 +69,8 @@ export const keysAPI = {
     getById: (id) => apiClient.get(`/api/keys/${id}`),
     create: (data) => apiClient.post('/api/keys', data),
     update: (id, data) => apiClient.put(`/api/keys/${id}`, data),
-    delete: (id) => apiClient.delete(`/api/keys/${id}`)
+    delete: (id) => apiClient.delete(`/api/keys/${id}`),
+    writeNfc: (id, uid) => apiClient.post(`/api/keys/${id}/nfc-write`, { uid }),
 };
 
 // ================== USER API ==================
