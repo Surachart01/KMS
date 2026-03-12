@@ -1,5 +1,5 @@
 import { PrismaClient } from "@prisma/client";
-import { HardwareEvents } from "../../server.js";
+import { HardwareEvents } from '../utils/hardwareEvents.js';
 
 const prisma = new PrismaClient();
 

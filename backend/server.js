@@ -9,10 +9,7 @@ import dotenv from 'dotenv';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import { PrismaClient } from '@prisma/client';
-import { EventEmitter } from 'events';
-
-// สร้าง Global Event Emitter สำหรับสื่อสารข้ามไฟล์
-export const HardwareEvents = new EventEmitter();
+import { HardwareEvents } from './src/utils/hardwareEvents.js';
 
 import authRouter from './src/routes/auth.js';
 import usersRouter from './src/routes/users.js';
