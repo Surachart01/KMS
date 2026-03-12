@@ -513,6 +513,13 @@ io.on('connection', (socket) => {
     io.to('kiosk').emit('borrow:cancelled', { slotNumber, bookingId });
   });
 
+  // ── nfc:write-result — รับผลการเขียน NFC จาก RPi แล้วส่งต่อให้ Controller ──
+  socket.on('nfc:write-result', (data) => {
+    console.log(`✅ nfc:write-result: slot=${data.slotNumber}, success=${data.success}`);
+    // Re-emit บน io ระดับโกลบอลเพื่อให้ controller ดัก event นี้ได้
+    io.emit('nfc:write-result', data);
+  });
+
   // ── nfc:register-mode — Staff สั่งให้ RPi อยู่ใน mode รับ UID ครั้งเดียว ──
   // Hardware จะ emit nfc:tag event กลับมา ซึ่ง backend จะ forward ให้ staff client นั้น
   socket.on('nfc:register-mode', (data) => {
