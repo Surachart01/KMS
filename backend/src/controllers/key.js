@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import { HardwareEvents } from "../../server.js";
 
 const prisma = new PrismaClient();
 
@@ -252,6 +253,7 @@ export const writeNfcTag = async (req, res) => {
     try {
         const { id } = req.params;
         const { uid } = req.body;
+        console.log(`\n\n[API ENTRY] POST /api/keys/${id}/nfc-write - Body:`, req.body);
 
         if (!uid || !uid.trim()) {
             return res.status(400).json({ message: "กรุณาระบุ NFC UID" });
@@ -279,15 +281,15 @@ export const writeNfcTag = async (req, res) => {
             const handler = (data) => {
                 if (data.slotNumber === key.slotNumber) {
                     clearTimeout(timeout);
-                    io.removeListener('nfc:write-result', handler);
+                    HardwareEvents.removeListener('nfc:write-result', handler);
                     resolve(data);
                 }
             };
 
-            // ฟังจากทุก socket ใน gpio room
-            io.on('nfc:write-result', handler);
+            // ฟังจาก global emitter ที่มาจาก socket.on ใน server.js
+            HardwareEvents.on('nfc:write-result', handler);
 
-            // ส่งคำสั่ง write ไป RPi
+            // ส่งคำสั่ง write ไป RPi (ผ่าน Socket.IO)
             io.to('gpio').emit('nfc:write', {
                 slotNumber: key.slotNumber,
                 uid: uid.trim(),

@@ -9,6 +9,11 @@ import dotenv from 'dotenv';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import { PrismaClient } from '@prisma/client';
+import { EventEmitter } from 'events';
+
+// สร้าง Global Event Emitter สำหรับสื่อสารข้ามไฟล์
+export const HardwareEvents = new EventEmitter();
+
 import authRouter from './src/routes/auth.js';
 import usersRouter from './src/routes/users.js';
 import majorRouter from './src/routes/major.js';
@@ -516,8 +521,8 @@ io.on('connection', (socket) => {
   // ── nfc:write-result — รับผลการเขียน NFC จาก RPi แล้วส่งต่อให้ Controller ──
   socket.on('nfc:write-result', (data) => {
     console.log(`✅ nfc:write-result: slot=${data.slotNumber}, success=${data.success}`);
-    // Re-emit บน io ระดับโกลบอลเพื่อให้ controller ดัก event นี้ได้
-    io.emit('nfc:write-result', data);
+    // ส่ง Event ข้ามไฟล์ไปยัง controller (key.js) แทนการใช้ io.emit
+    HardwareEvents.emit('nfc:write-result', data);
   });
 
   // ── nfc:register-mode — Staff สั่งให้ RPi อยู่ใน mode รับ UID ครั้งเดียว ──
