@@ -19,8 +19,8 @@ dotenv.config();
 
 const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:4556';
 const NFC_POLLING_INTERVAL_MS = 200; // loop NFC ทุก 200ms
-const KEY_PULL_TIMEOUT_S = 10;       // รอดึงกุญแจสูงสุด 10 วินาที
-const KEY_PULL_CHECK_INTERVAL_MS = 1000; // poll NFC ทุก 1 วินาที
+const KEY_PULL_TIMEOUT_S = 15;       // รอดึงกุญแจ 15 วินาทีคงที่
+
 
 // slots ที่กำลังรอดึงกุญแจออก (ห้าม NFC polling loop ทั่วไปรบกวน)
 const pullCheckingSlots = new Set();
@@ -206,72 +206,58 @@ function readNfcAtSlot(slotNumber) {
 }
 
 /**
- * Key-Pull Verification
- * หลัง unlock → poll NFC ทุก 1s นาน KEY_PULL_TIMEOUT_S วินาที
- * - tag หาย  → emit 'key:pulled' → เบิกสำเร็จ
- * - หมดเวลา → lockSlot() + emit 'borrow:cancelled'
+ * Key-Pull Verification (Timed 15s)
+ * หลัง unlock → รอเวลา KEY_PULL_TIMEOUT_S วินาที (ให้ solenoid เปิดค้าง)
+ * เมื่อครบ 15s → เช็ค NFC 1 ครั้ง 
+ * - ถ้า tag หาย  → emit 'key:pulled' → เบิกสำเร็จ
+ * - ถ้า tag ยังอยู่ → emit 'borrow:cancelled'
+ * แล้วค่อย lockSlot() กลับสู่สถานะเดิม
  */
 function startKeyPullCheck(slotNumber, bookingId) {
     pullCheckingSlots.add(slotNumber);
-    console.log(`⏳ Key-pull check started: slot=${slotNumber} (${KEY_PULL_TIMEOUT_S}s timeout)`);
+    console.log(`⏳ Solenoid UNLOCKED for 15s... waiting to check NFC at slot=${slotNumber}`);
 
-    let elapsedS = 0;
-
-    // Mock mode: simulate กุญแจถูกดึงออกหลัง 3 วินาที
+    // Mock mode
     if (IS_MOCK || !Mfrc522) {
-        const mockInterval = setInterval(() => {
-            elapsedS++;
-            console.log(`🔍 [MOCK] Checking slot ${slotNumber}... elapsed=${elapsedS}s`);
-
-            if (elapsedS >= 3) {
-                // Simulate key pulled after 3s
-                clearInterval(mockInterval);
-                pullCheckingSlots.delete(slotNumber);
-                console.log(`✅ [MOCK] Key pulled from slot ${slotNumber}!`);
-                lockSlot(slotNumber);
-                socket.emit('key:pulled', { slotNumber, bookingId });
-                return;
-            }
-
-            if (elapsedS >= KEY_PULL_TIMEOUT_S) {
-                clearInterval(mockInterval);
-                pullCheckingSlots.delete(slotNumber);
-                console.log(`⏰ [MOCK] Timeout! Key NOT pulled from slot ${slotNumber} → cancelling borrow`);
-                lockSlot(slotNumber);
-                socket.emit('borrow:cancelled', { slotNumber, bookingId });
-            }
-        }, KEY_PULL_CHECK_INTERVAL_MS);
+        setTimeout(() => {
+            pullCheckingSlots.delete(slotNumber);
+            // จำลองว่ากุญแจถูกดึงออกเสมอใน mock
+            console.log(`✅ [MOCK] 15s passed. Key pulled from slot ${slotNumber}!`);
+            lockSlot(slotNumber);
+            socket.emit('key:pulled', { slotNumber, bookingId });
+        }, KEY_PULL_TIMEOUT_S * 1000);
         return;
     }
 
-    // Real hardware
-    const interval = setInterval(() => {
-        elapsedS++;
+    // Real hardware (รอ 15 วิ ค่อยเช็คบัตร)
+    setTimeout(() => {
         const uid = readNfcAtSlot(slotNumber);
 
+        pullCheckingSlots.delete(slotNumber);
+
         if (!uid) {
-            // tag หายไปแล้ว = กุญแจถูกดึงออก
-            clearInterval(interval);
-            pullCheckingSlots.delete(slotNumber);
+            // tag หายไปแล้ว = กุญแจถูกดึงออกสำเร็จ
             slotHasKey[slotNumber] = false;
-            console.log(`✅ Key pulled from slot ${slotNumber}! (LED → RED)`);
-            lockSlot(slotNumber); // สั่งล็อค (เป็นสีแดงยาว)
+            console.log(`✅ 15s passed... Key pulled from slot ${slotNumber}! (LED → RED)`);
+            lockSlot(slotNumber); // สั่งล็อคตู้ (ไฟแดง)
             socket.emit('key:pulled', { slotNumber, bookingId });
-            return;
-        }
-
-        console.log(`🔍 Slot ${slotNumber} still has tag (${elapsedS}s/${KEY_PULL_TIMEOUT_S}s)`);
-
-        if (elapsedS >= KEY_PULL_TIMEOUT_S) {
-            clearInterval(interval);
-            pullCheckingSlots.delete(slotNumber);
-            console.log(`⏰ Timeout! Key NOT pulled from slot ${slotNumber} → cancelling borrow`);
-            // กลับไปสถานะเขียว (เพราะกุญแจยังเสียบอยู่และหมดเวลาดึง)
+        } else {
+            // tag ยังอยู่ = ไม่ได้ดึงกุญแจออก
+            console.log(`⏰ 15s passed... Key STILL in slot ${slotNumber} → cancelling borrow`);
             slotHasKey[slotNumber] = true;
-            if (!IS_MOCK) exec(`pinctrl set ${SLOT_PIN_MAP[slotNumber]} dh`);
+            // ยังคงสถานะไฟเขียวไว้ แต่ lockSolt (ซึ่งในกรณีนี้ DH จะทำให้ไฟเขียวติดอยู่แล้ว)
+            // แต่จริงๆ lockSlot สั่ง dl ซึ่งจะทำให้เป็นไฟแดง ดังนั้นเราต้องสั่ง dh กลับถ้าบัตรยังอยู่
             socket.emit('borrow:cancelled', { slotNumber, bookingId });
+
+            // Re-assert green LED as lockSlot sets it to LOW(Red) blindly 
+            // แต่ถ้าจะให้ไฟเขียวค้าง ต้องสั่ง dh ตรงๆ
+            if (!IS_MOCK) {
+                exec(`pinctrl set ${SLOT_PIN_MAP[slotNumber]} dh`, (err) => {
+                    if (err) console.error(err);
+                });
+            }
         }
-    }, KEY_PULL_CHECK_INTERVAL_MS);
+    }, KEY_PULL_TIMEOUT_S * 1000);
 }
 
 // รับคำสั่ง unlock จาก Backend → เปิด solenoid → เริ่ม key-pull check
