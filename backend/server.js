@@ -356,6 +356,7 @@ io.on('connection', (socket) => {
           studentCode: data.studentCode,
           roomCode: data.roomCode,
           reason: data.reason || undefined,
+          returnByTime: data.returnByTime || undefined,
         },
       };
       const fakeRes = {

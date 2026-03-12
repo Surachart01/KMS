@@ -45,9 +45,9 @@ export function identifyUser(studentCode) {
     });
 }
 
-export function borrowKey(studentCode, roomCode, reason) {
+export function borrowKey(studentCode, roomCode, reason, returnByTime) {
     return new Promise((resolve) => {
-        socket.emit('key:borrow', { studentCode, roomCode, reason }, (response) => {
+        socket.emit('key:borrow', { studentCode, roomCode, reason, returnByTime }, (response) => {
             resolve(response);
         });
     });

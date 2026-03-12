@@ -386,11 +386,16 @@ export const borrowKey = async (req, res) => {
         const bookingSource = authorization ? "FACE_SCANNER" : "FACE_SCANNER_WITH_REASON";
         const bookingReason = authorization ? null : req.body.reason;
 
-        // กำหนดเวลาคืนตาม BorrowReason.durationMinutes
-        // - null = ไม่จำกัดเวลา (กรณีเบิกด้วยเหตุผลที่ไม่กำหนด duration)
-        // - default 4 ชั่วโมง สำหรับเบิกปกติ (มีสิทธิ์)
+        // กำหนดเวลาคืน:
+        // 1. ถ้า frontend ส่ง returnByTime มา → ใช้เป็น dueAt ตรงๆ
+        // 2. ถ้าเบิกด้วยเหตุผล → ดึง durationMinutes จาก BorrowReason DB
+        // 3. ถ้าเบิกปกติ (มีสิทธิ์) → 4 ชั่วโมง
         let dueAt;
-        if (bookingReason) {
+        if (req.body.returnByTime) {
+            // Frontend ส่งเวลาคืนมาแล้ว (เบิกนอกตาราง + เลือกเวลา)
+            dueAt = new Date(req.body.returnByTime);
+            console.log(`   ⏰ ใช้ returnByTime จาก frontend: ${dueAt.toISOString()}`);
+        } else if (bookingReason) {
             // เบิกด้วยเหตุผล → ดึง durationMinutes จาก DB
             try {
                 const matchedReason = await prisma.borrowReason.findFirst({

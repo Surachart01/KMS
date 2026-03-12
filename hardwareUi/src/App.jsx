@@ -453,11 +453,11 @@ export default function App() {
     };
 
     // ── Reason Submit (borrow) ──
-    const handleReasonSubmit = async (reason) => {
+    const handleReasonSubmit = async (reason, returnByTime) => {
         if (!scannedUser?.userId || !selectedRoom) return;
         setLoading(true);
         try {
-            const result = await borrowKey(scannedUser.userId, selectedRoom, reason);
+            const result = await borrowKey(scannedUser.userId, selectedRoom, reason, returnByTime);
             setBorrowResult(result);
             if (result?.success) {
                 setPage('success');

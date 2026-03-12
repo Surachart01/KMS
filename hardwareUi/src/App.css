@@ -817,6 +817,25 @@ body,
     gap: 10px;
 }
 
+.reason-step-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--primary-dark);
+    align-self: flex-start;
+    max-width: 450px;
+    width: 100%;
+    margin-bottom: -4px;
+}
+
+.reason-return-preview {
+    font-size: 0.9rem;
+    color: var(--primary-dark);
+    background: var(--surface-3);
+    padding: 8px 16px;
+    border-radius: var(--radius);
+    border: 1px solid rgba(22, 163, 74, 0.25);
+}
+
 /* ── Success Page ── */
 .success-icon-wrapper {
     width: 80px;
