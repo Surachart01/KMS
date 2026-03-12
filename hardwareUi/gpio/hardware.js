@@ -21,7 +21,6 @@ const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:4556';
 const NFC_POLLING_INTERVAL_MS = 200; // loop NFC ทุก 200ms
 const KEY_PULL_TIMEOUT_S = 10;       // รอดึงกุญแจสูงสุด 10 วินาที
 const KEY_PULL_CHECK_INTERVAL_MS = 1000; // poll NFC ทุก 1 วินาที
-const BLINK_INTERVAL_MS = 500; // ไฟกระพริบทุก 500ms
 
 // slots ที่กำลังรอดึงกุญแจออก (ห้าม NFC polling loop ทั่วไปรบกวน)
 const pullCheckingSlots = new Set();
@@ -236,7 +235,6 @@ function startKeyPullCheck(slotNumber, bookingId) {
 
             if (elapsedS >= KEY_PULL_TIMEOUT_S) {
                 clearInterval(mockInterval);
-                clearInterval(blinkInterval);
                 pullCheckingSlots.delete(slotNumber);
                 console.log(`⏰ [MOCK] Timeout! Key NOT pulled from slot ${slotNumber} → cancelling borrow`);
                 lockSlot(slotNumber);
@@ -247,12 +245,6 @@ function startKeyPullCheck(slotNumber, bookingId) {
     }
 
     // Real hardware
-    let blinkState = true;
-    const blinkInterval = setInterval(() => {
-        blinkState = !blinkState;
-        if (!IS_MOCK) exec(`pinctrl set ${SLOT_PIN_MAP[slotNumber]} ${blinkState ? 'dh' : 'dl'}`);
-    }, BLINK_INTERVAL_MS);
-
     const interval = setInterval(() => {
         elapsedS++;
         const uid = readNfcAtSlot(slotNumber);
@@ -260,7 +252,6 @@ function startKeyPullCheck(slotNumber, bookingId) {
         if (!uid) {
             // tag หายไปแล้ว = กุญแจถูกดึงออก
             clearInterval(interval);
-            clearInterval(blinkInterval);
             pullCheckingSlots.delete(slotNumber);
             slotHasKey[slotNumber] = false;
             console.log(`✅ Key pulled from slot ${slotNumber}! (LED → RED)`);
@@ -273,7 +264,6 @@ function startKeyPullCheck(slotNumber, bookingId) {
 
         if (elapsedS >= KEY_PULL_TIMEOUT_S) {
             clearInterval(interval);
-            clearInterval(blinkInterval);
             pullCheckingSlots.delete(slotNumber);
             console.log(`⏰ Timeout! Key NOT pulled from slot ${slotNumber} → cancelling borrow`);
             // กลับไปสถานะเขียว (เพราะกุญแจยังเสียบอยู่และหมดเวลาดึง)
