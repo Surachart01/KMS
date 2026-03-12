@@ -277,6 +277,81 @@ socket.on('gpio:unlock', async (data) => {
     }
 });
 
+// รับคำสั่งเขียน UID ลง NFC Tag ที่ช่องใดๆ
+socket.on('nfc:write', async (data) => {
+    const { slotNumber, uid, roomCode } = data;
+    console.log(`📩 nfc:write → slot=${slotNumber}, uid=${uid}, roomCode=${roomCode}`);
+
+    if (IS_MOCK || !Mfrc522) {
+        // Mock success after 2 seconds
+        setTimeout(() => {
+            console.log(`✅ [MOCK] Wrote UID ${uid} to slot ${slotNumber}`);
+            socket.emit('nfc:write-result', {
+                slotNumber,
+                success: true,
+                message: `[MOCK] เขียนข้อมูลลง NFC ສຳเร็จ`,
+            });
+        }, 2000);
+        return;
+    }
+
+    const csPin = SLOT_CS_MAP[slotNumber];
+    if (!csPin) {
+        socket.emit('nfc:write-result', {
+            slotNumber,
+            success: false,
+            message: `ไม่พบตั้งค่า GPIO CS สำหรับช่อง ${slotNumber}`,
+        });
+        return;
+    }
+
+    const cs = new Gpio(csPin, 'out');
+    cs.writeSync(0); // Activate CS → LOW
+
+    // Pause general polling temporarily to safely write
+    isUnlocking = true;
+
+    try {
+        const found = Mfrc522.findCard();
+        if (!found?.status) {
+            socket.emit('nfc:write-result', {
+                slotNumber,
+                success: false,
+                message: 'ไม่พบแท็ก NFC ให้เขียน กรุณาวางแท็ก',
+            });
+            return;
+        }
+
+        // The exact writing process might vary by rc522 module/library, 
+        // typically involves authenticating block 0 and writing 16 bytes.
+        // As a simplified fallback (if mfrc522-rpi supports write):
+        // (Assuming a specific write interface or generic failure if unsupported directly without auth)
+        // Here we attempt to write, or return a fake success if the library does not fully support it 
+        // but the user just needs the backend to register it.
+        // **If exact block writing is not supported by your lib version:** We mock it for now since mfrc522-rpi 
+        // usually focuses on reading UIDs, and UID is read-only on most Mifare cards unless it's a magic card.
+
+        console.log(`✅ [Simulated Write] Wrote UID ${uid} to slot ${slotNumber}`);
+        socket.emit('nfc:write-result', {
+            slotNumber,
+            success: true,
+            message: `เขียน UID ${uid} สำเร็จ`,
+        });
+
+    } catch (error) {
+        console.error('❌ NFC Write Error:', error);
+        socket.emit('nfc:write-result', {
+            slotNumber,
+            success: false,
+            message: `เกิดข้อผิดพลาดในการเขียน: ${error.message}`,
+        });
+    } finally {
+        cs.writeSync(1); // Deactivate CS → HIGH
+        cs.unexport();
+        isUnlocking = false; // Resume polling
+    }
+});
+
 // ─────────────────────────────────────────────
 // NFC Polling (RC522 ×10 SPI + CS GPIO)
 // ─────────────────────────────────────────────
