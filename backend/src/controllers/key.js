@@ -323,3 +323,68 @@ export const writeNfcTag = async (req, res) => {
     }
 };
 
+/**
+ * รอรับการสแกน NFC จากตู้กุญแจ (NFC Registration Flow)
+ * @route POST /api/keys/:id/nfc-read
+ * @access Staff
+ */
+export const readNfcTag = async (req, res) => {
+    try {
+        const { id } = req.params;
+        console.log(`\n\n[API ENTRY] POST /api/keys/${id}/nfc-read`);
+
+        // 1. ดึงข้อมูลกุญแจเพื่อหาว่าอยู่ช่องไหน (Slot)
+        const key = await prisma.key.findUnique({
+            where: { id },
+        });
+
+        if (!key) {
+            return res.status(404).json({ message: "ไม่พบข้อมูลกุญแจ" });
+        }
+
+        if (!key.slotNumber) {
+            return res.status(400).json({ message: "กุญแจนี้ยังไม่ได้ตั้งค่าช่องตู้ (Slot Number)" });
+        }
+
+        // 2. รอรับ event 'nfc:tag' (timeout 15 วินาที)
+        const readPromise = new Promise((resolve) => {
+            const timeout = setTimeout(() => {
+                resolve({ success: false, message: "หมดเวลารอให้อ่าน NFC เหรียญ (15 วินาที)" });
+            }, 15000);
+
+            // ฟัง result จาก RPi (ครั้งเดียว)
+            const handler = (data) => {
+                if (data.slotNumber === key.slotNumber) {
+                    clearTimeout(timeout);
+                    HardwareEvents.removeListener('nfc:tag', handler);
+                    resolve({ success: true, uid: data.uid, slotNumber: data.slotNumber });
+                }
+            };
+
+            // ฟังจาก global emitter ที่มาจาก socket.on ใน server.js
+            HardwareEvents.on('nfc:tag', handler);
+
+            console.log(`🏷️ [NFC Read] รอการทาบเหรียญที่ช่อง ${key.slotNumber} (${key.roomCode})...`);
+        });
+
+        const result = await readPromise;
+
+        if (!result.success) {
+            return res.status(500).json({ message: result.message });
+        }
+
+        console.log(`✅ [NFC Read] อ่านสำเร็จที่ช่อง ${result.slotNumber}: UID=${result.uid}`);
+
+        return res.status(200).json({
+            message: `อ่าน NFC UID สำเร็จ (ห้อง ${key.roomCode}, ช่อง ${key.slotNumber})`,
+            data: {
+                uid: result.uid,
+                slotNumber: result.slotNumber
+            }
+        });
+
+    } catch (error) {
+        console.error("Error reading NFC tag:", error);
+        return res.status(500).json({ message: "เกิดข้อผิดพลาดภายในเซิร์ฟเวอร์" });
+    }
+};

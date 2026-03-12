@@ -535,6 +535,9 @@ io.on('connection', (socket) => {
   socket.on('nfc:tag', (data) => {
     const { slotNumber, uid, staffSocketId } = data;
     console.log(`🏷️  nfc:tag received: uid=${uid}, slot=${slotNumber}`);
+
+    // Broadcast for global controller listener (nfc-read route)
+    HardwareEvents.emit('nfc:tag', data);
     if (staffSocketId) {
       // forward UID กลับไปยัง staff browser ที่รอรับ
       io.to(staffSocketId).emit('nfc:uid-captured', { uid, slotNumber });

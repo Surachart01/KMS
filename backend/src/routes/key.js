@@ -13,5 +13,6 @@ router.post('/', requireStaff, keyController.createKey);
 router.put('/:id', requireStaff, keyController.updateKey);
 router.delete('/:id', requireStaff, keyController.deleteKey);
 router.post('/:id/nfc-write', requireStaff, keyController.writeNfcTag);
+router.post('/:id/nfc-read', requireStaff, keyController.readNfcTag);
 
 export default router;

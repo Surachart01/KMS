@@ -33,14 +33,7 @@ import { keysAPI } from "@/service/api";
 
 const { Title, Text } = Typography;
 
-/** สุ่ม NFC UID แบบ HEX 8 หลัก (32-bit) */
-function generateNfcUid() {
-    return Array.from({ length: 4 }, () =>
-        Math.floor(Math.random() * 256).toString(16).padStart(2, "0")
-    )
-        .join("")
-        .toUpperCase();
-}
+
 
 export default function KeysPage() {
     const [keys, setKeys] = useState([]);
@@ -55,8 +48,7 @@ export default function KeysPage() {
     const [nfcModalVisible, setNfcModalVisible] = useState(false);
     const [nfcTargetKey, setNfcTargetKey] = useState(null);
     const [nfcUidInput, setNfcUidInput] = useState("");
-    const [copied, setCopied] = useState(false);
-    const [writingNfc, setWritingNfc] = useState(false);
+    const [readingNfc, setReadingNfc] = useState(false);
 
     useEffect(() => { fetchKeys(); }, []);
 
@@ -95,46 +87,37 @@ export default function KeysPage() {
     const handleOpenNfcModal = (record) => {
         setNfcTargetKey(record);
         setNfcUidInput(record.nfcUid || "");
-        setCopied(false);
         setNfcModalVisible(true);
     };
 
-    const handleGenerate = () => {
-        const uid = generateNfcUid();
-        setNfcUidInput(uid);
-        setCopied(false);
-    };
+    const handleReadNfc = async () => {
+        if (!nfcTargetKey?.id) return;
+        setReadingNfc(true);
+        try {
+            message.info("ระบบกำลังเปิดรับเหรียญ 15 วินาที กรุณานำเหรียญไปทาบที่ช่องตู้");
+            const res = await keysAPI.readNfc(nfcTargetKey.id);
+            const { uid } = res.data.data;
 
-    const handleCopy = () => {
-        if (!nfcUidInput) return;
-        navigator.clipboard.writeText(nfcUidInput);
-        setCopied(true);
-        message.success("คัดลอก UID แล้ว!");
-        setTimeout(() => setCopied(false), 3000);
+            setNfcUidInput(uid);
+            await keysAPI.update(nfcTargetKey.id, { nfcUid: uid });
+
+            message.success(res.data?.message || `สแกนสำเร็จ: ${uid}`);
+            setNfcModalVisible(false);
+            fetchKeys();
+        } catch (e) {
+            message.error(e.response?.data?.message || "หมดเวลา หรืออ่าน NFC ไม่สำเร็จ");
+        } finally {
+            setReadingNfc(false);
+        }
     };
 
     const handleSaveNfcUid = async () => {
-        if (!nfcUidInput.trim()) { message.warning("กรุณากรอกหรือ Generate NFC UID ก่อน"); return; }
+        if (!nfcUidInput.trim()) { message.warning("กรุณาสแกนหรือกรอกรหัส UID ก่อนกดยืนยัน"); return; }
         try {
             await keysAPI.update(nfcTargetKey.id, { nfcUid: nfcUidInput.trim() });
             message.success(`บันทึก NFC UID สำเร็จ`);
             setNfcModalVisible(false); fetchKeys();
         } catch (e) { message.error(e.response?.data?.message || "ไม่สามารถบันทึก UID ได้"); }
-    };
-
-    const handleWriteNfc = async () => {
-        if (!nfcUidInput.trim() || !nfcTargetKey?.id) return;
-        setWritingNfc(true);
-        try {
-            const res = await keysAPI.writeNfc(nfcTargetKey.id, nfcUidInput.trim());
-            message.success(res.data?.message || "เขียน NFC สำเร็จ!");
-            setNfcModalVisible(false);
-            fetchKeys();
-        } catch (e) {
-            message.error(e.response?.data?.message || "เขียน NFC ไม่สำเร็จ");
-        } finally {
-            setWritingNfc(false);
-        }
     };
 
     const handleClearNfcUid = async () => {
@@ -218,71 +201,54 @@ export default function KeysPage() {
                 </Form>
             </Modal>
 
-            {/* Modal กำหนด NFC UID */}
+            {/* Modal ลงทะเบียน NFC UID */}
             <Modal
-                title={<Space><WifiOutlined style={{ color: "#1890ff" }} />กำหนด NFC Tag — ห้อง {nfcTargetKey?.roomCode} (ช่อง {nfcTargetKey?.slotNumber})</Space>}
+                title={<Space><WifiOutlined style={{ color: "#1890ff" }} />ลงทะเบียนกุญแจ NFC — ห้อง {nfcTargetKey?.roomCode} (ช่อง {nfcTargetKey?.slotNumber})</Space>}
                 open={nfcModalVisible}
                 onCancel={() => setNfcModalVisible(false)}
                 footer={[
                     nfcTargetKey?.nfcUid && (
                         <Popconfirm key="clear" title="ลบ NFC UID นี้?" onConfirm={handleClearNfcUid} okText="ลบ" cancelText="ยกเลิก">
-                            <Button danger>ลบ UID</Button>
+                            <Button danger>ลบ UID เก่าทิ้ง</Button>
                         </Popconfirm>
                     ),
-                    <Button key="cancel" onClick={() => setNfcModalVisible(false)}>ยกเลิก</Button>,
-                    <Button key="write" icon={<SendOutlined />} onClick={handleWriteNfc}
-                        disabled={!nfcUidInput.trim() || writingNfc}
-                        loading={writingNfc}
-                        style={{ background: '#1890ff', color: 'white', borderColor: '#1890ff' }}
-                    >{writingNfc ? 'กำลังเขียน...' : 'เขียนลง NFC'}</Button>,
-                    <Button key="save" type="primary" onClick={handleSaveNfcUid} disabled={!nfcUidInput.trim()}>บันทึก</Button>,
+                    <Button key="cancel" onClick={() => setNfcModalVisible(false)}>ปิด</Button>,
+                    <Button key="save" type="primary" onClick={handleSaveNfcUid} disabled={!nfcUidInput.trim() || readingNfc}>เซฟรหัสที่พิมพ์เอง</Button>,
                 ]}
-                width={460}
+                width={480}
             >
-                <Space direction="vertical" size="middle" style={{ width: "100%" }}>
+                <Space direction="vertical" size="middle" style={{ width: "100%", marginTop: 16 }}>
                     <Alert
-                        message="วิธีใช้"
-                        description="กดปุ่ม Generate เพื่อสร้าง UID → Copy → เขียนลง NFC tag ด้วยโปรแกรมภายนอก → กด บันทึก"
+                        message="วิธีการลงทะเบียนกุญแจ"
+                        description="กดปุ่ม 'เริ่มสแกนเหรียญใหม่' จากนั้นนำเหรียญ NFC ใหม่ไปทาบที่ช่องล็อคเกอร์ของกุญแจดอกนี้ ภายใน 15 วินาที ระบบจะบันทึกรหัสของเหรียญเข้ากับกุญแจดอกนี้ให้อัตโนมัติ"
                         type="info" showIcon />
 
-                    {/* UID Display */}
-                    <div style={{ background: "#f5f5f5", borderRadius: 8, padding: "16px 20px", textAlign: "center" }}>
-                        <Text style={{ fontFamily: "monospace", fontSize: 28, letterSpacing: 4, fontWeight: "bold" }}>
-                            {nfcUidInput || "— — — —"}
-                        </Text>
+                    {/* Button Scanner */}
+                    <div style={{ textAlign: "center", margin: "16px 0" }}>
+                        <Button
+                            type="primary"
+                            icon={<WifiOutlined />}
+                            size="large"
+                            onClick={handleReadNfc}
+                            loading={readingNfc}
+                            style={{ width: "80%", height: 50, fontSize: 16, background: readingNfc ? '#faad14' : '#52c41a', borderColor: 'transparent' }}
+                        >
+                            {readingNfc ? "กำลังรับสัญญาณสแกน (15 วิ)..." : "แตะเพื่อเริ่มสแกนเหรียญใหม่"}
+                        </Button>
                     </div>
 
-                    {/* Buttons */}
-                    <Space style={{ width: "100%", justifyContent: "center" }}>
-                        <Button icon={<ReloadOutlined />} onClick={handleGenerate} size="large">
-                            Generate UID
-                        </Button>
-                        <Button
-                            icon={<CopyOutlined />}
-                            onClick={handleCopy}
-                            size="large"
-                            type={copied ? "primary" : "default"}
-                            disabled={!nfcUidInput}
-                        >
-                            {copied ? "คัดลอกแล้ว ✓" : "Copy"}
-                        </Button>
-                    </Space>
-
-                    {/* Manual input */}
+                    {/* UID Display */}
                     <div>
-                        <Text type="secondary" style={{ display: "block", marginBottom: 4 }}>หรือกรอก UID เอง:</Text>
+                        <Text type="secondary" style={{ display: "block", marginBottom: 4 }}>รหัส UID ปัจจุบันของกุญแจดอกนี้:</Text>
                         <Input
                             value={nfcUidInput}
-                            onChange={(e) => { setNfcUidInput(e.target.value.toUpperCase()); setCopied(false); }}
-                            placeholder="เช่น A1B2C3D4"
-                            style={{ fontFamily: "monospace", textAlign: "center" }}
+                            onChange={(e) => setNfcUidInput(e.target.value.toUpperCase())}
+                            placeholder="ว่างเปล่า (ยังไม่ผูก NFC)"
+                            style={{ fontFamily: "monospace", textAlign: "center", fontSize: 18, height: 44, color: nfcUidInput ? '#1890ff' : '#000' }}
                             maxLength={32}
+                            disabled={readingNfc}
                         />
                     </div>
-
-                    {nfcTargetKey?.nfcUid && (
-                        <Alert message={`UID ปัจจุบัน: ${nfcTargetKey.nfcUid}`} type="warning" showIcon />
-                    )}
                 </Space>
             </Modal>
         </div>

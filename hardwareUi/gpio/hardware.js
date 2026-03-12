@@ -67,6 +67,7 @@ let Mfrc522 = null;
 let IS_MOCK = true;
 let isUnlocking = false; // Flag to pause NFC polling during relay operation
 const slotHasKey = {}; // กุญแจอยู่ในช่องหรือไม่ (true = Green, false = Red)
+const csPins = {}; // เก็บ object Gpio ของ CS แต่ละช่อง
 
 async function setupHardware() {
     // Check if pinctrl is available
@@ -305,7 +306,16 @@ socket.on('nfc:write', async (data) => {
         return;
     }
 
-    const cs = new Gpio(csPin, 'out');
+    const cs = csPins[slotNumber];
+    if (!cs) {
+        socket.emit('nfc:write-result', {
+            slotNumber,
+            success: false,
+            message: `ระบบยังไม่พร้อม หรือไม่พบ CS Pin ของช่อง ${slotNumber}`,
+        });
+        return;
+    }
+
     cs.writeSync(0); // Activate CS → LOW
 
     // Pause general polling temporarily to safely write
@@ -347,7 +357,6 @@ socket.on('nfc:write', async (data) => {
         });
     } finally {
         cs.writeSync(1); // Deactivate CS → HIGH
-        cs.unexport();
         isUnlocking = false; // Resume polling
     }
 });
@@ -373,7 +382,6 @@ function startNfcPolling() {
     console.log('🟢 NFC Real mode — starting polling loop');
 
     // ตั้ง CS pins ทุกตัวเป็น HIGH (inactive)
-    const csPins = {};
     for (const [slot, pin] of Object.entries(SLOT_CS_MAP)) {
         csPins[slot] = new Gpio(pin, 'out');
         csPins[slot].writeSync(1);

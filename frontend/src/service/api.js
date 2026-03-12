@@ -71,6 +71,7 @@ export const keysAPI = {
     update: (id, data) => apiClient.put(`/api/keys/${id}`, data),
     delete: (id) => apiClient.delete(`/api/keys/${id}`),
     writeNfc: (id, uid) => apiClient.post(`/api/keys/${id}/nfc-write`, { uid }),
+    readNfc: (id) => apiClient.post(`/api/keys/${id}/nfc-read`),
 };
 
 // ================== USER API ==================
