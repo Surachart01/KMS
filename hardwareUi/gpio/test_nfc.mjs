@@ -1,5 +1,8 @@
 import { execSync } from 'child_process';
 import readline from 'readline';
+import { createRequire } from 'module';
+
+const require = createRequire(import.meta.url);
 
 console.log("=========================================");
 console.log("   โปรแกรมทดสอบเครื่องอ่าน NFC (NodeJS)  ");
@@ -13,10 +16,12 @@ const rl = readline.createInterface({
 const checkAndImport = async () => {
     try {
         console.log("กำลังเชื่อมต่อบอร์ด MFRC522...");
-        const { default: Mfrc522Lib } = await import('mfrc522-rpi');
+        // Use require to bypass ESM module resolution if it's missing locally
+        const Mfrc522Lib = require('mfrc522-rpi').default || require('mfrc522-rpi');
         return new Mfrc522Lib();
     } catch (e) {
-        console.error("❌ ไม่สามารถโหลด mfrc522-rpi ได้ กรุณาเช็คว่ารันบน RPi และลง package ครบแล้ว", e.message);
+        console.error("❌ ไม่สามารถโหลด mfrc522-rpi ได้", e.message);
+        console.error("👉 วิธีแก้: พิมพ์คำสั่ง 'npm install mfrc522-rpi' ก่อนรันเทสครับ");
         process.exit(1);
     }
 };
@@ -25,23 +30,28 @@ const readTag = (mfrc522) => {
     console.log("\n[โหมดอ่าน UID (Read)]");
     console.log("กรุณานำเหรียญ/บัตร NFC ไปทาบที่ตัวอ่าน (RC522) ภายใน 10 วินาที...");
 
-    // ตั้งเวลา 10 วิ หมดเวลาจะตัดจบ
     let elapsed = 0;
     const interval = setInterval(() => {
-        const found = mfrc522.findCard();
-        if (found?.status) {
-            const uidResult = mfrc522.getUid();
-            if (uidResult?.status) {
-                const uid = uidResult.data
-                    .slice(0, 4)
-                    .map((b) => b.toString(16).padStart(2, '0'))
-                    .join('')
-                    .toUpperCase();
-                console.log(`\n✅ เจอแท็ก! UID: ${uid}`);
-                clearInterval(interval);
-                process.exit(0);
+        try {
+            mfrc522.reset();
+            const found = mfrc522.findCard();
+            if (found?.status) {
+                const uidResult = mfrc522.getUid();
+                if (uidResult?.status) {
+                    const uid = uidResult.data
+                        .slice(0, 4)
+                        .map((b) => b.toString(16).padStart(2, '0'))
+                        .join('')
+                        .toUpperCase();
+                    console.log(`\n✅ เจอแท็ก! UID: ${uid}`);
+                    clearInterval(interval);
+                    process.exit(0);
+                }
             }
+        } catch (err) {
+            // Ignore minor SPI errors during continuous polling
         }
+
         elapsed += 0.5;
         if (elapsed >= 10) {
             console.log("⏳ หมดเวลาแสกน ไม่พบเหรียญ");
