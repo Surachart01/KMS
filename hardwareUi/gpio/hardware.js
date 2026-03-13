@@ -80,8 +80,9 @@ async function setupHardware() {
                 console.log('🟢 GPIO: Real mode (Raspberry Pi 5 detected via pinctrl)');
                 IS_MOCK = false;
 
-                // Set all pins as output low
-                for (const pin of Object.values(SLOT_PIN_MAP)) {
+                // Set all pins as output low (Safety First - prevent relay clicking)
+                for (const [slot, pin] of Object.entries(SLOT_PIN_MAP)) {
+                    console.log(`📡 Pin Init: Slot ${slot} (Pin ${pin}) -> LOW`);
                     exec(`pinctrl set ${pin} op dl`);
                 }
             }
