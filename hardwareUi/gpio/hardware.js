@@ -412,10 +412,10 @@ function startNfcPolling() {
 
             const found = Mfrc522.findCard();
             if (found?.status) {
-                // อัปเดตไฟ LED เป็นสีเขียว (มีกุญแจ)
+                // อัปเดตสถานะในแรม (กุญแจอยู่)
                 if (slotHasKey[currentSlot] !== true) {
                     slotHasKey[currentSlot] = true;
-                    if (!IS_MOCK) exec(`pinctrl set ${SLOT_PIN_MAP[currentSlot]} dh`); // Green LED (NO)
+                    // exec(`pinctrl set ${SLOT_PIN_MAP[currentSlot]} dh`); // <--- นำออก: ป้องกันการสะอึกของ Relay
                 }
 
                 const uidResult = Mfrc522.getUid();
@@ -434,11 +434,11 @@ function startNfcPolling() {
                     socket.emit('nfc:tag', { slotNumber: currentSlot, uid });
                 }
             } else {
-                // อัปเดตไฟ LED เป็นสีแดง (ไม่มีกุญแจ)
+                // อัปเดตสถานะในแรม (กุญแจหาย)
                 if (slotHasKey[currentSlot] !== false) {
                     slotHasKey[currentSlot] = false;
                     slotHasKey[`last_uid_${currentSlot}`] = null;
-                    if (!IS_MOCK) exec(`pinctrl set ${SLOT_PIN_MAP[currentSlot]} dl`); // Red LED (NC)
+                    // exec(`pinctrl set ${SLOT_PIN_MAP[currentSlot]} dl`); // <--- นำออก
                 }
             }
         } catch {
@@ -446,7 +446,7 @@ function startNfcPolling() {
             if (slotHasKey[currentSlot] !== false) {
                 slotHasKey[currentSlot] = false;
                 slotHasKey[`last_uid_${currentSlot}`] = null;
-                if (!IS_MOCK) exec(`pinctrl set ${SLOT_PIN_MAP[currentSlot]} dl`); // Red LED (NC)
+                // exec(`pinctrl set ${SLOT_PIN_MAP[currentSlot]} dl`); // <--- นำออก
             }
         } finally {
             cs.writeSync(1); // Deactivate CS → HIGH
