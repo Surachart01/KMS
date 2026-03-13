@@ -351,9 +351,9 @@ def nfc_polling_loop():
         uid = read_nfc_at_slot(current_slot)
         
         if uid:
-            # อัปเดตสถานะ Green LED (ถ้าบัตรอยู่)
+            # อัปเดตสถานะในแรม (ไม่สั่ง Relay เพื่อป้องกันการเตะกลอนคลิกๆ)
             if not slot_has_key.get(current_slot):
-                relays[current_slot].on() # ไฟเขียว
+                # relays[current_slot].on() # <--- นำออก: ป้องกันการสะอึกของ Relay
                 slot_has_key[current_slot] = True
             
             # ส่ง Event ถ้าเป็นเหรียญใหม่ที่ตรวจเจอในรอบนั้น
@@ -362,9 +362,9 @@ def nfc_polling_loop():
                 last_uid_map[current_slot] = uid
                 sio.emit('nfc:tag', {'slotNumber': current_slot, 'uid': uid})
         else:
-            # อัปเดตสถานะ Red LED (ถ้าบัตรไม่อยู่)
+            # อัปเดตสถานะในแรม
             if slot_has_key.get(current_slot):
-                relays[current_slot].off() # ไฟแดง
+                # relays[current_slot].off() # <--- นำออก
                 slot_has_key[current_slot] = False
                 last_uid_map[current_slot] = None
                 
