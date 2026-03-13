@@ -10,6 +10,12 @@ const rl = readline.createInterface({
     output: process.stdout
 });
 
+const path = require('path');
+// บังคับให้ Node มองหาแพ็กเกจในโฟลเดอร์หลัก (hardwareUi/node_modules) 
+// เพื่อแก้ปัญหา sudo เคลียร์ค่า NODE_PATH
+module.paths.push(path.resolve(__dirname, '..', 'node_modules'));
+module.paths.push(path.resolve(__dirname, '..', '..', 'node_modules'));
+
 const checkAndImport = () => {
     try {
         console.log("กำลังเชื่อมต่อบอร์ด MFRC522...");
