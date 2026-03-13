@@ -1,24 +1,33 @@
 #!/usr/bin/env python3
 """
 ทดสอบ NFC RC522 × 10 Slot — Raspberry Pi 5
-GPIO chip: gpiochip0 [pinctrl-rp1] ← RPi5 ใช้ตัวนี้
+GPIO chip: gpiochip0 [pinctrl-rp1]
 
-RST  = GPIO 7  (Pin 25) — shared ทุก RC522
+RST  = GPIO 7  (Pin 25)
 MOSI = GPIO 10 (Pin 19)
 MISO = GPIO 9  (Pin 21)
 SCK  = GPIO 11 (Pin 23)
 CS slot 1–10 = GPIO 4,5,6,12,13,16,19,20,21,26
 """
 
-import sys, os, time
+import sys
+import time
 
 # ── ตรวจ library ──────────────────────────────
 try:
     import gpiod
+    from gpiod.line import Direction, Value
+    GPIOD_V2 = True
 except ImportError:
-    print("❌ ไม่พบ gpiod")
-    print("👉  pip install gpiod")
-    sys.exit(1)
+    try:
+        import gpiod
+        GPIOD_V2 = False
+    except ImportError:
+        print("❌ ไม่พบ gpiod")
+        print("👉  pip install gpiod spidev")
+        sys.exit(1)
+except Exception:
+    GPIOD_V2 = False
 
 try:
     import spidev
@@ -28,7 +37,7 @@ except ImportError:
     sys.exit(1)
 
 # ── Config ────────────────────────────────────
-GPIO_CHIP = "/dev/gpiochip0"   # RPi5: pinctrl-rp1, 54 lines
+GPIO_CHIP = "/dev/gpiochip0"
 RST_PIN   = 7
 
 CS_PINS = {
@@ -44,30 +53,33 @@ CS_PINS = {
     10: 26,
 }
 
-# ── GPIO Manager (gpiod v1 / v2 compatible) ───
+ALL_PINS = [RST_PIN] + list(CS_PINS.values())
+
+# ── GPIO Manager ──────────────────────────────
 class GpioManager:
     def __init__(self):
+        self._v2 = GPIOD_V2
+        if self._v2:
+            self._init_v2()
+        else:
+            self._init_v1()
+
+    def _init_v2(self):
+        settings = gpiod.LineSettings(
+            direction=Direction.OUTPUT,
+            output_value=Value.ACTIVE
+        )
+        self._req = gpiod.request_lines(
+            GPIO_CHIP,
+            consumer="nfc_test",
+            config={pin: settings for pin in ALL_PINS}
+        )
+
+    def _init_v1(self):
+        self._chip  = gpiod.Chip(GPIO_CHIP)
         self._lines = {}
-        chip = gpiod.Chip(GPIO_CHIP)
-
-        all_pins = [RST_PIN] + list(CS_PINS.values())
-
-        # ลอง gpiod v2 API ก่อน ถ้าไม่มีใช้ v1
-        try:
-            # gpiod v2
-            import gpiod
-            self._v2 = hasattr(gpiod, 'request_lines')
-            if self._v2:
-                self._request_v2(all_pins)
-            else:
-                self._request_v1(chip, all_pins)
-        except Exception as e:
-            raise RuntimeError(f"เปิด GPIO ไม่ได้: {e}")
-
-    def _request_v1(self, chip, pins):
-        self._v2 = False
-        for pin in pins:
-            line = chip.get_line(pin)
+        for pin in ALL_PINS:
+            line = self._chip.get_line(pin)
             line.request(
                 consumer="nfc_test",
                 type=gpiod.LINE_REQ_DIR_OUT,
@@ -75,30 +87,14 @@ class GpioManager:
             )
             self._lines[pin] = line
 
-    def _request_v2(self, pins):
-        import gpiod
-        from gpiod.line import Direction, Value
-        line_settings = gpiod.LineSettings(
-            direction=Direction.OUTPUT,
-            output_value=Value.ACTIVE
-        )
-        self._req = gpiod.request_lines(
-            GPIO_CHIP,
-            consumer="nfc_test",
-            config={pin: line_settings for pin in pins}
-        )
-        self._pins_v2 = pins
-
     def high(self, pin):
         if self._v2:
-            from gpiod.line import Value
             self._req.set_value(pin, Value.ACTIVE)
         else:
             self._lines[pin].set_value(1)
 
     def low(self, pin):
         if self._v2:
-            from gpiod.line import Value
             self._req.set_value(pin, Value.INACTIVE)
         else:
             self._lines[pin].set_value(0)
@@ -107,8 +103,8 @@ class GpioManager:
         if self._v2:
             self._req.release()
         else:
-            for l in self._lines.values():
-                l.release()
+            for line in self._lines.values():
+                line.release()
 
 gpio = None
 
@@ -230,25 +226,27 @@ def test_version_all():
 def test_read_uid(slot, timeout=15):
     print(f"\n{'='*50}")
     print(f"  โหมด 2: อ่าน UID — Slot {slot}  CS=GPIO{CS_PINS[slot]}")
-    print(f"{'='*50}")
-    print(f"  นำบัตร/เหรียญ NFC ทาบที่ RC522 Slot {slot}  (รอ {timeout} วิ)\n")
-    r = RC522(slot); start = time.time()
+    print(f"  นำบัตร/เหรียญ NFC ทาบที่ Slot {slot}  (รอ {timeout} วิ)\n")
+    r = RC522(slot)
+    start = time.time()
     try:
         while time.time() - start < timeout:
             if r.find_card():
                 uid = r.get_uid()
                 if uid:
                     print(f"\n  ✅ UID: {uid}  (Slot {slot}, GPIO{CS_PINS[slot]})")
-                    r.close(); return uid
+                    r.close()
+                    return uid
             time.sleep(0.1)
             print(f"  ⏳ {int(timeout-(time.time()-start))} วิ...  \r", end='', flush=True)
     except KeyboardInterrupt:
         print("\n  ยกเลิก")
     r.close()
-    print(f"\n  ⏳ หมดเวลา"); return None
+    print(f"\n  ⏳ หมดเวลา")
+    return None
 
 # ── โหมด 3: Scan ทุก Slot ────────────────────
-def test_scan_all(timeout=30):
+def test_scan_all():
     print(f"\n{'='*50}")
     print(f"  โหมด 3: Scan ทุก Slot  (Ctrl+C หยุด)")
     print(f"{'='*50}\n")
@@ -269,9 +267,11 @@ def test_scan_all(timeout=30):
 # ── Main ──────────────────────────────────────
 def main():
     global gpio
+
     print("="*50)
     print("  NFC RC522 × 10  —  Raspberry Pi 5")
     print(f"  GPIO chip : {GPIO_CHIP}  (pinctrl-rp1)")
+    print(f"  gpiod API : {'v2' if GPIOD_V2 else 'v1'}")
     print(f"  RST=GPIO{RST_PIN}  SPI=GPIO10/9/11")
     print("="*50)
 
@@ -279,7 +279,7 @@ def main():
         gpio = GpioManager()
         print("  ✅ GPIO พร้อม")
     except Exception as e:
-        print(f"\n  ❌ {e}")
+        print(f"\n  ❌ เปิด GPIO ไม่ได้: {e}")
         print("  💡 ลอง: sudo python3 test_nfc.py")
         sys.exit(1)
 
@@ -299,8 +299,10 @@ def main():
             else:
                 try:
                     s = int(input("\n  เลือก Slot (1-10): ").strip())
-                    if 1 <= s <= 10: test_read_uid(s)
-                    else: print("  ❌ Slot 1-10 เท่านั้น")
+                    if 1 <= s <= 10:
+                        test_read_uid(s)
+                    else:
+                        print("  ❌ Slot 1-10 เท่านั้น")
                 except ValueError:
                     print("  ❌ กรอกตัวเลข")
         elif c == '3':
@@ -312,7 +314,8 @@ def main():
     except KeyboardInterrupt:
         print("\n  ยกเลิก")
     finally:
-        if gpio: gpio.cleanup()
+        if gpio:
+            gpio.cleanup()
         print("  GPIO cleanup เรียบร้อย")
 
 if __name__ == '__main__':
