@@ -43,6 +43,10 @@ else
     fi
 fi
 
+# === Step 1.5: Install Python deps for NFC (Pi 5 friendly) ===
+echo "🐍 Step 1.5: Installing Python NFC dependencies..."
+apt-get install -y -qq python3-lgpio python3-spidev
+
 # === Step 2: Install Node.js dependencies ===
 echo "📦 Step 2: Installing Node.js dependencies..."
 cd "${HARDWARE_UI_DIR}" && sudo -u "${USER_NAME}" npm install
