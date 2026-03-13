@@ -13,14 +13,28 @@ const rl = readline.createInterface({
 const checkAndImport = () => {
     try {
         console.log("กำลังเชื่อมต่อบอร์ด MFRC522...");
-        // Use require to try loading mfrc522-rpi from the local node_modules
-        const Mfrc522Lib = require('mfrc522-rpi').default || require('mfrc522-rpi');
-        return new Mfrc522Lib();
+
+        // ลองโหลดจากหลายๆ ที่ (แก้ปัญหาเรื่องรันจาก subfolder)
+        let Mfrc522Lib;
+        try {
+            Mfrc522Lib = require('mfrc522-rpi');
+        } catch (err) {
+            try {
+                // ลองย้อนกลับไปดูโฟลเดอร์นอก
+                Mfrc522Lib = require('../../../node_modules/mfrc522-rpi');
+            } catch (err2) {
+                // ลองอีกชั้น (ถ้าอยู่ลึก)
+                Mfrc522Lib = require('../../node_modules/mfrc522-rpi');
+            }
+        }
+
+        const Lib = Mfrc522Lib.default || Mfrc522Lib;
+        return new Lib();
     } catch (e) {
         console.error("❌ ไม่สามารถโหลดไลบรารีอ่านเหรียญ mfrc522-rpi ได้");
-        console.error("👉 วิธีแก้: ให้กด Ctrl+C ออกไปก่อน แล้วพิมพ์คำสั่งด้านล่างนี้เลยครับ:\n");
-        console.error("    npm install mfrc522-rpi\n");
-        console.error("จากนั้นค่อยสลับมารัน 'sudo node test_nfc.js' ใหม่อีกครั้งครับ");
+        console.error("เหตุผล: " + e.message);
+        console.error("\n👉 วิธีแก้: ไม่ต้อง install ใหม่ครับ ให้รันคำสั่งนี้แทน:");
+        console.error("    sudo NODE_PATH=../../node_modules node test_nfc.js");
         process.exit(1);
     }
 };
