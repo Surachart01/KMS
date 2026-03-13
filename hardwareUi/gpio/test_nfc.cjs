@@ -14,27 +14,15 @@ const checkAndImport = () => {
     try {
         console.log("กำลังเชื่อมต่อบอร์ด MFRC522...");
 
-        // ลองโหลดจากหลายๆ ที่ (แก้ปัญหาเรื่องรันจาก subfolder)
-        let Mfrc522Lib;
-        try {
-            Mfrc522Lib = require('mfrc522-rpi');
-        } catch (err) {
-            try {
-                // ลองย้อนกลับไปดูโฟลเดอร์นอก
-                Mfrc522Lib = require('../../../node_modules/mfrc522-rpi');
-            } catch (err2) {
-                // ลองอีกชั้น (ถ้าอยู่ลึก)
-                Mfrc522Lib = require('../../node_modules/mfrc522-rpi');
-            }
-        }
-
+        // ใช้ require ตรงๆ เพื่อให้ NODE_PATH หรือระบบค้นหาปกติทำงานได้แม่นยำที่สุด
+        const Mfrc522Lib = require('mfrc522-rpi');
         const Lib = Mfrc522Lib.default || Mfrc522Lib;
         return new Lib();
     } catch (e) {
-        console.error("❌ ไม่สามารถโหลดไลบรารีอ่านเหรียญ mfrc522-rpi ได้");
+        console.error("❌ ไม่สามารถโหลด mfrc522-rpi ได้");
         console.error("เหตุผล: " + e.message);
-        console.error("\n👉 วิธีแก้: ไม่ต้อง install ใหม่ครับ ให้รันคำสั่งนี้แทน:");
-        console.error("    sudo NODE_PATH=../../node_modules node test_nfc.cjs");
+        console.error("\n👉 วิธีแก้: ให้รันคำสั่งนี้แทนครับ (แก้ Path ให้ตรง):");
+        console.error("    sudo NODE_PATH=../node_modules node test_nfc.cjs");
         process.exit(1);
     }
 };
