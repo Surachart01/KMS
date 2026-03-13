@@ -195,6 +195,8 @@ SLOT_CS_MAP = {
     6: 16, 7: 19, 8: 20, 9: 21, 10: 26
 }
 
+NFC_RST_PIN = 7 # ขา RST ตัวรองรับ (shared)
+
 # ─────────────────────────────────────────────
 # Initialization
 # ─────────────────────────────────────────────
@@ -226,6 +228,10 @@ for slot, pin in SLOT_CS_MAP.items():
 
 # NFC Reader Instance (Using our custom Pi5 class)
 try:
+    # ตั้งค่าขา RST ให้เป็น HIGH เพื่อเริ่มการทำงานของ RC522 ทุกตัว
+    nfc_rst = OutputDevice(NFC_RST_PIN, initial_value=True)
+    time.sleep(0.1)
+    
     reader = Pi5MFRC522()
 except Exception as e:
     print(f"❌ Error initializing NFC Reader: {e}")

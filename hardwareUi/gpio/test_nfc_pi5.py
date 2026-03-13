@@ -175,7 +175,10 @@ SLOT_CS_MAP = {
     6: 16, 7: 19, 8: 20, 9: 21, 10: 26
 }
 
+NFC_RST_PIN = 7 # ขา RST ตัวรองรับ (shared)
+
 cs_pins = {}
+nfc_rst = None
 reader = None
 
 def signal_handler(sig, frame):
@@ -193,9 +196,14 @@ def start_test():
     print("=============================================")
     
     # 1. Init CS Pins
-    print("⚙️  กำลังตั้งค่า GPIO CS Pins...")
+    print("⚙️  กำลังตั้งค่า GPIO Pins (CS & RST)...")
     for slot, pin in SLOT_CS_MAP.items():
         cs_pins[slot] = OutputDevice(pin, initial_value=True)
+    
+    # Init shared Reset pin (Must be HIGH)
+    global nfc_rst
+    nfc_rst = OutputDevice(NFC_RST_PIN, initial_value=True)
+    time.sleep(0.1)
     
     # 2. Init Reader
     try:
