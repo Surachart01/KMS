@@ -16,8 +16,8 @@ echo "🚀 Starting migration to Python Hardware Service..."
 echo "📦 Installing Python dependencies..."
 apt-get update -qq
 apt-get install -y -qq python3-pip python3-rpi-lgpio
-sudo -u "${USER_NAME}" pip3 install python-socketio[client] mfrc522 gpiozero python-dotenv --break-system-packages || \
-sudo -u "${USER_NAME}" pip3 install python-socketio[client] mfrc522 gpiozero python-dotenv
+sudo -u "${USER_NAME}" pip3 install python-socketio[client] mfrc522 gpiozero python-dotenv spidev --break-system-packages || \
+sudo -u "${USER_NAME}" pip3 install python-socketio[client] mfrc522 gpiozero python-dotenv spidev
 
 # 2. Stop old service
 echo "🛑 Stopping old Node.js hardware service..."
