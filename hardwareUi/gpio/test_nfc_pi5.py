@@ -1,339 +1,319 @@
 #!/usr/bin/env python3
 """
-ทดสอบ NFC RC522 — ตรงกับ Wire Guide
-RST  = GPIO 7  (Pin 25)
+ทดสอบ NFC RC522 × 10 Slot — Raspberry Pi 5
+GPIO chip: gpiochip0 [pinctrl-rp1] ← RPi5 ใช้ตัวนี้
+
+RST  = GPIO 7  (Pin 25) — shared ทุก RC522
 MOSI = GPIO 10 (Pin 19)
 MISO = GPIO 9  (Pin 21)
 SCK  = GPIO 11 (Pin 23)
 CS slot 1–10 = GPIO 4,5,6,12,13,16,19,20,21,26
 """
 
-import sys
-import time
+import sys, os, time
 
-# ──────────────────────────────────────────────
-# ตรวจสอบ library ก่อนรัน
-# ──────────────────────────────────────────────
+# ── ตรวจ library ──────────────────────────────
 try:
-    import RPi.GPIO as GPIO
-    import spidev
-except ImportError as e:
-    print(f"❌ Library ขาด: {e}")
-    print("\n👉 ติดตั้งก่อนรันครับ:")
-    print("   pip3 install RPi.GPIO spidev --break-system-packages")
+    import gpiod
+except ImportError:
+    print("❌ ไม่พบ gpiod")
+    print("👉  pip install gpiod")
     sys.exit(1)
 
-# ──────────────────────────────────────────────
-# Config ตาม Wire Guide
-# ──────────────────────────────────────────────
-RST_PIN = 7   # GPIO 7 (Pin 25) — shared RST ทุก RC522
+try:
+    import spidev
+except ImportError:
+    print("❌ ไม่พบ spidev")
+    print("👉  pip install spidev")
+    sys.exit(1)
 
-# CS (SDA) ของ RC522 แต่ละ slot
+# ── Config ────────────────────────────────────
+GPIO_CHIP = "/dev/gpiochip0"   # RPi5: pinctrl-rp1, 54 lines
+RST_PIN   = 7
+
 CS_PINS = {
-    1:  4,   # Pin 7
-    2:  5,   # Pin 29
-    3:  6,   # Pin 31
-    4:  12,  # Pin 32
-    5:  13,  # Pin 33
-    6:  16,  # Pin 36
-    7:  19,  # Pin 35
-    8:  20,  # Pin 38
-    9:  21,  # Pin 40
-    10: 26,  # Pin 37
+    1:  4,
+    2:  5,
+    3:  6,
+    4:  12,
+    5:  13,
+    6:  16,
+    7:  19,
+    8:  20,
+    9:  21,
+    10: 26,
 }
 
-# ──────────────────────────────────────────────
-# MFRC522 Register Map
-# ──────────────────────────────────────────────
-CommandReg     = 0x01
-ComIEnReg      = 0x02
-ComIrqReg      = 0x04
-ErrorReg       = 0x06
-FIFODataReg    = 0x09
-FIFOLevelReg   = 0x0A
-ControlReg     = 0x0C
-BitFramingReg  = 0x0D
-ModeReg        = 0x11
-TxControlReg   = 0x14
-TxASKReg       = 0x15
-TModeReg       = 0x2A
-TPrescalerReg  = 0x2B
-TReloadRegH    = 0x2C
-TReloadRegL    = 0x2D
-VersionReg     = 0x37
+# ── GPIO Manager (gpiod v1 / v2 compatible) ───
+class GpioManager:
+    def __init__(self):
+        self._lines = {}
+        chip = gpiod.Chip(GPIO_CHIP)
 
-PCD_Idle       = 0x00
-PCD_Transceive = 0x0C
-PCD_ReqA       = 0x26
-PICC_REQA      = 0x26
+        all_pins = [RST_PIN] + list(CS_PINS.values())
 
+        # ลอง gpiod v2 API ก่อน ถ้าไม่มีใช้ v1
+        try:
+            # gpiod v2
+            import gpiod
+            self._v2 = hasattr(gpiod, 'request_lines')
+            if self._v2:
+                self._request_v2(all_pins)
+            else:
+                self._request_v1(chip, all_pins)
+        except Exception as e:
+            raise RuntimeError(f"เปิด GPIO ไม่ได้: {e}")
 
+    def _request_v1(self, chip, pins):
+        self._v2 = False
+        for pin in pins:
+            line = chip.get_line(pin)
+            line.request(
+                consumer="nfc_test",
+                type=gpiod.LINE_REQ_DIR_OUT,
+                default_vals=[1]
+            )
+            self._lines[pin] = line
+
+    def _request_v2(self, pins):
+        import gpiod
+        from gpiod.line import Direction, Value
+        line_settings = gpiod.LineSettings(
+            direction=Direction.OUTPUT,
+            output_value=Value.ACTIVE
+        )
+        self._req = gpiod.request_lines(
+            GPIO_CHIP,
+            consumer="nfc_test",
+            config={pin: line_settings for pin in pins}
+        )
+        self._pins_v2 = pins
+
+    def high(self, pin):
+        if self._v2:
+            from gpiod.line import Value
+            self._req.set_value(pin, Value.ACTIVE)
+        else:
+            self._lines[pin].set_value(1)
+
+    def low(self, pin):
+        if self._v2:
+            from gpiod.line import Value
+            self._req.set_value(pin, Value.INACTIVE)
+        else:
+            self._lines[pin].set_value(0)
+
+    def cleanup(self):
+        if self._v2:
+            self._req.release()
+        else:
+            for l in self._lines.values():
+                l.release()
+
+gpio = None
+
+# ── MFRC522 Registers ─────────────────────────
+CommandReg    = 0x01
+ComIrqReg     = 0x04
+FIFODataReg   = 0x09
+FIFOLevelReg  = 0x0A
+BitFramingReg = 0x0D
+ModeReg       = 0x11
+TxControlReg  = 0x14
+TxASKReg      = 0x15
+TModeReg      = 0x2A
+TPrescalerReg = 0x2B
+TReloadRegH   = 0x2C
+TReloadRegL   = 0x2D
+VersionReg    = 0x37
+PCD_Idle      = 0x00
+PCD_Transceive= 0x0C
+PICC_REQA     = 0x26
+
+# ── RC522 Driver ──────────────────────────────
 class RC522:
-    def __init__(self, slot: int):
-        self.slot = slot
+    def __init__(self, slot):
+        self.slot   = slot
         self.cs_pin = CS_PINS[slot]
-        self.spi = spidev.SpiDev()
+        self.spi    = spidev.SpiDev()
         self.spi.open(0, 0)
-        self.spi.max_speed_hz = 1000000
-        self.spi.mode = 0b00
+        self.spi.max_speed_hz = 1_000_000
+        self.spi.mode         = 0b00
         self._init()
 
     def _write(self, reg, val):
+        gpio.low(self.cs_pin)
         self.spi.xfer2([(reg << 1) & 0x7E, val])
+        gpio.high(self.cs_pin)
 
     def _read(self, reg):
-        return self.spi.xfer2([((reg << 1) & 0x7E) | 0x80, 0])[1]
-
-    def _select(self):
-        """เลือก RC522 ตัวนี้ (CS LOW) ปิดตัวอื่น"""
-        for pin in CS_PINS.values():
-            GPIO.output(pin, GPIO.HIGH)   # ปิดทุกตัวก่อน
-        GPIO.output(self.cs_pin, GPIO.LOW)  # เปิดตัวที่ต้องการ
-
-    def _deselect(self):
-        GPIO.output(self.cs_pin, GPIO.HIGH)
+        gpio.low(self.cs_pin)
+        r = self.spi.xfer2([((reg << 1) & 0x7E) | 0x80, 0])[1]
+        gpio.high(self.cs_pin)
+        return r
 
     def _init(self):
-        self._select()
-        # Reset
-        GPIO.output(RST_PIN, GPIO.LOW)
-        time.sleep(0.05)
-        GPIO.output(RST_PIN, GPIO.HIGH)
-        time.sleep(0.05)
-        # ตั้งค่า Timer + Modulation
+        gpio.low(RST_PIN);  time.sleep(0.05)
+        gpio.high(RST_PIN); time.sleep(0.05)
         self._write(TModeReg,      0x80)
         self._write(TPrescalerReg, 0xA9)
         self._write(TReloadRegH,   0x03)
         self._write(TReloadRegL,   0xE8)
         self._write(TxASKReg,      0x40)
         self._write(ModeReg,       0x3D)
-        # เปิด antenna
         tx = self._read(TxControlReg)
         if not (tx & 0x03):
             self._write(TxControlReg, tx | 0x03)
-        self._deselect()
 
     def get_version(self):
-        self._select()
-        ver = self._read(VersionReg)
-        self._deselect()
-        return ver
+        return self._read(VersionReg)
 
     def find_card(self):
-        """ส่ง REQA — คืน True ถ้ามีบัตร"""
-        self._select()
         self._write(BitFramingReg, 0x07)
         self._write(ComIrqReg,     0x7F)
         self._write(FIFOLevelReg,  0x80)
         self._write(FIFODataReg,   PICC_REQA)
         self._write(CommandReg,    PCD_Transceive)
         self._write(BitFramingReg, 0x87)
-
         found = False
         for _ in range(2000):
             irq = self._read(ComIrqReg)
-            if irq & 0x20:   # RxIRq
-                found = True
-                break
-            if irq & 0x01:   # TimerIRq
-                break
-
+            if irq & 0x20: found = True; break
+            if irq & 0x01: break
         self._write(CommandReg, PCD_Idle)
-        self._deselect()
         return found
 
     def get_uid(self):
-        """อ่าน UID — คืน string hex หรือ None"""
-        self._select()
         self._write(ComIrqReg,    0x7F)
         self._write(FIFOLevelReg, 0x80)
-        # Anti-collision command
         for b in [0x93, 0x20]:
             self._write(FIFODataReg, b)
         self._write(CommandReg,    PCD_Transceive)
-        self._write(BitFramingReg, 0x00)
-        # กระตุ้น
         self._write(BitFramingReg, 0x80)
-
         time.sleep(0.01)
-
         level = self._read(FIFOLevelReg)
-        uid_bytes = [self._read(FIFODataReg) for _ in range(level)]
+        data  = [self._read(FIFODataReg) for _ in range(level)]
         self._write(CommandReg, PCD_Idle)
-        self._deselect()
-
-        if len(uid_bytes) >= 4:
-            uid_hex = ''.join(f'{b:02X}' for b in uid_bytes[:4])
-            return uid_hex
+        if len(data) >= 4:
+            return ''.join(f'{b:02X}' for b in data[:4])
         return None
 
     def close(self):
-        self._deselect()
         self.spi.close()
 
-
-# ──────────────────────────────────────────────
-# Setup GPIO
-# ──────────────────────────────────────────────
-def setup_gpio():
-    GPIO.setmode(GPIO.BCM)
-    GPIO.setwarnings(False)
-    GPIO.setup(RST_PIN, GPIO.OUT)
-    GPIO.output(RST_PIN, GPIO.HIGH)
-    for pin in CS_PINS.values():
-        GPIO.setup(pin, GPIO.OUT)
-        GPIO.output(pin, GPIO.HIGH)  # ปิดทุกตัวก่อน
-
-
-# ──────────────────────────────────────────────
-# ทดสอบ: ตรวจ Version ของ RC522 ทุกตัว
-# ──────────────────────────────────────────────
+# ── โหมด 1: Version check ─────────────────────
 def test_version_all():
     print("\n" + "="*50)
-    print("  ทดสอบ 1: ตรวจ Chip Version ทุก Slot")
+    print("  โหมด 1: ตรวจ Chip Version ทุก Slot")
     print("="*50)
-    print("  Version 0x91 หรือ 0x92 = RC522 ✅")
-    print("  Version 0x00 หรือ 0xFF = สายผิด ❌")
+    print("  0x91/0x92 = RC522 OK ✅  |  0x00/0xFF = สายผิด ❌")
     print("-"*50)
-
-    ok_count = 0
+    ok = 0
     for slot in range(1, 11):
-        reader = RC522(slot)
-        ver = reader.get_version()
-        reader.close()
-
+        r   = RC522(slot)
+        ver = r.get_version()
+        r.close()
         if ver in (0x91, 0x92):
-            status = "✅ RC522 พบแล้ว"
-            ok_count += 1
+            tag = "✅ OK"; ok += 1
         elif ver == 0x00:
-            status = "❌ ไม่ตอบสนอง (ตรวจสาย CS / VCC / GND)"
+            tag = "❌ ไม่ตอบ — ตรวจสาย CS/VCC/GND"
         elif ver == 0xFF:
-            status = "❌ SPI error (ตรวจสาย MOSI/MISO/SCK)"
+            tag = "❌ SPI error — ตรวจสาย MOSI/MISO/SCK"
         else:
-            status = f"⚠️  Version ไม่รู้จัก (0x{ver:02X})"
-
-        cs_gpio = CS_PINS[slot]
-        print(f"  Slot {slot:>2} (CS=GPIO{cs_gpio:<2}) → 0x{ver:02X}  {status}")
-
+            tag = f"⚠️  0x{ver:02X} unknown"
+        print(f"  Slot {slot:>2}  CS=GPIO{CS_PINS[slot]:<2}  ver=0x{ver:02X}  {tag}")
     print("-"*50)
-    print(f"  พบ RC522 ทั้งหมด: {ok_count}/10 ตัว")
-    return ok_count
+    print(f"  พบ RC522: {ok}/10 ตัว")
+    return ok
 
-
-# ──────────────────────────────────────────────
-# ทดสอบ: อ่าน UID จาก Slot ที่เลือก
-# ──────────────────────────────────────────────
-def test_read_uid(slot: int, timeout: int = 15):
+# ── โหมด 2: อ่าน UID ─────────────────────────
+def test_read_uid(slot, timeout=15):
     print(f"\n{'='*50}")
-    print(f"  ทดสอบ 2: อ่าน UID — Slot {slot} (CS=GPIO{CS_PINS[slot]})")
+    print(f"  โหมด 2: อ่าน UID — Slot {slot}  CS=GPIO{CS_PINS[slot]}")
     print(f"{'='*50}")
-    print(f"  นำบัตร/เหรียญ NFC ไปทาบที่ RC522 Slot {slot}")
-    print(f"  รอ {timeout} วินาที...\n")
-
-    reader = RC522(slot)
-    start = time.time()
-
+    print(f"  นำบัตร/เหรียญ NFC ทาบที่ RC522 Slot {slot}  (รอ {timeout} วิ)\n")
+    r = RC522(slot); start = time.time()
     try:
         while time.time() - start < timeout:
-            if reader.find_card():
-                uid = reader.get_uid()
+            if r.find_card():
+                uid = r.get_uid()
                 if uid:
-                    print(f"  ✅ เจอบัตร!")
-                    print(f"     UID (HEX): {uid}")
-                    print(f"     Slot: {slot}  CS: GPIO{CS_PINS[slot]}")
-                    reader.close()
-                    return uid
+                    print(f"\n  ✅ UID: {uid}  (Slot {slot}, GPIO{CS_PINS[slot]})")
+                    r.close(); return uid
             time.sleep(0.1)
-            remaining = int(timeout - (time.time() - start))
-            print(f"  ⏳ รออีก {remaining} วิ...  \r", end='', flush=True)
+            print(f"  ⏳ {int(timeout-(time.time()-start))} วิ...  \r", end='', flush=True)
     except KeyboardInterrupt:
-        print("\n  ยกเลิกโดยผู้ใช้")
+        print("\n  ยกเลิก")
+    r.close()
+    print(f"\n  ⏳ หมดเวลา"); return None
 
-    reader.close()
-    print(f"\n  ⏳ หมดเวลา ไม่พบบัตรที่ Slot {slot}")
-    return None
-
-
-# ──────────────────────────────────────────────
-# ทดสอบ: scan ทุก Slot พร้อมกัน (round-robin)
-# ──────────────────────────────────────────────
-def test_scan_all(timeout: int = 30):
+# ── โหมด 3: Scan ทุก Slot ────────────────────
+def test_scan_all(timeout=30):
     print(f"\n{'='*50}")
-    print(f"  ทดสอบ 3: Scan ทุก Slot พร้อมกัน")
-    print(f"{'='*50}")
-    print(f"  นำบัตร NFC ไปทาบที่ RC522 ตัวใดก็ได้")
-    print(f"  รอ {timeout} วินาที... (Ctrl+C เพื่อหยุด)\n")
-
-    readers = {slot: RC522(slot) for slot in range(1, 11)}
-    start = time.time()
-
+    print(f"  โหมด 3: Scan ทุก Slot  (Ctrl+C หยุด)")
+    print(f"{'='*50}\n")
+    readers = {s: RC522(s) for s in range(1, 11)}
     try:
-        while time.time() - start < timeout:
-            for slot, reader in readers.items():
-                if reader.find_card():
-                    uid = reader.get_uid()
+        while True:
+            for slot, r in readers.items():
+                if r.find_card():
+                    uid = r.get_uid()
                     if uid:
-                        print(f"\n  ✅ Slot {slot:>2} (GPIO{CS_PINS[slot]:<2}) → UID: {uid}")
+                        print(f"  ✅ Slot {slot:>2}  GPIO{CS_PINS[slot]:<2}  UID: {uid}")
             time.sleep(0.05)
     except KeyboardInterrupt:
-        print("\n  หยุดการ scan")
-
+        print("\n  หยุด")
     for r in readers.values():
         r.close()
 
-
-# ──────────────────────────────────────────────
-# Main Menu
-# ──────────────────────────────────────────────
+# ── Main ──────────────────────────────────────
 def main():
-    print("=" * 50)
-    print("  ทดสอบ NFC RC522 × 10 Slot")
-    print(f"  RST: GPIO{RST_PIN}  |  SPI: GPIO10/9/11")
-    print("=" * 50)
+    global gpio
+    print("="*50)
+    print("  NFC RC522 × 10  —  Raspberry Pi 5")
+    print(f"  GPIO chip : {GPIO_CHIP}  (pinctrl-rp1)")
+    print(f"  RST=GPIO{RST_PIN}  SPI=GPIO10/9/11")
+    print("="*50)
 
-    setup_gpio()
+    try:
+        gpio = GpioManager()
+        print("  ✅ GPIO พร้อม")
+    except Exception as e:
+        print(f"\n  ❌ {e}")
+        print("  💡 ลอง: sudo python3 test_nfc.py")
+        sys.exit(1)
 
-    print("\n  เลือกโหมดทดสอบ:")
-    print("  1 — ตรวจ Version ทุก Slot (แนะนำทำก่อน)")
+    print("\n  1 — ตรวจ Version ทุก Slot  ← แนะนำทำก่อน")
     print("  2 — อ่าน UID จาก Slot ที่เลือก")
     print("  3 — Scan ทุก Slot พร้อมกัน")
     print("  0 — ออก")
 
     try:
-        choice = input("\n  เลือก (0-3): ").strip()
-
-        if choice == '1':
+        c = input("\n  เลือก (0-3): ").strip()
+        if c == '1':
             test_version_all()
-
-        elif choice == '2':
+        elif c == '2':
             ok = test_version_all()
             if ok == 0:
-                print("\n  ⚠️  ไม่พบ RC522 เลย ตรวจสายก่อนครับ")
+                print("\n  ⚠️  ไม่พบ RC522 เลย กรุณาตรวจสายก่อน")
             else:
                 try:
-                    slot = int(input("\n  เลือก Slot (1-10): ").strip())
-                    if 1 <= slot <= 10:
-                        test_read_uid(slot)
-                    else:
-                        print("  ❌ Slot ต้องอยู่ระหว่าง 1-10")
+                    s = int(input("\n  เลือก Slot (1-10): ").strip())
+                    if 1 <= s <= 10: test_read_uid(s)
+                    else: print("  ❌ Slot 1-10 เท่านั้น")
                 except ValueError:
-                    print("  ❌ กรุณากรอกตัวเลข")
-
-        elif choice == '3':
+                    print("  ❌ กรอกตัวเลข")
+        elif c == '3':
             test_scan_all()
-
-        elif choice == '0':
-            print("  ออกจากโปรแกรม")
-
+        elif c == '0':
+            print("  ออก")
         else:
-            print("  ❌ ไม่พบตัวเลือกนี้")
-
+            print("  ❌ ไม่มีตัวเลือกนี้")
     except KeyboardInterrupt:
         print("\n  ยกเลิก")
     finally:
-        GPIO.cleanup()
+        if gpio: gpio.cleanup()
         print("  GPIO cleanup เรียบร้อย")
-
 
 if __name__ == '__main__':
     main()
