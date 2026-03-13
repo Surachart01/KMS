@@ -1,0 +1,16 @@
+[Unit]
+Description=Hardware Service (Python) - NFC Reader + Solenoid Controller
+After=network.target kiosk-ui.service
+
+[Service]
+Type=simple
+User=admin
+WorkingDirectory=/home/admin/Desktop/KMS/hardwareUi/gpio
+ExecStart=/usr/bin/python3 hardware_service.py
+Restart=always
+RestartSec=5
+Environment=PYTHONUNBUFFERED=1
+Environment=PATH=/usr/local/bin:/usr/bin:/bin
+
+[Install]
+WantedBy=multi-user.target
