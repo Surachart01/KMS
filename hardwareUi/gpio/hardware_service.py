@@ -172,6 +172,29 @@ class Pi5MFRC522:
                 status = 1 # MI_ERR
         return status, back_data
 
+# Load environment variables
+load_dotenv()
+
+BACKEND_URL = os.getenv('BACKEND_URL', 'http://localhost:4556')
+NFC_POLLING_INTERVAL = 0.2  # วนลูปทุก 0.2 วินาที
+KEY_PULL_TIMEOUT = 15     # เวลารอดึงกุญแจ 15 วินาที
+
+# ─────────────────────────────────────────────
+# GPIO Pin Maps (BCM)
+# ─────────────────────────────────────────────
+
+# Relay/Solenoid Pins
+SLOT_PIN_MAP = {
+    1: 17, 2: 27, 3: 22, 4: 23, 5: 24, 
+    6: 25, 7: 14, 8: 15, 9: 18, 10: 0
+}
+
+# NFC Chip Select (CS/SDA) Pins
+SLOT_CS_MAP = {
+    1: 4, 2: 5, 3: 6, 4: 12, 5: 13, 
+    6: 16, 7: 19, 8: 20, 9: 21, 10: 26
+}
+
 # ─────────────────────────────────────────────
 # Initialization
 # ─────────────────────────────────────────────
