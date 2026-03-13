@@ -12,6 +12,7 @@ const rl = readline.createInterface({
 
 const checkAndImport = () => {
     try {
+<<<<<<< Current (Your changes)
         console.log("กำลังเชื่อมต่อบอร์ด MFRC522...");
 ()
         // ลองโหลดจากหลายๆ ที่ (แก้ปัญหาเรื่องรันจาก subfolder)
@@ -32,6 +33,16 @@ const checkAndImport = () => {
         return new Lib();
     } catch (e) {
         console.error("❌ ไม่สามารถโหลดไลบรารีอ่านเหรียญ mfrc522-rpi ได้");
+=======
+        console.log("กำลังเชื่อมต่อบอร์ด MFRC522... (@efesoroglu/mfrc522-rpi)");
+
+        // ใช้ require ตรงๆ เพื่อให้ NODE_PATH หรือระบบค้นหาปกติทำงานได้แม่นยำที่สุด
+        const Mfrc522Lib = require('@efesoroglu/mfrc522-rpi');
+        const Lib = Mfrc522Lib.default || Mfrc522Lib;
+        return new Lib();
+    } catch (e) {
+        console.error("❌ ไม่สามารถโหลด @efesoroglu/mfrc522-rpi ได้");
+>>>>>>> Incoming (Background Agent changes)
         console.error("เหตุผล: " + e.message);
         console.error("\n👉 วิธีแก้: ไม่ต้อง install ใหม่ครับ ให้รันคำสั่งนี้แทน:");
         console.error("    sudo NODE_PATH=../../node_modules node test_nfc.cjs");
@@ -76,7 +87,7 @@ const readTag = (mfrc522) => {
 
 const writeTag = (mfrc522) => {
     console.log("\n❌ [โหมดเขียนข้อมูล]");
-    console.log("ตัวไลบรารี mfrc522-rpi ไม่รองรับการเขียนข้อมูล หรือเหรียญ NTAG215 จำนวนมากปฏิเสธการแก้ UID");
+    console.log("ตัวไลบรารี @efesoroglu/mfrc522-rpi ไม่รองรับการเปลี่ยน UID ของเหรียญส่วนใหญ่โดยตรง");
     console.log("แนะนำให้ใช้ โหมดอ่าน (กด 1) เพื่อดึงรหัสโรงงานไปเซฟจะเสถียรที่สุดครับ!");
     process.exit(0);
 };

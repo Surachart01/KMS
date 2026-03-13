@@ -20,6 +20,10 @@ dotenv.config();
 const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:4556';
 const NFC_POLLING_INTERVAL_MS = 200; // loop NFC ทุก 200ms
 const KEY_PULL_TIMEOUT_S = 15;       // รอดึงกุญแจ 15 วินาทีคงที่
+const KEY_PULL_POLL_INTERVAL_MS = 1000; // ตรวจเช็คการดึงกุญแจทุก 1 วินาที
+// Relay module บางรุ่นเป็น Active-LOW (สั่ง LOW แล้วรีเลย์ทำงาน)
+// ตั้งค่าได้ใน gpio/.env: RELAY_ACTIVE_STATE=LOW หรือ HIGH (default HIGH)
+const RELAY_ACTIVE_STATE = (process.env.RELAY_ACTIVE_STATE || 'HIGH').toUpperCase();
 
 
 // slots ที่กำลังรอดึงกุญแจออก (ห้าม NFC polling loop ทั่วไปรบกวน)
@@ -64,6 +68,7 @@ const SLOT_CS_MAP = {
 import { exec } from 'child_process';
 
 let Mfrc522 = null;
+let Gpio = null;
 let IS_MOCK = true;
 let isUnlocking = false; // Flag to pause NFC polling during relay operation
 const slotHasKey = {}; // กุญแจอยู่ในช่องหรือไม่ (true = Green, false = Red)
@@ -82,8 +87,9 @@ async function setupHardware() {
 
                 // Set all pins as output low (Safety First - prevent relay clicking)
                 for (const [slot, pin] of Object.entries(SLOT_PIN_MAP)) {
-                    console.log(`📡 Pin Init: Slot ${slot} (Pin ${pin}) -> LOW`);
-                    exec(`pinctrl set ${pin} op dl`);
+                    const inactiveLevel = RELAY_ACTIVE_STATE === 'LOW' ? 'dh' : 'dl';
+                    console.log(`📡 Pin Init: Slot ${slot} (Pin ${pin}) -> ${inactiveLevel.toUpperCase()}`);
+                    exec(`pinctrl set ${pin} op ${inactiveLevel}`);
                 }
             }
             resolve();
@@ -92,13 +98,42 @@ async function setupHardware() {
 
     if (!IS_MOCK) {
         try {
-            const { default: Mfrc522Lib } = await import('mfrc522-rpi');
+            const onoff = await import('onoff');
+            Gpio = onoff.Gpio;
+            if (!Gpio?.accessible) {
+                console.log('🟡 NFC: onoff loaded but GPIO not accessible → mock NFC mode');
+                IS_MOCK = true;
+                return;
+            }
+
+            const { default: Mfrc522Lib } = await import('@efesoroglu/mfrc522-rpi');
             Mfrc522 = new Mfrc522Lib();
-            console.log('🟢 NFC: mfrc522-rpi loaded');
-        } catch {
-            console.log('🟡 NFC: mfrc522-rpi not found → mock NFC mode');
+            console.log('🟢 NFC: @efesoroglu/mfrc522-rpi loaded');
+        } catch (err) {
+            console.log('🟡 NFC: @efesoroglu/mfrc522-rpi not found or failed to load → mock NFC mode');
+            console.error(err.message);
         }
     }
+}
+
+function setRelayActive(slotNumber, shouldUnlock) {
+    const pin = SLOT_PIN_MAP[slotNumber];
+    if (!pin) return;
+
+    // "Active" หมายถึงรีเลย์ทำงาน/จ่ายไฟให้ solenoid เพื่อปลดล็อก
+    // - Active-HIGH: unlock => dh, lock => dl
+    // - Active-LOW : unlock => dl, lock => dh
+    const activeLevel = RELAY_ACTIVE_STATE === 'LOW' ? 'dl' : 'dh';
+    const inactiveLevel = RELAY_ACTIVE_STATE === 'LOW' ? 'dh' : 'dl';
+    const level = shouldUnlock ? activeLevel : inactiveLevel;
+
+    exec(`pinctrl set ${pin} ${level}`, (err) => {
+        if (err) {
+            console.error(`❌ Relay set error slot ${slotNumber}:`, err.message);
+        } else {
+            console.log(`🔌 Relay slot ${slotNumber} (Pin ${pin}) → ${level.toUpperCase()} (${shouldUnlock ? 'UNLOCK' : 'LOCK'})`);
+        }
+    });
 }
 
 // ─────────────────────────────────────────────
@@ -145,13 +180,14 @@ async function unlockSlot(slotNumber) {
 
     return new Promise((resolve) => {
         isUnlocking = true; // Pause NFC polling temporarily
-        exec(`pinctrl set ${pin} dh`, (err) => {
+        const activeLevel = RELAY_ACTIVE_STATE === 'LOW' ? 'dl' : 'dh';
+        exec(`pinctrl set ${pin} ${activeLevel}`, (err) => {
             isUnlocking = false; // Resume NFC polling
             if (err) {
                 console.error(`❌ GPIO error slot ${slotNumber}:`, err.message);
                 resolve(false);
             } else {
-                console.log(`✅ Slot ${slotNumber} (Pin ${pin}) → HIGH`);
+                console.log(`✅ Slot ${slotNumber} (Pin ${pin}) → ${activeLevel.toUpperCase()} (UNLOCK)`);
                 resolve(true);
             }
         });
@@ -168,18 +204,19 @@ function lockSlot(slotNumber) {
         return;
     }
 
-    exec(`pinctrl set ${pin} dl`, (err) => {
+    const inactiveLevel = RELAY_ACTIVE_STATE === 'LOW' ? 'dh' : 'dl';
+    exec(`pinctrl set ${pin} ${inactiveLevel}`, (err) => {
         if (err) {
             console.error(`❌ Lock error slot ${slotNumber}:`, err.message);
         } else {
-            console.log(`🔒 Slot ${slotNumber} (Pin ${pin}) → LOW`);
+            console.log(`🔒 Slot ${slotNumber} (Pin ${pin}) → ${inactiveLevel.toUpperCase()} (LOCK)`);
         }
     });
 }
 
 // อ่าน NFC tag ที่ slot ใดสักตัว → คืน uid หรือ null
 function readNfcAtSlot(slotNumber) {
-    if (IS_MOCK || !Mfrc522) return null; // จัดการใน mock branch ของ startKeyPullCheck
+    if (IS_MOCK || !Mfrc522 || !Gpio) return null; // จัดการใน mock branch ของ startKeyPullCheck
 
     const csPin = SLOT_CS_MAP[slotNumber];
     if (!csPin) return null;
@@ -209,15 +246,14 @@ function readNfcAtSlot(slotNumber) {
 
 /**
  * Key-Pull Verification (Timed 15s)
- * หลัง unlock → รอเวลา KEY_PULL_TIMEOUT_S วินาที (ให้ solenoid เปิดค้าง)
- * เมื่อครบ 15s → เช็ค NFC 1 ครั้ง 
- * - ถ้า tag หาย  → emit 'key:pulled' → เบิกสำเร็จ
- * - ถ้า tag ยังอยู่ → emit 'borrow:cancelled'
- * แล้วค่อย lockSlot() กลับสู่สถานะเดิม
+ * หลัง unlock → ตรวจ NFC slot นั้นทุก 1 วินาที (สูงสุด 15 วินาที)
+ * - ถ้า tag หายเมื่อไหร่ → lockSlot() ทันที + emit 'key:pulled' → เบิกสำเร็จ
+ * - ถ้าครบเวลาแล้วยังเจอ tag อยู่ → emit 'borrow:cancelled' (ถือว่าไม่ได้ดึง)
+ * แล้วค่อย lock/restore LED ตามเงื่อนไขเดิม
  */
 function startKeyPullCheck(slotNumber, bookingId) {
     pullCheckingSlots.add(slotNumber);
-    console.log(`⏳ Solenoid UNLOCKED for 15s... waiting to check NFC at slot=${slotNumber}`);
+    console.log(`⏳ Solenoid UNLOCKED... monitoring NFC removal at slot=${slotNumber} (max ${KEY_PULL_TIMEOUT_S}s)`);
 
     // Mock mode
     if (IS_MOCK || !Mfrc522) {
@@ -231,35 +267,39 @@ function startKeyPullCheck(slotNumber, bookingId) {
         return;
     }
 
-    // Real hardware (รอ 15 วิ ค่อยเช็คบัตร)
-    setTimeout(() => {
+    // Real hardware: poll NFC removal every 1s, stop early if removed
+    const startedAt = Date.now();
+    const timeoutMs = KEY_PULL_TIMEOUT_S * 1000;
+
+    const intervalId = setInterval(() => {
+        const elapsedMs = Date.now() - startedAt;
+
         const uid = readNfcAtSlot(slotNumber);
-
-        pullCheckingSlots.delete(slotNumber);
-
         if (!uid) {
+            clearInterval(intervalId);
+            pullCheckingSlots.delete(slotNumber);
+
             // tag หายไปแล้ว = กุญแจถูกดึงออกสำเร็จ
             slotHasKey[slotNumber] = false;
-            console.log(`✅ 15s passed... Key pulled from slot ${slotNumber}! (LED → RED)`);
-            lockSlot(slotNumber); // สั่งล็อคตู้ (ไฟแดง)
+            console.log(`✅ Key pulled from slot ${slotNumber} (detected early at ~${Math.round(elapsedMs / 1000)}s)`);
+            lockSlot(slotNumber); // ดึง solenoid กลับทันที
             socket.emit('key:pulled', { slotNumber, bookingId });
-        } else {
-            // tag ยังอยู่ = ไม่ได้ดึงกุญแจออก
-            console.log(`⏰ 15s passed... Key STILL in slot ${slotNumber} → cancelling borrow`);
+            return;
+        }
+
+        if (elapsedMs >= timeoutMs) {
+            clearInterval(intervalId);
+            pullCheckingSlots.delete(slotNumber);
+
+            // tag ยังอยู่ครบเวลา = ไม่ได้ดึงกุญแจออก
+            console.log(`⏰ ${KEY_PULL_TIMEOUT_S}s elapsed... Key STILL in slot ${slotNumber} → cancelling borrow`);
             slotHasKey[slotNumber] = true;
-            // ยังคงสถานะไฟเขียวไว้ แต่ lockSolt (ซึ่งในกรณีนี้ DH จะทำให้ไฟเขียวติดอยู่แล้ว)
-            // แต่จริงๆ lockSlot สั่ง dl ซึ่งจะทำให้เป็นไฟแดง ดังนั้นเราต้องสั่ง dh กลับถ้าบัตรยังอยู่
             socket.emit('borrow:cancelled', { slotNumber, bookingId });
 
-            // Re-assert green LED as lockSlot sets it to LOW(Red) blindly 
-            // แต่ถ้าจะให้ไฟเขียวค้าง ต้องสั่ง dh ตรงๆ
-            if (!IS_MOCK) {
-                exec(`pinctrl set ${SLOT_PIN_MAP[slotNumber]} dh`, (err) => {
-                    if (err) console.error(err);
-                });
-            }
+            // กลับสู่สถานะ LOCK เพื่อให้ solenoid ยุบกลับ (ปลอดภัยกว่าให้ค้าง)
+            lockSlot(slotNumber);
         }
-    }, KEY_PULL_TIMEOUT_S * 1000);
+    }, KEY_PULL_POLL_INTERVAL_MS);
 }
 
 // รับคำสั่ง unlock จาก Backend → เปิด solenoid → เริ่ม key-pull check
