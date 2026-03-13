@@ -240,7 +240,17 @@ class MultiReader:
         if not self.select_slot(slot):
             return None
         try:
-            return self.rc522.read_uid_hex()
+            # After switching CS, give the reader a brief settle time.
+            time.sleep(0.003)
+
+            # Retry a few times to avoid false negatives from noisy RF / timing.
+            # Each attempt is quick (tens of ms). If a tag is present, we usually get it within 1-2 tries.
+            for _ in range(3):
+                uid = self.rc522.read_uid_hex()
+                if uid:
+                    return uid
+                time.sleep(0.005)
+            return None
         finally:
             self.deselect_all()
 
