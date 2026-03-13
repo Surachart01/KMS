@@ -7,7 +7,7 @@ echo "🔄 Stopping Python Hardware Service..."
 sudo systemctl stop kiosk-hardware
 
 echo "⚙️  Reverting systemd service to NodeJS..."
-sudo cat > /etc/systemd/system/kiosk-hardware.service << EOF
+cat << EOF | sudo tee /etc/systemd/system/kiosk-hardware.service > /dev/null
 [Unit]
 Description=Hardware Service - NFC Reader + Solenoid Controller
 After=network.target kiosk-ui.service
