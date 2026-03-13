@@ -17,11 +17,15 @@ import dotenv from 'dotenv';
 import { spawn } from 'child_process';
 
 dotenv.config();
-
+ 
 const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:4556';
 const NFC_POLLING_INTERVAL_MS = 200; // loop NFC ทุก 200ms
 const KEY_PULL_TIMEOUT_S = 15;       // รอดึงกุญแจ 15 วินาทีคงที่
 const KEY_PULL_POLL_INTERVAL_MS = 1000; // ตรวจเช็คการดึงกุญแจทุก 1 วินาที
+// กันอ่าน NFC หลุดเป็นจังหวะแล้วคิดว่าดึงกุญแจ: ต้องเห็นแท็กก่อน และต้องหายติดกันหลายครั้ง
+const KEY_PULL_REQUIRE_SEEN_TAG = true;
+const KEY_PULL_MISS_THRESHOLD = Number(process.env.KEY_PULL_MISS_THRESHOLD || 2); // หายติดกันกี่ครั้งถึงนับว่าดึงออกแล้ว
+const KEY_PULL_SEEN_GRACE_MS = Number(process.env.KEY_PULL_SEEN_GRACE_MS || 2000); // เวลารอให้เห็นแท็กครั้งแรกหลัง unlock
 // Relay module บางรุ่นเป็น Active-LOW (สั่ง LOW แล้วรีเลย์ทำงาน)
 // ตั้งค่าได้ใน gpio/.env: RELAY_ACTIVE_STATE=LOW หรือ HIGH (default HIGH)
 const RELAY_ACTIVE_STATE = (process.env.RELAY_ACTIVE_STATE || 'HIGH').toUpperCase();
@@ -381,23 +385,42 @@ function startKeyPullCheck(slotNumber, bookingId) {
     const timeoutMs = KEY_PULL_TIMEOUT_S * 1000;
 
     let isChecking = false;
+    let seenTag = false;
+    let missCount = 0;
     const intervalId = setInterval(async () => {
         if (isChecking) return;
         isChecking = true;
         const elapsedMs = Date.now() - startedAt;
 
         const uid = await readNfcAtSlot(slotNumber);
-        if (!uid) {
-            clearInterval(intervalId);
-            pullCheckingSlots.delete(slotNumber);
+            if (uid) {
+            seenTag = true;
+            missCount = 0;
+        } else {
+            // ถ้ายังไม่เคยเห็นแท็กหลัง unlock ให้รอก่อน (กันกรณีอ่านหลุด/เริ่มต้นช้า)
+            if (KEY_PULL_REQUIRE_SEEN_TAG && !seenTag) {
+                if (elapsedMs >= KEY_PULL_SEEN_GRACE_MS) {
+                    console.log(
+                        `⚠️  NFC not seen within ${Math.round(KEY_PULL_SEEN_GRACE_MS / 1000)}s at slot ${slotNumber} — will keep waiting until timeout`
+                    );
+                }
+            } else {
+                missCount += 1;
+                if (missCount >= Math.max(1, KEY_PULL_MISS_THRESHOLD)) {
+                    clearInterval(intervalId);
+                    pullCheckingSlots.delete(slotNumber);
 
-            // tag หายไปแล้ว = กุญแจถูกดึงออกสำเร็จ
-            slotHasKey[slotNumber] = false;
-            console.log(`✅ Key pulled from slot ${slotNumber} (detected early at ~${Math.round(elapsedMs / 1000)}s)`);
-            lockSlot(slotNumber); // ดึง solenoid กลับทันที
-            socket.emit('key:pulled', { slotNumber, bookingId });
-            isChecking = false;
-            return;
+                    // tag หายไปติดกันหลายครั้ง = กุญแจถูกดึงออกสำเร็จ
+                    slotHasKey[slotNumber] = false;
+                    console.log(
+                        `✅ Key pulled from slot ${slotNumber} (missing ${missCount}x, detected at ~${Math.round(elapsedMs / 1000)}s)`
+                    );
+                    lockSlot(slotNumber); // ดึง solenoid กลับทันที
+                    socket.emit('key:pulled', { slotNumber, bookingId });
+                    isChecking = false;
+                    return;
+                }
+            }
         }
 
         if (elapsedMs >= timeoutMs) {
