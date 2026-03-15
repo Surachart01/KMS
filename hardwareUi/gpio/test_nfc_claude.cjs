@@ -214,8 +214,35 @@ class MultiReader:
         self.spi.open(0, 0)
         self.spi.max_speed_hz = 1_000_000
         self.spi.mode = 0
+        self.spi.no_cs = True
 
         self.rc522 = Rc522(self.spi)
+
+        # ── SPI diagnostic on slot 1 ──
+        sys.stderr.write("\\n── SPI Diagnostic ──\\n")
+        sys.stderr.write("  mode=" + str(self.spi.mode) + " speed=" + str(self.spi.max_speed_hz) + " no_cs=" + str(self.spi.no_cs) + "\\n")
+        if 1 in self.cs_lines:
+            pin1 = self.cs_lines[1]
+            lgpio.gpio_write(self.chip, pin1, 0)
+            time.sleep(0.01)
+            raw1 = self.spi.xfer2([0xEF, 0x00])
+            raw2 = self.spi.xfer2([0xEF, 0x00])
+            raw3 = self.spi.xfer2([0xEF, 0x00])
+            lgpio.gpio_write(self.chip, pin1, 1)
+            sys.stderr.write("  Slot 1 (GPIO" + str(pin1) + ") read VersionReg (0x37):\\n")
+            sys.stderr.write("    attempt 1: sent [0xEF,0x00] got " + str(raw1) + "\\n")
+            sys.stderr.write("    attempt 2: sent [0xEF,0x00] got " + str(raw2) + "\\n")
+            sys.stderr.write("    attempt 3: sent [0xEF,0x00] got " + str(raw3) + "\\n")
+            if raw1[1] == 0 and raw2[1] == 0 and raw3[1] == 0:
+                sys.stderr.write("  *** All 0x00 — SPI bus not responding ***\\n")
+                sys.stderr.write("  Check: MOSI(Pin19) MISO(Pin21) SCK(Pin23) wiring\\n")
+                sys.stderr.write("  Check: VCC(3.3V) and GND connected to RC522\\n")
+            else:
+                sys.stderr.write("  SPI OK — got 0x" + format(raw1[1], "02X") + "\\n")
+        else:
+            sys.stderr.write("  Slot 1 GPIO not claimed, skipping diag\\n")
+        sys.stderr.write("── End Diagnostic ──\\n\\n")
+        sys.stderr.flush()
 
     def close(self):
         for pin in self.cs_lines.values():
@@ -328,7 +355,7 @@ function startHardwareHelper() {
     pyProc.stderr.on('data', (chunk) => {
       const msg = chunk.toString();
       stderrBuf += msg;
-      if (msg.includes('WARN:')) process.stderr.write(msg);
+      process.stderr.write(msg);
     });
 
     pyProc.stdout.on('data', (chunk) => {
