@@ -1,8 +1,11 @@
+'use strict';
 /**
  * test_nfc_claude.cjs — Test 10× RC522 NFC readers on Raspberry Pi 5
- * Single SPI bus (/dev/spidev0.0), 10× software CS (GPIO).
- * Uses node-libgpiod (character device) so GPIO works on RPi 5 where
- * legacy sysfs /sys/class/gpio is disabled or returns EINVAL.
+ * Single SPI bus (/dev/spidev0.0), software CS via Python lgpio co-process.
+ *
+ * RPi 5 dropped legacy sysfs GPIO (/sys/class/gpio), so onoff / node-libgpiod
+ * do not work. Instead we spawn a tiny Python helper that uses lgpio (the RPi
+ * Foundation's recommended library, pre-installed on RPi OS Bookworm).
  *
  * Pin connections (do not change):
  * ─────────────────────────────────────────────────────────────────
@@ -26,121 +29,225 @@
  *   Reader #10 : GPIO26  (Pin 37)
  * ─────────────────────────────────────────────────────────────────
  *
- * Prereqs on RPi: sudo apt install build-essential gpiod libgpiod2 libgpiod-dev
- * Run: node test_nfc_claude.cjs   (or sudo if /dev/gpiochip* not in your group)
+ * Prereqs:
+ *   sudo apt install python3-lgpio   (usually pre-installed on RPi OS)
+ *   npm install spi-device            (in this folder)
+ *
+ * Run:  sudo node test_nfc_claude.cjs
  */
 
 const spi = require('spi-device');
-const { Chip, Line } = require('node-libgpiod');
+const { spawn } = require('child_process');
 
-// ─── Constants ────────────────────────────────────────────────────
+// ─── SPI Constants ────────────────────────────────────────────────
 const SPI_BUS = 0;
 const SPI_DEVICE = 0;
-const SPI_MODE = spi.MODE0;
-const SPI_SPEED_HZ = 1000000;
+const SPI_SPEED_HZ = 1000000; // 1 MHz
 
-const RST_GPIO = 7;   // Pin 25, shared
+// ─── GPIO Constants ───────────────────────────────────────────────
+const RST_GPIO = 7;
 
 const CS_MAP = [
-  { reader: 1, gpio: 4,  pin: 7 },
-  { reader: 2, gpio: 5,  pin: 29 },
-  { reader: 3, gpio: 6,  pin: 31 },
-  { reader: 4, gpio: 12, pin: 32 },
-  { reader: 5, gpio: 13, pin: 33 },
-  { reader: 6, gpio: 16, pin: 36 },
-  { reader: 7, gpio: 19, pin: 35 },
-  { reader: 8, gpio: 20, pin: 38 },
-  { reader: 9, gpio: 21, pin: 40 },
+  { reader: 1,  gpio: 4,  pin: 7 },
+  { reader: 2,  gpio: 5,  pin: 29 },
+  { reader: 3,  gpio: 6,  pin: 31 },
+  { reader: 4,  gpio: 12, pin: 32 },
+  { reader: 5,  gpio: 13, pin: 33 },
+  { reader: 6,  gpio: 16, pin: 36 },
+  { reader: 7,  gpio: 19, pin: 35 },
+  { reader: 8,  gpio: 20, pin: 38 },
+  { reader: 9,  gpio: 21, pin: 40 },
   { reader: 10, gpio: 26, pin: 37 },
 ];
 
-// RC522 registers
-const REG_COMMAND    = 0x01;
-const REG_COM_IRQ    = 0x04;
-const REG_FIFO_DATA  = 0x09;
-const REG_FIFO_LEVEL = 0x0A;
-const REG_BIT_FRAMING = 0x0D;
-const REG_VERSION   = 0x37;
+// Python index 0-9 = CS for reader 1-10, index 10 = RST
+const RST_INDEX = CS_MAP.length; // 10
 
-const CMD_IDLE       = 0x00;
-const CMD_TRANSCEIVE = 0x0C;
-const REQA           = 0x26;
-const SEL_CMD        = 0x93;
-const NVB            = 0x20;
-const COM_IRQ_IRQ    = 0x20; // bit 5 = IdleIrq
+// ─── RC522 Registers ──────────────────────────────────────────────
+const REG_COMMAND     = 0x01;
+const REG_COM_IRQ     = 0x04;
+const REG_FIFO_DATA   = 0x09;
+const REG_FIFO_LEVEL  = 0x0A;
+const REG_BIT_FRAMING = 0x0D;
+const REG_VERSION     = 0x37;
+
+const CMD_IDLE        = 0x00;
+const CMD_TRANSCEIVE  = 0x0C;
+const REQA            = 0x26;
+const SEL_CMD         = 0x93;
+const NVB             = 0x20;
+const COM_IRQ_RX_DONE = 0x20; // bit 5
 
 const VERSION_OK = [0x91, 0x92];
 
-// ─── Globals (set during init, used in cleanup) ────────────────────
+// ─── Embedded Python GPIO helper ──────────────────────────────────
+// Uses lgpio (character-device GPIO) which works on RPi 5.
+// Protocol: Node writes "<pinIndex><0|1>\n", Python sets GPIO and replies "K\n".
+const PY_GPIO_HELPER = `
+import sys
+
+try:
+    import lgpio
+except ImportError:
+    sys.stderr.write("ERROR: python3-lgpio not found.\\n")
+    sys.stderr.write("Install: sudo apt install python3-lgpio\\n")
+    sys.stderr.flush()
+    sys.exit(1)
+
+CS  = [4, 5, 6, 12, 13, 16, 19, 20, 21, 26]
+RST = 7
+ALL = CS + [RST]
+
+try:
+    h = lgpio.gpiochip_open(0)
+except Exception as e:
+    sys.stderr.write("ERROR: Cannot open /dev/gpiochip0: " + str(e) + "\\n")
+    sys.stderr.write("Try: sudo node test_nfc_claude.cjs\\n")
+    sys.stderr.flush()
+    sys.exit(1)
+
+for g in ALL:
+    lgpio.gpio_claim_output(h, g, 1)
+
+sys.stdout.write("READY\\n")
+sys.stdout.flush()
+
+for raw in sys.stdin:
+    cmd = raw.strip()
+    if cmd == "Q":
+        break
+    if len(cmd) >= 2:
+        try:
+            idx = int(cmd[:-1])
+            val = int(cmd[-1])
+            if 0 <= idx < len(ALL):
+                lgpio.gpio_write(h, ALL[idx], val)
+        except Exception:
+            pass
+    sys.stdout.write("K\\n")
+    sys.stdout.flush()
+
+for g in ALL:
+    try:
+        lgpio.gpio_free(h, g)
+    except Exception:
+        pass
+lgpio.gpiochip_close(h)
+`;
+
+// ─── Globals ──────────────────────────────────────────────────────
 let spiDev = null;
-let gpioChip = null;  // keep ref so Line instances are not GC'd
-let csPins = [];      // Line instances (libgpiod)
-let rstPin = null;
+let pyProc = null;
+let pyBuffer = '';
+let gpioResolve = null;
 
-// ─── Helpers ──────────────────────────────────────────────────────
+// ─── Python GPIO helper management ───────────────────────────────
 
-function spiTransfer(spiDev, sendBuf, receiveLen) {
-  const recv = receiveLen != null ? Buffer.alloc(receiveLen) : Buffer.alloc(sendBuf.length);
+function startGpioHelper() {
   return new Promise((resolve, reject) => {
-    const transfer = [{
+    pyProc = spawn('python3', ['-u', '-c', PY_GPIO_HELPER], {
+      stdio: ['pipe', 'pipe', 'pipe'],
+    });
+
+    let started = false;
+    let stderrBuf = '';
+
+    pyProc.stderr.on('data', (chunk) => {
+      stderrBuf += chunk.toString();
+    });
+
+    pyProc.stdout.on('data', (chunk) => {
+      pyBuffer += chunk.toString();
+      if (!started) {
+        const idx = pyBuffer.indexOf('READY\n');
+        if (idx !== -1) {
+          pyBuffer = pyBuffer.slice(idx + 6);
+          started = true;
+          resolve();
+          return;
+        }
+      }
+      drainGpioBuffer();
+    });
+
+    pyProc.on('close', (code) => {
+      if (!started) {
+        reject(new Error(
+          stderrBuf.trim() || 'GPIO helper exited with code ' + code
+        ));
+      }
+    });
+
+    setTimeout(() => {
+      if (!started) {
+        pyProc.kill();
+        reject(new Error(
+          'GPIO helper timed out.\n' + stderrBuf.trim()
+        ));
+      }
+    }, 5000);
+  });
+}
+
+function drainGpioBuffer() {
+  while (true) {
+    const idx = pyBuffer.indexOf('\n');
+    if (idx === -1) break;
+    const line = pyBuffer.slice(0, idx).trim();
+    pyBuffer = pyBuffer.slice(idx + 1);
+    if (line === 'K' && gpioResolve) {
+      const r = gpioResolve;
+      gpioResolve = null;
+      r();
+    }
+  }
+}
+
+function gpioSet(pinIndex, value) {
+  return new Promise((resolve) => {
+    gpioResolve = resolve;
+    pyProc.stdin.write(pinIndex + '' + value + '\n');
+  });
+}
+
+function csLow(csIndex) {
+  return gpioSet(csIndex, 0);
+}
+
+function csHigh(csIndex) {
+  return gpioSet(csIndex, 1);
+}
+
+// ─── SPI helpers ──────────────────────────────────────────────────
+
+function spiTransfer(dev, sendBuf) {
+  return new Promise((resolve, reject) => {
+    const recv = Buffer.alloc(sendBuf.length);
+    dev.transfer([{
       sendBuffer: sendBuf,
       receiveBuffer: recv,
       byteLength: sendBuf.length,
       speedHz: SPI_SPEED_HZ,
-    }];
-    spiDev.transfer(transfer, (err) => {
+    }], (err) => {
       if (err) return reject(err);
       resolve(recv);
     });
   });
 }
 
-function csLow(line) {
-  line.setValue(0);
+async function readReg(dev, csIndex, reg) {
+  const addr = ((reg << 1) & 0x7E) | 0x80;
+  await csLow(csIndex);
+  const recv = await spiTransfer(dev, Buffer.from([addr, 0x00]));
+  await csHigh(csIndex);
+  return recv[1];
 }
 
-function csHigh(line) {
-  line.setValue(1);
-}
-
-function readReg(spiDev, csGpio, reg) {
-  const addrRead = ((reg << 1) & 0x7E) | 0x80;
-  const sendBuf = Buffer.from([addrRead, 0x00]);
-  return new Promise((resolve, reject) => {
-    csLow(csGpio);
-    const recv = Buffer.alloc(2);
-    const transfer = [{
-      sendBuffer: sendBuf,
-      receiveBuffer: recv,
-      byteLength: 2,
-      speedHz: SPI_SPEED_HZ,
-    }];
-    spiDev.transfer(transfer, (err) => {
-      csHigh(csGpio);
-      if (err) return reject(err);
-      resolve(recv[1]);
-    });
-  });
-}
-
-function writeReg(spiDev, csGpio, reg, value) {
-  const addrWrite = (reg << 1) & 0x7E;
-  const sendBuf = Buffer.from([addrWrite, value]);
-  return new Promise((resolve, reject) => {
-    csLow(csGpio);
-    const recv = Buffer.alloc(2);
-    const transfer = [{
-      sendBuffer: sendBuf,
-      receiveBuffer: recv,
-      byteLength: 2,
-      speedHz: SPI_SPEED_HZ,
-    }];
-    spiDev.transfer(transfer, (err) => {
-      csHigh(csGpio);
-      if (err) return reject(err);
-      resolve();
-    });
-  });
+async function writeReg(dev, csIndex, reg, value) {
+  const addr = (reg << 1) & 0x7E;
+  await csLow(csIndex);
+  await spiTransfer(dev, Buffer.from([addr, value]));
+  await csHigh(csIndex);
 }
 
 function delay(ms) {
@@ -149,118 +256,92 @@ function delay(ms) {
 
 function timestamp() {
   const d = new Date();
-  const h = d.getHours().toString().padStart(2, '0');
-  const m = d.getMinutes().toString().padStart(2, '0');
-  const s = d.getSeconds().toString().padStart(2, '0');
-  return `${h}:${m}:${s}`;
+  return [d.getHours(), d.getMinutes(), d.getSeconds()]
+    .map((n) => n.toString().padStart(2, '0'))
+    .join(':');
 }
 
-// ─── Init: open SPI, init CS and RST ───────────────────────────────
+// ─── Open SPI ─────────────────────────────────────────────────────
 
 function openSpi() {
   try {
     spiDev = spi.openSync(SPI_BUS, SPI_DEVICE, {
-      mode: SPI_MODE,
+      mode: spi.MODE0,
       maxSpeedHz: SPI_SPEED_HZ,
     });
   } catch (err) {
-    console.error('Failed to open SPI device:', err.message);
+    console.error('Failed to open /dev/spidev0.0:', err.message);
     console.error('Ensure SPI is enabled: sudo raspi-config → Interface Options → SPI → Enable');
-    console.error('Then reboot and check: ls /dev/spi*');
-    process.exit(1);
-  }
-}
-
-function initGpio() {
-  try {
-    gpioChip = new Chip(0);
-    rstPin = new Line(gpioChip, RST_GPIO);
-    rstPin.requestOutputMode();
-    rstPin.setValue(1);
-
-    for (const { gpio } of CS_MAP) {
-      const line = new Line(gpioChip, gpio);
-      line.requestOutputMode();
-      line.setValue(1);
-      csPins.push(line);
-    }
-  } catch (err) {
-    console.error('Failed to open GPIO (libgpiod):', err.message);
-    console.error('Install: sudo apt install build-essential gpiod libgpiod2 libgpiod-dev');
-    console.error('Then: npm install (node-libgpiod). You may need: sudo node test_nfc_claude.cjs');
+    console.error('Then reboot and verify: ls /dev/spi*');
     process.exit(1);
   }
 }
 
 // ─── Version check per reader ─────────────────────────────────────
 
-async function readVersion(readerIndex) {
-  const { reader, gpio, pin } = CS_MAP[readerIndex];
-  const csGpio = csPins[readerIndex];
-  const v = await readReg(spiDev, csGpio, REG_VERSION);
+async function readVersion(idx) {
+  const { reader, gpio, pin } = CS_MAP[idx];
+  const v = await readReg(spiDev, idx, REG_VERSION);
   const ok = VERSION_OK.includes(v);
-  const padN = reader.toString().padStart(2);
-  const padGpio = `GPIO${gpio}`.padEnd(6);
-  const padPin = `Pin ${pin}`.padEnd(6);
-  console.log(`Reader #${padN}  | ${padGpio} | ${padPin} | Version: 0x${v.toString(16).toUpperCase().padStart(2, '0')} | ${ok ? 'OK' : 'FAIL'}`);
+  const col1 = ('Reader #' + reader).padEnd(11);
+  const col2 = ('GPIO' + gpio).padEnd(6);
+  const col3 = ('Pin ' + pin).padEnd(6);
+  const col4 = '0x' + v.toString(16).toUpperCase().padStart(2, '0');
+  console.log(`${col1} | ${col2} | ${col3} | Version: ${col4} | ${ok ? 'OK' : 'FAIL'}`);
   return ok;
 }
 
-// ─── Poll: card present + anti-collision UID ────────────────────────
+// ─── Card detect + anti-collision UID ────────────────────────────
 
-async function isCardPresent(csGpio) {
-  await writeReg(spiDev, csGpio, REG_BIT_FRAMING, 0x7F);
-  await writeReg(spiDev, csGpio, REG_COMMAND, CMD_TRANSCEIVE);
-  await writeReg(spiDev, csGpio, REG_FIFO_DATA, REQA);
+async function isCardPresent(csIndex) {
+  await writeReg(spiDev, csIndex, REG_BIT_FRAMING, 0x07);
+  await writeReg(spiDev, csIndex, REG_COMMAND, CMD_IDLE);
+  await writeReg(spiDev, csIndex, REG_FIFO_LEVEL, 0x80); // flush FIFO
+  await writeReg(spiDev, csIndex, REG_FIFO_DATA, REQA);
+  await writeReg(spiDev, csIndex, REG_BIT_FRAMING, 0x87); // start tx (bit 7)
+  await writeReg(spiDev, csIndex, REG_COMMAND, CMD_TRANSCEIVE);
   await delay(10);
-  const irq = await readReg(spiDev, csGpio, REG_COM_IRQ);
-  return (irq & COM_IRQ_IRQ) !== 0;
+  const irq = await readReg(spiDev, csIndex, REG_COM_IRQ);
+  return (irq & COM_IRQ_RX_DONE) !== 0;
 }
 
-async function getUid(csGpio) {
-  await writeReg(spiDev, csGpio, REG_COMMAND, CMD_IDLE);
-  await writeReg(spiDev, csGpio, REG_FIFO_LEVEL, 0x80); // Flush FIFO (0x80 = flush)
-  await writeReg(spiDev, csGpio, REG_FIFO_DATA, SEL_CMD);
-  await writeReg(spiDev, csGpio, REG_FIFO_DATA, NVB);
-  await writeReg(spiDev, csGpio, REG_COMMAND, CMD_TRANSCEIVE);
+async function getUid(csIndex) {
+  await writeReg(spiDev, csIndex, REG_COMMAND, CMD_IDLE);
+  await writeReg(spiDev, csIndex, REG_FIFO_LEVEL, 0x80); // flush FIFO
+  await writeReg(spiDev, csIndex, REG_BIT_FRAMING, 0x00);
+  await writeReg(spiDev, csIndex, REG_FIFO_DATA, SEL_CMD);
+  await writeReg(spiDev, csIndex, REG_FIFO_DATA, NVB);
+  await writeReg(spiDev, csIndex, REG_COMMAND, CMD_TRANSCEIVE);
   await delay(10);
 
-  const level = await readReg(spiDev, csGpio, REG_FIFO_LEVEL);
+  const level = await readReg(spiDev, csIndex, REG_FIFO_LEVEL);
   if (level === 0 || level > 16) return null;
 
   const bytes = [];
   for (let i = 0; i < level; i++) {
-    const b = await readReg(spiDev, csGpio, REG_FIFO_DATA);
-    bytes.push(b);
+    bytes.push(await readReg(spiDev, csIndex, REG_FIFO_DATA));
   }
-  // UID is typically first 4 bytes (or 7 for double-size); use first 4 for display
-  const uidBytes = bytes.slice(0, 4);
-  return uidBytes.map((b) => b.toString(16).padStart(2, '0')).join('').toUpperCase();
+  return bytes
+    .slice(0, 4)
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('')
+    .toUpperCase();
 }
 
-// ─── Cleanup ─────────────────────────────────────────────────────
+// ─── Cleanup ──────────────────────────────────────────────────────
 
 function shutdown() {
   console.log('\nShutting down...');
   try {
-    if (csPins.length) {
-      for (const line of csPins) {
-        try { line.release(); } catch (_) {}
-      }
-      csPins = [];
+    if (pyProc) {
+      pyProc.stdin.write('Q\n');
+      pyProc.stdin.end();
+      pyProc = null;
     }
-    if (rstPin) {
-      try { rstPin.release(); } catch (_) {}
-      rstPin = null;
-    }
-    gpioChip = null;
-    if (spiDev) {
-      try { spiDev.closeSync(); } catch (_) {}
-      spiDev = null;
-    }
-  } catch (e) {
-    console.error(e);
-  }
+  } catch (_) {}
+  try {
+    if (spiDev) { spiDev.closeSync(); spiDev = null; }
+  } catch (_) {}
   console.log('Done.');
   process.exit(0);
 }
@@ -272,7 +353,13 @@ async function main() {
   console.log('Initializing readers...\n');
 
   openSpi();
-  initGpio();
+
+  try {
+    await startGpioHelper();
+  } catch (err) {
+    console.error('GPIO init failed:', err.message);
+    process.exit(1);
+  }
 
   const enabled = [];
   for (let i = 0; i < CS_MAP.length; i++) {
@@ -281,10 +368,10 @@ async function main() {
       enabled.push(ok);
     } catch (err) {
       const { reader, gpio, pin } = CS_MAP[i];
-      const padN = reader.toString().padStart(2);
-      const padGpio = `GPIO${gpio}`.padEnd(6);
-      const padPin = `Pin ${pin}`.padEnd(6);
-      console.log(`Reader #${padN}  | ${padGpio} | ${padPin} | Error: ${err.message} | FAIL`);
+      const col1 = ('Reader #' + reader).padEnd(11);
+      const col2 = ('GPIO' + gpio).padEnd(6);
+      const col3 = ('Pin ' + pin).padEnd(6);
+      console.log(`${col1} | ${col2} | ${col3} | Error    | FAIL`);
       enabled.push(false);
     }
     await delay(50);
@@ -300,19 +387,17 @@ async function main() {
     for (let i = 0; i < CS_MAP.length; i++) {
       if (!enabled[i]) continue;
       const { reader, gpio } = CS_MAP[i];
-      const csGpio = csPins[i];
       try {
-        const present = await isCardPresent(csGpio);
-        if (present) {
-          const uid = await getUid(csGpio);
+        if (await isCardPresent(i)) {
+          const uid = await getUid(i);
           if (uid) {
-            console.log(`[${timestamp()}] Reader #${reader.toString().padStart(2)}  (GPIO${gpio.toString().padStart(2)}) → UID: ${uid}`);
+            const rdr = ('#' + reader).padStart(3);
+            const gpioStr = ('GPIO' + gpio).padStart(6);
+            console.log(`[${timestamp()}] Reader ${rdr}  (${gpioStr}) → UID: ${uid}`);
           }
         }
-      } catch (_) {
-        // ignore single-read errors during poll
-      }
-    }
+      } catch (_) {}
+ดรป    }
     await delay(200);
   }
 }
