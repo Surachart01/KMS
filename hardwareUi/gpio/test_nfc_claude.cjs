@@ -84,7 +84,7 @@ const VERSION_OK = [0x91, 0x92];
 // Uses lgpio (character-device GPIO) which works on RPi 5.
 // Protocol: Node writes "<pinIndex><0|1>\n", Python sets GPIO and replies "K\n".
 const PY_GPIO_HELPER = `
-import sys
+import sys, json
 
 try:
     import lgpio
@@ -97,6 +97,7 @@ except ImportError:
 CS  = [4, 5, 6, 12, 13, 16, 19, 20, 21, 26]
 RST = 7
 ALL = CS + [RST]
+claimed = set()
 
 try:
     h = lgpio.gpiochip_open(0)
@@ -107,9 +108,14 @@ except Exception as e:
     sys.exit(1)
 
 for g in ALL:
-    lgpio.gpio_claim_output(h, g, 1)
+    try:
+        lgpio.gpio_claim_output(h, g, 1)
+        claimed.add(g)
+    except lgpio.error:
+        sys.stderr.write("WARN: GPIO" + str(g) + " busy (kernel driver), skipped\\n")
+        sys.stderr.flush()
 
-sys.stdout.write("READY\\n")
+sys.stdout.write("READY:" + json.dumps(sorted(claimed)) + "\\n")
 sys.stdout.flush()
 
 for raw in sys.stdin:
@@ -120,14 +126,14 @@ for raw in sys.stdin:
         try:
             idx = int(cmd[:-1])
             val = int(cmd[-1])
-            if 0 <= idx < len(ALL):
+            if 0 <= idx < len(ALL) and ALL[idx] in claimed:
                 lgpio.gpio_write(h, ALL[idx], val)
         except Exception:
             pass
     sys.stdout.write("K\\n")
     sys.stdout.flush()
 
-for g in ALL:
+for g in claimed:
     try:
         lgpio.gpio_free(h, g)
     except Exception:
@@ -140,6 +146,7 @@ let spiDev = null;
 let pyProc = null;
 let pyBuffer = '';
 let gpioResolve = null;
+let claimedGpios = new Set(); // GPIOs the Python helper successfully claimed
 
 // ─── Python GPIO helper management ───────────────────────────────
 
@@ -153,15 +160,28 @@ function startGpioHelper() {
     let stderrBuf = '';
 
     pyProc.stderr.on('data', (chunk) => {
-      stderrBuf += chunk.toString();
+      const msg = chunk.toString();
+      stderrBuf += msg;
+      // Print warnings immediately so user sees them during init
+      if (msg.includes('WARN:')) {
+        process.stderr.write(msg);
+      }
     });
 
     pyProc.stdout.on('data', (chunk) => {
       pyBuffer += chunk.toString();
       if (!started) {
-        const idx = pyBuffer.indexOf('READY\n');
-        if (idx !== -1) {
-          pyBuffer = pyBuffer.slice(idx + 6);
+        const nlIdx = pyBuffer.indexOf('\n');
+        if (nlIdx !== -1) {
+          const firstLine = pyBuffer.slice(0, nlIdx);
+          pyBuffer = pyBuffer.slice(nlIdx + 1);
+          // Parse "READY:[4,5,6,...]" — list of claimed GPIOs
+          if (firstLine.startsWith('READY:')) {
+            try {
+              const arr = JSON.parse(firstLine.slice(6));
+              claimedGpios = new Set(arr);
+            } catch (_) {}
+          }
           started = true;
           resolve();
           return;
@@ -361,17 +381,32 @@ async function main() {
     process.exit(1);
   }
 
+  // Report RST status
+  if (claimedGpios.has(RST_GPIO)) {
+    console.log(`RST (GPIO${RST_GPIO}) : claimed OK`);
+  } else {
+    console.log(`RST (GPIO${RST_GPIO}) : busy (SPI CE1) — skipped, not required`);
+  }
+  console.log('');
+
   const enabled = [];
   for (let i = 0; i < CS_MAP.length; i++) {
+    const { reader, gpio, pin } = CS_MAP[i];
+    const col1 = ('Reader #' + reader).padEnd(11);
+    const col2 = ('GPIO' + gpio).padEnd(6);
+    const col3 = ('Pin ' + pin).padEnd(6);
+
+    if (!claimedGpios.has(gpio)) {
+      console.log(`${col1} | ${col2} | ${col3} | GPIO busy | FAIL`);
+      enabled.push(false);
+      continue;
+    }
+
     try {
       const ok = await readVersion(i);
       enabled.push(ok);
     } catch (err) {
-      const { reader, gpio, pin } = CS_MAP[i];
-      const col1 = ('Reader #' + reader).padEnd(11);
-      const col2 = ('GPIO' + gpio).padEnd(6);
-      const col3 = ('Pin ' + pin).padEnd(6);
-      console.log(`${col1} | ${col2} | ${col3} | Error    | FAIL`);
+      console.log(`${col1} | ${col2} | ${col3} | SPI error | FAIL`);
       enabled.push(false);
     }
     await delay(50);
@@ -397,7 +432,7 @@ async function main() {
           }
         }
       } catch (_) {}
-ดรป    }
+    }
     await delay(200);
   }
 }
