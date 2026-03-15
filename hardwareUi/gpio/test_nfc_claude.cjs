@@ -82,6 +82,8 @@ const VERSION_OK = [0x91, 0x92];
 
 // ─── Embedded Python GPIO helper ──────────────────────────────────
 // Uses lgpio (character-device GPIO) which works on RPi 5.
+// Auto-detects the correct gpiochip (pinctrl-rp1) since RPi 5 may
+// map user GPIOs to gpiochip0 or gpiochip4 depending on kernel version.
 // Protocol: Node writes "<pinIndex><0|1>\n", Python sets GPIO and replies "K\n".
 const PY_GPIO_HELPER = `
 import sys, json
@@ -97,22 +99,67 @@ except ImportError:
 CS  = [4, 5, 6, 12, 13, 16, 19, 20, 21, 26]
 RST = 7
 ALL = CS + [RST]
+
+# ── Auto-detect the correct gpiochip ──
+# On RPi 5 user GPIOs live on the RP1 chip (label contains "pinctrl-rp1").
+# Depending on kernel version this can be gpiochip0 or gpiochip4.
+h = None
+chip_id = -1
+
+sys.stderr.write("Scanning gpiochips...\\n")
+for dev in range(0, 10):
+    try:
+        handle = lgpio.gpiochip_open(dev)
+        info = lgpio.gpio_get_chip_info(handle)
+        lines = info[0]
+        name  = info[1] if len(info) > 1 else "?"
+        label = info[2] if len(info) > 2 else "?"
+        sys.stderr.write("  gpiochip" + str(dev) + ": " + name + " [" + label + "] (" + str(lines) + " lines)\\n")
+        if "pinctrl-rp1" in label or "pinctrl-rp1" in name:
+            h = handle
+            chip_id = dev
+            sys.stderr.write("  >> Selected gpiochip" + str(dev) + " (RP1 user GPIO)\\n")
+        else:
+            lgpio.gpiochip_close(handle)
+    except Exception:
+        pass
+
+# Fallback: if no RP1 chip found, try gpiochip0
+if h is None:
+    try:
+        h = lgpio.gpiochip_open(0)
+        chip_id = 0
+        sys.stderr.write("  >> Fallback to gpiochip0\\n")
+    except Exception as e:
+        sys.stderr.write("ERROR: No usable gpiochip found: " + str(e) + "\\n")
+        sys.stderr.flush()
+        sys.exit(1)
+
+sys.stderr.flush()
+
+# ── Show line info for our GPIOs (diagnostic) ──
+sys.stderr.write("\\nLine status on gpiochip" + str(chip_id) + ":\\n")
+for g in ALL:
+    try:
+        info = lgpio.gpio_get_line_info(h, g)
+        flags = info[1] if len(info) > 1 else 0
+        lname = info[2] if len(info) > 2 and info[2] else "-"
+        user  = info[3] if len(info) > 3 and info[3] else "free"
+        kernel = "KERNEL" if (flags & 1) else "free"
+        sys.stderr.write("  GPIO" + str(g).rjust(2) + ": " + kernel + "  user=" + user + "  name=" + lname + "\\n")
+    except Exception as e:
+        sys.stderr.write("  GPIO" + str(g).rjust(2) + ": error: " + str(e) + "\\n")
+sys.stderr.write("\\n")
+sys.stderr.flush()
+
+# ── Claim our GPIO pins ──
 claimed = set()
-
-try:
-    h = lgpio.gpiochip_open(0)
-except Exception as e:
-    sys.stderr.write("ERROR: Cannot open /dev/gpiochip0: " + str(e) + "\\n")
-    sys.stderr.write("Try: sudo node test_nfc_claude.cjs\\n")
-    sys.stderr.flush()
-    sys.exit(1)
-
 for g in ALL:
     try:
         lgpio.gpio_claim_output(h, g, 1)
         claimed.add(g)
-    except lgpio.error:
-        sys.stderr.write("WARN: GPIO" + str(g) + " busy (kernel driver), skipped\\n")
+    except lgpio.error as e:
+        sys.stderr.write("WARN: GPIO" + str(g) + " on gpiochip" + str(chip_id) + ": " + str(e) + "\\n")
         sys.stderr.flush()
 
 sys.stdout.write("READY:" + json.dumps(sorted(claimed)) + "\\n")
