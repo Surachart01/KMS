@@ -64,19 +64,31 @@ const CS_MAP = [
 const RST_INDEX = CS_MAP.length; // 10
 
 // ─── RC522 Registers ──────────────────────────────────────────────
-const REG_COMMAND     = 0x01;
-const REG_COM_IRQ     = 0x04;
-const REG_FIFO_DATA   = 0x09;
-const REG_FIFO_LEVEL  = 0x0A;
-const REG_BIT_FRAMING = 0x0D;
-const REG_VERSION     = 0x37;
+const REG_COMMAND      = 0x01;
+const REG_COM_I_EN     = 0x02;
+const REG_DIV_I_EN     = 0x03;
+const REG_COM_IRQ      = 0x04;
+const REG_ERROR        = 0x06;
+const REG_STATUS1      = 0x07;
+const REG_FIFO_DATA    = 0x09;
+const REG_FIFO_LEVEL   = 0x0A;
+const REG_CONTROL      = 0x0C;
+const REG_BIT_FRAMING  = 0x0D;
+const REG_MODE         = 0x11;
+const REG_TX_CONTROL   = 0x14;
+const REG_TX_ASK       = 0x15;
+const REG_TMODE        = 0x2A;
+const REG_TPRESCALER   = 0x2B;
+const REG_TRELOAD_H    = 0x2C;
+const REG_TRELOAD_L    = 0x2D;
+const REG_VERSION      = 0x37;
 
-const CMD_IDLE        = 0x00;
-const CMD_TRANSCEIVE  = 0x0C;
-const REQA            = 0x26;
-const SEL_CMD         = 0x93;
-const NVB             = 0x20;
-const COM_IRQ_RX_DONE = 0x20; // bit 5
+const CMD_IDLE         = 0x00;
+const CMD_TRANSCEIVE   = 0x0C;
+const CMD_SOFTRESET    = 0x0F;
+const REQA             = 0x26;
+const SEL_CMD          = 0x93;
+const NVB              = 0x20;
 
 const VERSION_OK = [0x91, 0x92];
 
@@ -351,6 +363,7 @@ function openSpi() {
     spiDev = spi.openSync(SPI_BUS, SPI_DEVICE, {
       mode: spi.MODE0,
       maxSpeedHz: SPI_SPEED_HZ,
+      noChipSelect: true,
     });
   } catch (err) {
     console.error('Failed to open /dev/spidev0.0:', err.message);
@@ -360,10 +373,29 @@ function openSpi() {
   }
 }
 
+// ─── RC522 init (mirrors nfc_rc522_bridge.py _init_chip) ──────────
+
+async function initReader(csIndex) {
+  await writeReg(spiDev, csIndex, REG_COMMAND, CMD_SOFTRESET);
+  await delay(50);
+  await writeReg(spiDev, csIndex, REG_TMODE, 0x8D);
+  await writeReg(spiDev, csIndex, REG_TPRESCALER, 0x3E);
+  await writeReg(spiDev, csIndex, REG_TRELOAD_L, 30);
+  await writeReg(spiDev, csIndex, REG_TRELOAD_H, 0);
+  await writeReg(spiDev, csIndex, REG_TX_ASK, 0x40);
+  await writeReg(spiDev, csIndex, REG_MODE, 0x3D);
+  // Antenna on
+  const txCtrl = await readReg(spiDev, csIndex, REG_TX_CONTROL);
+  if ((txCtrl & 0x03) !== 0x03) {
+    await writeReg(spiDev, csIndex, REG_TX_CONTROL, txCtrl | 0x03);
+  }
+}
+
 // ─── Version check per reader ─────────────────────────────────────
 
 async function readVersion(idx) {
   const { reader, gpio, pin } = CS_MAP[idx];
+  await initReader(idx);
   const v = await readReg(spiDev, idx, REG_VERSION);
   const ok = VERSION_OK.includes(v);
   const col1 = ('Reader #' + reader).padEnd(11);
@@ -376,39 +408,65 @@ async function readVersion(idx) {
 
 // ─── Card detect + anti-collision UID ────────────────────────────
 
-async function isCardPresent(csIndex) {
-  await writeReg(spiDev, csIndex, REG_BIT_FRAMING, 0x07);
-  await writeReg(spiDev, csIndex, REG_COMMAND, CMD_IDLE);
-  await writeReg(spiDev, csIndex, REG_FIFO_LEVEL, 0x80); // flush FIFO
-  await writeReg(spiDev, csIndex, REG_FIFO_DATA, REQA);
-  await writeReg(spiDev, csIndex, REG_BIT_FRAMING, 0x87); // start tx (bit 7)
-  await writeReg(spiDev, csIndex, REG_COMMAND, CMD_TRANSCEIVE);
-  await delay(10);
-  const irq = await readReg(spiDev, csIndex, REG_COM_IRQ);
-  return (irq & COM_IRQ_RX_DONE) !== 0;
-}
+// Mirrors nfc_rc522_bridge.py _to_card + request + anticoll
 
-async function getUid(csIndex) {
+async function toCard(csIndex, command, sendData, timeoutMs) {
+  timeoutMs = timeoutMs || 30;
   await writeReg(spiDev, csIndex, REG_COMMAND, CMD_IDLE);
-  await writeReg(spiDev, csIndex, REG_FIFO_LEVEL, 0x80); // flush FIFO
-  await writeReg(spiDev, csIndex, REG_BIT_FRAMING, 0x00);
-  await writeReg(spiDev, csIndex, REG_FIFO_DATA, SEL_CMD);
-  await writeReg(spiDev, csIndex, REG_FIFO_DATA, NVB);
-  await writeReg(spiDev, csIndex, REG_COMMAND, CMD_TRANSCEIVE);
-  await delay(10);
+  await writeReg(spiDev, csIndex, REG_COM_IRQ, 0x7F);          // clear IRQs
+  const fl = await readReg(spiDev, csIndex, REG_FIFO_LEVEL);
+  await writeReg(spiDev, csIndex, REG_FIFO_LEVEL, fl | 0x80);  // flush FIFO
+
+  for (const b of sendData) {
+    await writeReg(spiDev, csIndex, REG_FIFO_DATA, b);
+  }
+  await writeReg(spiDev, csIndex, REG_COMMAND, command);
+  if (command === CMD_TRANSCEIVE) {
+    const bf = await readReg(spiDev, csIndex, REG_BIT_FRAMING);
+    await writeReg(spiDev, csIndex, REG_BIT_FRAMING, bf | 0x80); // StartSend
+  }
+
+  const start = Date.now();
+  while (true) {
+    const irq = await readReg(spiDev, csIndex, REG_COM_IRQ);
+    if (irq & 0x01) return { ok: false, data: [], bits: 0 }; // Timer
+    if (irq & 0x30) break; // RxIRq or IdleIRq
+    if (Date.now() - start >= timeoutMs) return { ok: false, data: [], bits: 0 };
+    await delay(1);
+  }
+
+  // Clear StartSend
+  const bf2 = await readReg(spiDev, csIndex, REG_BIT_FRAMING);
+  await writeReg(spiDev, csIndex, REG_BIT_FRAMING, bf2 & 0x7F);
+
+  const err = await readReg(spiDev, csIndex, REG_ERROR);
+  if (err & 0x1B) return { ok: false, data: [], bits: 0 };
 
   const level = await readReg(spiDev, csIndex, REG_FIFO_LEVEL);
-  if (level === 0 || level > 16) return null;
+  const lastBits = (await readReg(spiDev, csIndex, REG_CONTROL)) & 0x07;
+  const bits = lastBits ? (level - 1) * 8 + lastBits : level * 8;
 
-  const bytes = [];
+  const data = [];
   for (let i = 0; i < level; i++) {
-    bytes.push(await readReg(spiDev, csIndex, REG_FIFO_DATA));
+    data.push(await readReg(spiDev, csIndex, REG_FIFO_DATA));
   }
-  return bytes
-    .slice(0, 4)
-    .map((b) => b.toString(16).padStart(2, '0'))
-    .join('')
-    .toUpperCase();
+  return { ok: true, data, bits };
+}
+
+async function requestCard(csIndex) {
+  await writeReg(spiDev, csIndex, REG_BIT_FRAMING, 0x07); // TxLastBits=7
+  const r = await toCard(csIndex, CMD_TRANSCEIVE, [REQA]);
+  return r.ok && r.bits === 0x10 && r.data.length >= 2;
+}
+
+async function anticoll(csIndex) {
+  await writeReg(spiDev, csIndex, REG_BIT_FRAMING, 0x00);
+  const r = await toCard(csIndex, CMD_TRANSCEIVE, [SEL_CMD, 0x20]);
+  if (!r.ok || r.data.length < 5) return null;
+  const uid = r.data.slice(0, 4);
+  const bcc = r.data[4];
+  if ((uid[0] ^ uid[1] ^ uid[2] ^ uid[3]) !== bcc) return null;
+  return uid.map((b) => b.toString(16).padStart(2, '0')).join('').toUpperCase();
 }
 
 // ─── Cleanup ──────────────────────────────────────────────────────
@@ -486,8 +544,8 @@ async function main() {
       if (!enabled[i]) continue;
       const { reader, gpio } = CS_MAP[i];
       try {
-        if (await isCardPresent(i)) {
-          const uid = await getUid(i);
+        if (await requestCard(i)) {
+          const uid = await anticoll(i);
           if (uid) {
             const rdr = ('#' + reader).padStart(3);
             const gpioStr = ('GPIO' + gpio).padStart(6);
@@ -496,7 +554,7 @@ async function main() {
         }
       } catch (_) {}
     }
-    await delay(200);
+ดรป    await delay(200);
   }
 }
 
