@@ -554,7 +554,7 @@ async function main() {
         }
       } catch (_) {}
     }
-ดรป    await delay(200);
+  await delay(200);
   }
 }
 
