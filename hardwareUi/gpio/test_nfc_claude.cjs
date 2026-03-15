@@ -1,7 +1,8 @@
 /**
  * test_nfc_claude.cjs — Test 10× RC522 NFC readers on Raspberry Pi 5
  * Single SPI bus (/dev/spidev0.0), 10× software CS (GPIO).
- * CommonJS (.cjs) so it runs with package.json "type": "module".
+ * Uses node-libgpiod (character device) so GPIO works on RPi 5 where
+ * legacy sysfs /sys/class/gpio is disabled or returns EINVAL.
  *
  * Pin connections (do not change):
  * ─────────────────────────────────────────────────────────────────
@@ -25,11 +26,12 @@
  *   Reader #10 : GPIO26  (Pin 37)
  * ─────────────────────────────────────────────────────────────────
  *
- * Run: node test_nfc_claude.cjs
+ * Prereqs on RPi: sudo apt install build-essential gpiod libgpiod2 libgpiod-dev
+ * Run: node test_nfc_claude.cjs   (or sudo if /dev/gpiochip* not in your group)
  */
 
 const spi = require('spi-device');
-const { Gpio } = require('onoff');
+const { Chip, Line } = require('node-libgpiod');
 
 // ─── Constants ────────────────────────────────────────────────────
 const SPI_BUS = 0;
@@ -71,7 +73,8 @@ const VERSION_OK = [0x91, 0x92];
 
 // ─── Globals (set during init, used in cleanup) ────────────────────
 let spiDev = null;
-let csPins = [];
+let gpioChip = null;  // keep ref so Line instances are not GC'd
+let csPins = [];      // Line instances (libgpiod)
 let rstPin = null;
 
 // ─── Helpers ──────────────────────────────────────────────────────
@@ -92,12 +95,12 @@ function spiTransfer(spiDev, sendBuf, receiveLen) {
   });
 }
 
-function csLow(gpioPin) {
-  gpioPin.writeSync(0);
+function csLow(line) {
+  line.setValue(0);
 }
 
-function csHigh(gpioPin) {
-  gpioPin.writeSync(1);
+function csHigh(line) {
+  line.setValue(1);
 }
 
 function readReg(spiDev, csGpio, reg) {
@@ -169,13 +172,23 @@ function openSpi() {
 }
 
 function initGpio() {
-  rstPin = new Gpio(RST_GPIO, 'out');
-  rstPin.writeSync(1);
+  try {
+    gpioChip = new Chip(0);
+    rstPin = new Line(gpioChip, RST_GPIO);
+    rstPin.requestOutputMode();
+    rstPin.setValue(1);
 
-  for (const { gpio } of CS_MAP) {
-    const g = new Gpio(gpio, 'out');
-    g.writeSync(1);
-    csPins.push(g);
+    for (const { gpio } of CS_MAP) {
+      const line = new Line(gpioChip, gpio);
+      line.requestOutputMode();
+      line.setValue(1);
+      csPins.push(line);
+    }
+  } catch (err) {
+    console.error('Failed to open GPIO (libgpiod):', err.message);
+    console.error('Install: sudo apt install build-essential gpiod libgpiod2 libgpiod-dev');
+    console.error('Then: npm install (node-libgpiod). You may need: sudo node test_nfc_claude.cjs');
+    process.exit(1);
   }
 }
 
@@ -231,15 +244,16 @@ function shutdown() {
   console.log('\nShutting down...');
   try {
     if (csPins.length) {
-      for (const g of csPins) {
-        try { g.unexportSync(); } catch (_) {}
+      for (const line of csPins) {
+        try { line.release(); } catch (_) {}
       }
       csPins = [];
     }
     if (rstPin) {
-      try { rstPin.unexportSync(); } catch (_) {}
+      try { rstPin.release(); } catch (_) {}
       rstPin = null;
     }
+    gpioChip = null;
     if (spiDev) {
       try { spiDev.closeSync(); } catch (_) {}
       spiDev = null;
