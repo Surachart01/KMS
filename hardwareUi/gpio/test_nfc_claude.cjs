@@ -363,7 +363,6 @@ function openSpi() {
     spiDev = spi.openSync(SPI_BUS, SPI_DEVICE, {
       mode: spi.MODE0,
       maxSpeedHz: SPI_SPEED_HZ,
-      noChipSelect: true,
     });
   } catch (err) {
     console.error('Failed to open /dev/spidev0.0:', err.message);
