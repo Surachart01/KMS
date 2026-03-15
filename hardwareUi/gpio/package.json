@@ -10,6 +10,7 @@
         "socket.io-client": "^4.8.1",
         "onoff": "^6.0.3",
         "dotenv": "^17.2.3",
+        "spi-device": "^3.1.2",
         "@efesoroglu/mfrc522-rpi": "^3.1.3"
     }
 }
