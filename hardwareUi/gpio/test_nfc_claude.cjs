@@ -1,6 +1,7 @@
 /**
- * test_nfc_claude.js — Test 10× RC522 NFC readers on Raspberry Pi 5
+ * test_nfc_claude.cjs — Test 10× RC522 NFC readers on Raspberry Pi 5
  * Single SPI bus (/dev/spidev0.0), 10× software CS (GPIO).
+ * CommonJS (.cjs) so it runs with package.json "type": "module".
  *
  * Pin connections (do not change):
  * ─────────────────────────────────────────────────────────────────
@@ -24,7 +25,7 @@
  *   Reader #10 : GPIO26  (Pin 37)
  * ─────────────────────────────────────────────────────────────────
  *
- * Run: node test_nfc_claude.js
+ * Run: node test_nfc_claude.cjs
  */
 
 const spi = require('spi-device');
