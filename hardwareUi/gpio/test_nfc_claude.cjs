@@ -86,7 +86,7 @@ const VERSION_OK = [0x91, 0x92];
 // map user GPIOs to gpiochip0 or gpiochip4 depending on kernel version.
 // Protocol: Node writes "<pinIndex><0|1>\n", Python sets GPIO and replies "K\n".
 const PY_GPIO_HELPER = `
-import sys, json
+import sys, json, subprocess
 
 try:
     import lgpio
@@ -100,67 +100,83 @@ CS  = [4, 5, 6, 12, 13, 16, 19, 20, 21, 26]
 RST = 7
 ALL = CS + [RST]
 
-# ── Auto-detect the correct gpiochip ──
-# On RPi 5 user GPIOs live on the RP1 chip (label contains "pinctrl-rp1").
-# Depending on kernel version this can be gpiochip0 or gpiochip4.
-h = None
-chip_id = -1
-
-sys.stderr.write("Scanning gpiochips...\\n")
-for dev in range(0, 10):
-    try:
-        handle = lgpio.gpiochip_open(dev)
-        info = lgpio.gpio_get_chip_info(handle)
-        lines = info[0]
-        name  = info[1] if len(info) > 1 else "?"
-        label = info[2] if len(info) > 2 else "?"
-        sys.stderr.write("  gpiochip" + str(dev) + ": " + name + " [" + label + "] (" + str(lines) + " lines)\\n")
-        if "pinctrl-rp1" in label or "pinctrl-rp1" in name:
-            h = handle
-            chip_id = dev
-            sys.stderr.write("  >> Selected gpiochip" + str(dev) + " (RP1 user GPIO)\\n")
-        else:
-            lgpio.gpiochip_close(handle)
-    except Exception:
-        pass
-
-# Fallback: if no RP1 chip found, try gpiochip0
-if h is None:
-    try:
-        h = lgpio.gpiochip_open(0)
-        chip_id = 0
-        sys.stderr.write("  >> Fallback to gpiochip0\\n")
-    except Exception as e:
-        sys.stderr.write("ERROR: No usable gpiochip found: " + str(e) + "\\n")
-        sys.stderr.flush()
-        sys.exit(1)
-
+# ── Step 1: Run gpiodetect to find the RP1 user GPIO chip ──
+rp1_chip = None
+sys.stderr.write("Detecting gpiochips...\\n")
+try:
+    det = subprocess.run(["gpiodetect"], capture_output=True, text=True, timeout=5)
+    for line in det.stdout.strip().splitlines():
+        sys.stderr.write("  " + line + "\\n")
+        # e.g. "gpiochip4 [pinctrl-rp1] (54 lines)"
+        if "pinctrl-rp1" in line:
+            rp1_chip = int(line.split("[")[0].replace("gpiochip","").strip())
+except Exception as e:
+    sys.stderr.write("  gpiodetect failed: " + str(e) + "\\n")
 sys.stderr.flush()
 
-# ── Show line info for our GPIOs (diagnostic) ──
-sys.stderr.write("\\nLine status on gpiochip" + str(chip_id) + ":\\n")
-for g in ALL:
-    try:
-        info = lgpio.gpio_get_line_info(h, g)
-        flags = info[1] if len(info) > 1 else 0
-        lname = info[2] if len(info) > 2 and info[2] else "-"
-        user  = info[3] if len(info) > 3 and info[3] else "free"
-        kernel = "KERNEL" if (flags & 1) else "free"
-        sys.stderr.write("  GPIO" + str(g).rjust(2) + ": " + kernel + "  user=" + user + "  name=" + lname + "\\n")
-    except Exception as e:
-        sys.stderr.write("  GPIO" + str(g).rjust(2) + ": error: " + str(e) + "\\n")
-sys.stderr.write("\\n")
+# ── Step 2: Run gpioinfo on target chip to show line status ──
+target = rp1_chip if rp1_chip is not None else 0
+sys.stderr.write("\\nTarget: gpiochip" + str(target) + "\\n")
+try:
+    info_out = subprocess.run(["gpioinfo", "gpiochip" + str(target)],
+                              capture_output=True, text=True, timeout=5)
+    want = set(ALL)
+    for line in info_out.stdout.strip().splitlines():
+        for g in want:
+            tag = "line " + str(g).rjust(3) + ":"
+            tag2 = "line  " + str(g) + ":"
+            tag3 = "line " + str(g) + " "
+            if tag in line or tag2 in line or tag3 in line:
+                sys.stderr.write("  " + line.strip() + "\\n")
+except Exception as e:
+    sys.stderr.write("  gpioinfo failed: " + str(e) + "\\n")
 sys.stderr.flush()
 
-# ── Claim our GPIO pins ──
+# ── Step 3: If auto-detect found nothing, probe chips by trying to claim GPIO4 ──
+if rp1_chip is None:
+    sys.stderr.write("\\nRP1 not found via gpiodetect, probing chips 0-10...\\n")
+    for dev in range(0, 11):
+        try:
+            handle = lgpio.gpiochip_open(dev)
+            try:
+                lgpio.gpio_claim_output(handle, 4, 1)
+                lgpio.gpio_free(handle, 4)
+                rp1_chip = dev
+                sys.stderr.write("  gpiochip" + str(dev) + ": GPIO4 claim OK — using this chip\\n")
+                lgpio.gpiochip_close(handle)
+                break
+            except lgpio.error as e:
+                sys.stderr.write("  gpiochip" + str(dev) + ": GPIO4 " + str(e) + "\\n")
+                lgpio.gpiochip_close(handle)
+        except Exception:
+            pass
+    sys.stderr.flush()
+
+if rp1_chip is None:
+    sys.stderr.write("\\nERROR: Could not find a gpiochip where GPIO4 is claimable.\\n")
+    sys.stderr.write("Check: is another process using these GPIOs?\\n")
+    sys.stderr.write("  sudo lsof /dev/gpiochip*\\n")
+    sys.stderr.write("  ps aux | grep -i 'hardware\\\\|nfc\\\\|gpio'\\n")
+    sys.stderr.flush()
+    sys.exit(1)
+
+# ── Step 4: Open the selected chip and claim pins ──
+sys.stderr.write("\\nUsing gpiochip" + str(rp1_chip) + "\\n")
+try:
+    h = lgpio.gpiochip_open(rp1_chip)
+except Exception as e:
+    sys.stderr.write("ERROR: Cannot open gpiochip" + str(rp1_chip) + ": " + str(e) + "\\n")
+    sys.stderr.flush()
+    sys.exit(1)
+
 claimed = set()
 for g in ALL:
     try:
         lgpio.gpio_claim_output(h, g, 1)
         claimed.add(g)
     except lgpio.error as e:
-        sys.stderr.write("WARN: GPIO" + str(g) + " on gpiochip" + str(chip_id) + ": " + str(e) + "\\n")
-        sys.stderr.flush()
+        sys.stderr.write("WARN: GPIO" + str(g) + " on gpiochip" + str(rp1_chip) + ": " + str(e) + "\\n")
+sys.stderr.flush()
 
 sys.stdout.write("READY:" + json.dumps(sorted(claimed)) + "\\n")
 sys.stdout.flush()
