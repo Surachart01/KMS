@@ -35,7 +35,7 @@ print("⚡ Test Solenoid — Raspberry Pi 5 (GPIO Zero)")
 print("=" * 45)
 
 for slot, pin in sorted(SLOT_PIN_MAP.items()):
-    relays[slot] = OutputDevice(pin, initial_value=True)
+    relays[slot] = OutputDevice(pin, initial_value=False)
     print(f"  📌 Slot {slot:2d} (GPIO {pin:2d}) → registered")
 
 
