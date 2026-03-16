@@ -37,18 +37,10 @@ Simple MFRC522 test script (single reader)
 import RPi.GPIO as GPIO  # type: ignore
 from mfrc522 import SimpleMFRC522  # type: ignore
 
+reader = SimpleMFRC522()
 
-def main() -> None:
-    reader = SimpleMFRC522()
+print("Place your card near the reader")
+card_id, text = reader.read()
+print("ID: %s\nText: %s" % (card_id, text))
 
-    try:
-        print("Place your card near the reader")
-        card_id, text = reader.read()
-        print("ID: %s\nText: %s" % (card_id, text))
-    finally:
-        GPIO.cleanup()
-
-
-if __name__ == "__main__":
-    main()
 
