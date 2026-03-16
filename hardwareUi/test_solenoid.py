@@ -39,7 +39,7 @@ for slot, pin in sorted(SLOT_PIN_MAP.items()):
     print(f"  📌 Slot {slot:2d} (GPIO {pin:2d}) → registered")
 
 
-def all_high():
+def all_low():
     """สั่ง HIGH ทุก slot → Solenoid ดึงขึ้นทั้งหมด"""
     print("\n🔓 กำลังสั่ง HIGH ทุก slot...")
     for slot, relay in sorted(relays.items()):
@@ -50,7 +50,7 @@ def all_high():
     print("   กด Ctrl+C เพื่อปิด (LOW ทั้งหมด)")
 
 
-def all_low():
+def all_high():
     """สั่ง LOW ทุก slot → Solenoid ล็อคทั้งหมด"""
     print("\n🔒 กำลังสั่ง LOW ทุก slot...")
     for slot, relay in sorted(relays.items()):
