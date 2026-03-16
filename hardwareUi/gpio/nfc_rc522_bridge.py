@@ -105,7 +105,10 @@ class Rc522:
 
     def _init_chip(self) -> None:
         self._write_reg(CommandReg, PCD_SOFTRESET)
-        time.sleep(0.05)
+        for _ in range(10):
+            time.sleep(0.05)
+            if not (self._read_reg(CommandReg) & 0x10):
+                break
 
         # Timer: TAuto=1; f(Timer) = 6.78MHz / (2*TPreScaler+1)
         self._write_reg(TModeReg, 0x8D)

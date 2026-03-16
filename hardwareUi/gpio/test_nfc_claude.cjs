@@ -51,7 +51,7 @@ const CS_MAP = [
   { reader: 10, gpio: 26, pin: 37 },
 ];
 
-const VERSION_OK = [0x91, 0x92];
+const VERSION_OK = [0x91, 0x92, 0x88, 0x18];
 
 // ─── Embedded Python hardware helper ─────────────────────────────
 // Handles ALL SPI and GPIO. Ported from the working nfc_rc522_bridge.py.
@@ -134,7 +134,13 @@ class Rc522:
 
     def init_chip(self):
         self._wr(CommandReg, PCD_SOFTRESET)
-        time.sleep(0.05)
+        # FM17522E clones need longer recovery after soft reset
+        for _ in range(10):
+            time.sleep(0.05)
+            # Wait until PowerDown bit (bit 4) is cleared
+            cmd = self._rd(CommandReg)
+            if not (cmd & 0x10):
+                break
         self._wr(TModeReg, 0x8D)
         self._wr(TPrescalerReg, 0x3E)
         self._wr(TReloadRegL, 30)
@@ -290,6 +296,10 @@ class MultiReader:
         try:
             log("cmd_init slot " + str(slot) + ": sending SoftReset...")
             self.rc522.init_chip()
+            # Re-select CS after reset (clone chips may drop SPI state)
+            self.deselect()
+            time.sleep(0.01)
+            self.select(slot)
             v = self.rc522.version()
             log("cmd_init slot " + str(slot) + ": VersionReg=0x" + format(v, "02X"))
             return "VER:" + format(v, "02X")
