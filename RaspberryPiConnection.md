@@ -181,33 +181,33 @@ node test_nfc.cjs
 | 3.3V  | 3.3V    | Pin 1   |
 | GND   | GND     | Pin 6   |
 
-### NFC CS Pins (แต่ละ RC522 แยกกัน)
+### NFC CS Pins (แต่ละ RC522 แยกกัน — ฝั่งซ้ายของ header)
 | Slot | CS GPIO | Physical |
-|------|--------|---------|
-| 1    | GPIO 4  | Pin 7   |
-| 2    | GPIO 5  | Pin 29  |
-| 3    | GPIO 6  | Pin 31  |
-| 4    | GPIO 12 | Pin 32  |
-| 5    | GPIO 13 | Pin 33  |
-| 6    | GPIO 16 | Pin 36  |
-| 7    | GPIO 19 | Pin 35  |
-| 8    | GPIO 20 | Pin 38  |
-| 9    | GPIO 21 | Pin 40  |
-| 10   | GPIO 26 | Pin 37  |
+|------|---------|----------|
+| 1    | GPIO 4  | Pin 7    |
+| 2    | GPIO 17 | Pin 11   |
+| 3    | GPIO 27 | Pin 13   |
+| 4    | GPIO 22 | Pin 15   |
+| 5    | GPIO 0  | Pin 27   |
+| 6    | GPIO 5  | Pin 29   |
+| 7    | GPIO 6  | Pin 31   |
+| 8    | GPIO 13 | Pin 33   |
+| 9    | GPIO 19 | Pin 35   |
+| 10   | GPIO 26 | Pin 37   |
 
-### Relay Pins (Solenoid)
+### Relay Pins (Solenoid — ฝั่งขวาของ header)
 | Slot | GPIO    | Physical |
-|------|---------| ---------|
-| 1    | GPIO 17 | Pin 11   |
-| 2    | GPIO 27 | Pin 13   |
-| 3    | GPIO 22 | Pin 15   |
+|------|---------|----------|
+| 1    | GPIO 14 | Pin 8    |
+| 2    | GPIO 15 | Pin 10   |
+| 3    | GPIO 18 | Pin 12   |
 | 4    | GPIO 23 | Pin 16   |
 | 5    | GPIO 24 | Pin 18   |
 | 6    | GPIO 25 | Pin 22   |
-| 7    | GPIO 14 | Pin 8    |
-| 8    | GPIO 15 | Pin 10   |
-| 9    | GPIO 18 | Pin 12   |
-| 10   | GPIO 0  | Pin 27   |
+| 7    | GPIO 12 | Pin 32   |
+| 8    | GPIO 16 | Pin 36   |
+| 9    | GPIO 20 | Pin 38   |
+| 10   | GPIO 21 | Pin 40   |
 
 > ⚠️ GPIO 14, 15 ใช้เป็น UART — ต้อง disable ใน `raspi-config → Interface → Serial Port → No`
 

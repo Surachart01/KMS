@@ -13,18 +13,18 @@ from signal import pause
 import signal
 import sys
 
-# Relay Pin Map (BCM) — ตรงกับ SLOT_PIN_MAP ใน hardware.js
+# Relay Pin Map (BCM) — ตรงกับ SLOT_PIN_MAP ใน hardware.js (ฝั่งขวาของ header)
 SLOT_PIN_MAP = {
-    1: 17,
-    2: 27,
-    3: 22,
-    4: 23,
-    5: 24,
-    6: 25,
-    7: 14,   # ⚠️ UART TX — ต้อง disable serial ก่อน
-    8: 15,   # ⚠️ UART RX — ต้อง disable serial ก่อน
-    9: 18,
-    10: 0,
+    1: 14,   # Pin 8  — ⚠️ UART TX — ต้อง disable serial ก่อน
+    2: 15,   # Pin 10 — ⚠️ UART RX — ต้อง disable serial ก่อน
+    3: 18,   # Pin 12
+    4: 23,   # Pin 16
+    5: 24,   # Pin 18
+    6: 25,   # Pin 22
+    7: 12,   # Pin 32
+    8: 16,   # Pin 36
+    9: 20,   # Pin 38
+    10: 21,  # Pin 40
 }
 
 # สร้าง OutputDevice สำหรับทุก slot

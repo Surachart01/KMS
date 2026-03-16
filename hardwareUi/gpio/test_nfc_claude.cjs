@@ -16,16 +16,16 @@
  *   RST  : GPIO7  (Pin 25) — shared, all readers
  *   VCC  : 3.3V, GND : GND
  *
- * CS (SDA) per reader:
+ * CS (SDA) per reader — left side of header:
  *   Reader #1  : GPIO4   (Pin 7)
- *   Reader #2  : GPIO5   (Pin 29)
- *   Reader #3  : GPIO6   (Pin 31)
- *   Reader #4  : GPIO12  (Pin 32)
- *   Reader #5  : GPIO13  (Pin 33)
- *   Reader #6  : GPIO16  (Pin 36)
- *   Reader #7  : GPIO19  (Pin 35)
- *   Reader #8  : GPIO20  (Pin 38)
- *   Reader #9  : GPIO21  (Pin 40)
+ *   Reader #2  : GPIO17  (Pin 11)
+ *   Reader #3  : GPIO27  (Pin 13)
+ *   Reader #4  : GPIO22  (Pin 15)
+ *   Reader #5  : GPIO0   (Pin 27)
+ *   Reader #6  : GPIO5   (Pin 29)
+ *   Reader #7  : GPIO6   (Pin 31)
+ *   Reader #8  : GPIO13  (Pin 33)
+ *   Reader #9  : GPIO19  (Pin 35)
  *   Reader #10 : GPIO26  (Pin 37)
  * ─────────────────────────────────────────────────────────────────
  *
@@ -40,14 +40,14 @@ const { spawn } = require('child_process');
 // ─── Reader table (for display only — hardware config lives in Python) ──
 const CS_MAP = [
   { reader: 1,  gpio: 4,  pin: 7 },
-  { reader: 2,  gpio: 5,  pin: 29 },
-  { reader: 3,  gpio: 6,  pin: 31 },
-  { reader: 4,  gpio: 12, pin: 32 },
-  { reader: 5,  gpio: 13, pin: 33 },
-  { reader: 6,  gpio: 16, pin: 36 },
-  { reader: 7,  gpio: 19, pin: 35 },
-  { reader: 8,  gpio: 20, pin: 38 },
-  { reader: 9,  gpio: 21, pin: 40 },
+  { reader: 2,  gpio: 17, pin: 11 },
+  { reader: 3,  gpio: 27, pin: 13 },
+  { reader: 4,  gpio: 22, pin: 15 },
+  { reader: 5,  gpio: 0,  pin: 27 },
+  { reader: 6,  gpio: 5,  pin: 29 },
+  { reader: 7,  gpio: 6,  pin: 31 },
+  { reader: 8,  gpio: 13, pin: 33 },
+  { reader: 9,  gpio: 19, pin: 35 },
   { reader: 10, gpio: 26, pin: 37 },
 ];
 
@@ -80,7 +80,7 @@ except ImportError:
     sys.exit(1)
 
 # ── Pin map ──
-SLOT_CS = {1:4, 2:5, 3:6, 4:12, 5:13, 6:16, 7:19, 8:20, 9:21, 10:26}
+SLOT_CS = {1:4, 2:17, 3:27, 4:22, 5:0, 6:5, 7:6, 8:13, 9:19, 10:26}
 RST_PIN = 7
 
 # ── MFRC522 registers ──

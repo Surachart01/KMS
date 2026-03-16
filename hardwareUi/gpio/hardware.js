@@ -40,32 +40,32 @@ const pullCheckingSlots = new Set();
 // GPIO Pin Maps
 // ─────────────────────────────────────────────
 
-/** Relay pin สำหรับ Solenoid แต่ละ slot (BCM numbering) */
+/** Relay pin สำหรับ Solenoid แต่ละ slot (BCM numbering) — ฝั่งขวาของ header */
 const SLOT_PIN_MAP = {
-    1: 17,
-    2: 27,
-    3: 22,
-    4: 23,
-    5: 24,
-    6: 25,
-    7: 14,   // Pin 8  — ⚠️ UART TX (ต้อง disable serial ใน raspi-config)
-    8: 15,   // Pin 10 — ⚠️ UART RX (ต้อง disable serial ใน raspi-config)
-    9: 18,   // Pin 12
-    10: 0,   // Pin 27
+    1: 14,   // Pin 8  — ⚠️ UART TX (ต้อง disable serial ใน raspi-config)
+    2: 15,   // Pin 10 — ⚠️ UART RX (ต้อง disable serial ใน raspi-config)
+    3: 18,   // Pin 12
+    4: 23,   // Pin 16
+    5: 24,   // Pin 18
+    6: 25,   // Pin 22
+    7: 12,   // Pin 32
+    8: 16,   // Pin 36
+    9: 20,   // Pin 38
+    10: 21,  // Pin 40
 };
 
-/** CS (SDA) pin ของ RC522 แต่ละ slot (BCM numbering) */
+/** CS (SDA) pin ของ RC522 แต่ละ slot (BCM numbering) — ฝั่งซ้ายของ header */
 const SLOT_CS_MAP = {
-    1: 4,
-    2: 5,
-    3: 6,
-    4: 12,
-    5: 13,
-    6: 16,
-    7: 19,
-    8: 20,
-    9: 21,
-    10: 26,
+    1: 4,    // Pin 7
+    2: 17,   // Pin 11
+    3: 27,   // Pin 13
+    4: 22,   // Pin 15
+    5: 0,    // Pin 27
+    6: 5,    // Pin 29
+    7: 6,    // Pin 31
+    8: 13,   // Pin 33
+    9: 19,   // Pin 35
+    10: 26,  // Pin 37
 };
 
 // ─────────────────────────────────────────────
