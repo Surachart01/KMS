@@ -68,10 +68,6 @@ def cleanup(sig=None, frame=None):
     sys.exit(0)
 
 
-signal.signal(signal.SIGINT, cleanup)
-signal.signal(signal.SIGTERM, cleanup)
 
 all_high()
 
-# รอจนกว่าผู้ใช้จะกด Ctrl+C
-pause()
