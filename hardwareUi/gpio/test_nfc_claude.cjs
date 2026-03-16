@@ -61,20 +61,28 @@ const VERSION_OK = [0x91, 0x92];
 //   READ <slot> → request + anticoll, responds "UID:XXXXXXXX\n" or "NONE\n" or "ERR:msg\n"
 //   QUIT        → clean shutdown
 const PY_HELPER = `
-import sys, time, subprocess
+import sys, time, subprocess, os
+
+def log(msg):
+    sys.stderr.write("[DBG] " + msg + "\\n")
+    sys.stderr.flush()
+
+log("Python helper starting (pid=" + str(os.getpid()) + ")")
 
 try:
     import spidev
-except ImportError:
-    sys.stderr.write("ERROR: python3-spidev not found.\\n")
+    log("spidev imported OK — version: " + getattr(spidev, '__version__', 'unknown'))
+except ImportError as e:
+    sys.stderr.write("ERROR: python3-spidev not found: " + str(e) + "\\n")
     sys.stderr.write("Install: sudo apt install python3-spidev\\n")
     sys.stderr.flush()
     sys.exit(1)
 
 try:
     import lgpio
-except ImportError:
-    sys.stderr.write("ERROR: python3-lgpio not found.\\n")
+    log("lgpio imported OK — version: " + getattr(lgpio, 'VERSION', 'unknown'))
+except ImportError as e:
+    sys.stderr.write("ERROR: python3-lgpio not found: " + str(e) + "\\n")
     sys.stderr.write("Install: sudo apt install python3-lgpio\\n")
     sys.stderr.flush()
     sys.exit(1)
@@ -82,6 +90,7 @@ except ImportError:
 # ── Pin map ──
 SLOT_CS = {1:4, 2:17, 3:27, 4:22, 5:0, 6:5, 7:6, 8:13, 9:19, 10:26}
 RST_PIN = 7
+log("SLOT_CS=" + str(SLOT_CS))
 
 # ── MFRC522 registers ──
 CommandReg    = 0x01
@@ -192,7 +201,9 @@ class Rc522:
 class MultiReader:
     def __init__(self):
         # GPIO
+        log("Opening gpiochip0...")
         self.chip = lgpio.gpiochip_open(0)
+        log("gpiochip0 opened OK (handle=" + str(self.chip) + ")")
         self.cs_lines = {}
         self.gpio_ok = set()
         for slot, pin in SLOT_CS.items():
@@ -200,20 +211,46 @@ class MultiReader:
                 lgpio.gpio_claim_output(self.chip, pin, 1)
                 self.cs_lines[slot] = pin
                 self.gpio_ok.add(pin)
+                log("  GPIO" + str(pin) + " (slot " + str(slot) + ") claimed OK — set HIGH")
             except lgpio.error as e:
                 sys.stderr.write("WARN: GPIO" + str(pin) + ": " + str(e) + "\\n")
+                sys.stderr.flush()
         try:
             lgpio.gpio_claim_output(self.chip, RST_PIN, 1)
             self.gpio_ok.add(RST_PIN)
+            log("  GPIO" + str(RST_PIN) + " (RST) claimed OK")
         except lgpio.error:
             sys.stderr.write("WARN: GPIO" + str(RST_PIN) + " (RST) busy — skipped\\n")
-        sys.stderr.flush()
+            sys.stderr.flush()
+
+        log("GPIO claimed: " + str(sorted(self.gpio_ok)))
+        log("cs_lines: " + str(self.cs_lines))
 
         # SPI
+        log("Opening /dev/spidev0.0 ...")
         self.spi = spidev.SpiDev()
         self.spi.open(0, 0)
         self.spi.max_speed_hz = 1_000_000
         self.spi.mode = 0
+        log("SPI opened: bus=0 dev=0 mode=" + str(self.spi.mode) + " speed=" + str(self.spi.max_speed_hz))
+
+        # Raw SPI test on slot 1 (CS LOW → read VersionReg 0x37 → CS HIGH)
+        if 1 in self.cs_lines:
+            pin1 = self.cs_lines[1]
+            log("Raw SPI test on slot 1 (GPIO" + str(pin1) + "):")
+            lgpio.gpio_write(self.chip, pin1, 0)
+            time.sleep(0.005)
+            r1 = self.spi.xfer2([0xEE, 0x00])   # read VersionReg (addr=0x37 → 0x37<<1|0x80 = 0xEE)
+            r2 = self.spi.xfer2([0xEE, 0x00])
+            r3 = self.spi.xfer2([0xEE, 0x00])
+            lgpio.gpio_write(self.chip, pin1, 1)
+            log("  xfer2 result: " + str(r1) + " / " + str(r2) + " / " + str(r3))
+            if r1[1] == 0 and r2[1] == 0 and r3[1] == 0:
+                log("  *** All 0x00 — SPI bus not responding! Check MOSI/MISO/SCK wires ***")
+            else:
+                log("  SPI RESPONDING — version=0x" + format(r1[1], "02X"))
+        else:
+            log("Slot 1 not claimed — skipping raw SPI test")
 
         self.rc522 = Rc522(self.spi)
 
@@ -248,12 +285,16 @@ class MultiReader:
 
     def cmd_init(self, slot):
         if not self.select(slot):
+            log("cmd_init slot " + str(slot) + ": GPIO not claimed")
             return "ERR:GPIO_NOT_CLAIMED"
         try:
+            log("cmd_init slot " + str(slot) + ": sending SoftReset...")
             self.rc522.init_chip()
             v = self.rc522.version()
+            log("cmd_init slot " + str(slot) + ": VersionReg=0x" + format(v, "02X"))
             return "VER:" + format(v, "02X")
         except Exception as e:
+            log("cmd_init slot " + str(slot) + " ERROR: " + str(e))
             return "ERR:" + str(e)
         finally:
             self.deselect()
