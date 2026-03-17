@@ -104,11 +104,8 @@ class Rc522:
         self._write_reg(reg, self._read_reg(reg) & (~mask & 0xFF))
 
     def _init_chip(self) -> None:
-        self._write_reg(CommandReg, PCD_SOFTRESET)
-        for _ in range(10):
-            time.sleep(0.05)
-            if not (self._read_reg(CommandReg) & 0x10):
-                break
+        # Skip SoftReset for FM17522E clone compatibility
+        self._write_reg(CommandReg, PCD_IDLE)
 
         # Timer: TAuto=1; f(Timer) = 6.78MHz / (2*TPreScaler+1)
         self._write_reg(TModeReg, 0x8D)

@@ -133,20 +133,18 @@ class Rc522:
         self._wr(reg, self._rd(reg) & (~mask & 0xFF))
 
     def init_chip(self):
-        self._wr(CommandReg, PCD_SOFTRESET)
-        # FM17522E clones need longer recovery after soft reset
-        for _ in range(10):
-            time.sleep(0.05)
-            # Wait until PowerDown bit (bit 4) is cleared
-            cmd = self._rd(CommandReg)
-            if not (cmd & 0x10):
-                break
+        # Skip SoftReset — FM17522E clones often don't recover properly.
+        # The chip is already running (proven by raw version read).
+        # Just configure registers directly.
+        v = self._rd(VersionReg)
+        log("init_chip: pre-config version=0x" + format(v, "02X"))
         self._wr(TModeReg, 0x8D)
         self._wr(TPrescalerReg, 0x3E)
         self._wr(TReloadRegL, 30)
         self._wr(TReloadRegH, 0)
         self._wr(TxASKReg, 0x40)
         self._wr(ModeReg, 0x3D)
+        self._wr(CommandReg, PCD_IDLE)
         if (self._rd(TxControlReg) & 0x03) != 0x03:
             self._set(TxControlReg, 0x03)
 
@@ -294,12 +292,8 @@ class MultiReader:
             log("cmd_init slot " + str(slot) + ": GPIO not claimed")
             return "ERR:GPIO_NOT_CLAIMED"
         try:
-            log("cmd_init slot " + str(slot) + ": sending SoftReset...")
+            log("cmd_init slot " + str(slot) + ": configuring (no SoftReset)...")
             self.rc522.init_chip()
-            # Re-select CS after reset (clone chips may drop SPI state)
-            self.deselect()
-            time.sleep(0.01)
-            self.select(slot)
             v = self.rc522.version()
             log("cmd_init slot " + str(slot) + ": VersionReg=0x" + format(v, "02X"))
             return "VER:" + format(v, "02X")
