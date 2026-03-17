@@ -2,42 +2,28 @@
 /**
  * test_nfc_claude.cjs — Test 10× RC522 NFC readers on Raspberry Pi 5
  *
- * ALL hardware I/O (SPI + GPIO) runs inside an embedded Python co-process
- * using spidev + lgpio — the proven-working stack from nfc_rc522_bridge.py.
- * Node.js only sends text commands and displays results.
- * Zero native Node.js dependencies required.
+ * Architecture: Software CS via GPIO
+ *   - Each reader's SDA is connected to a separate GPIO pin
+ *   - GPIO LOW = select (active), GPIO HIGH = deselect
+ *   - Only ONE reader selected at a time
  *
- * Pin connections (do not change):
- * ─────────────────────────────────────────────────────────────────
- * SPI (shared busbar):
- *   MOSI : GPIO10 (Pin 19)
- *   MISO : GPIO9  (Pin 21)
- *   SCK  : GPIO11 (Pin 23)
- *   RST  : GPIO7  (Pin 25) — shared, all readers
- *   VCC  : 3.3V, GND : GND
+ * PREREQUISITE (run once, then reboot):
+ *   sudo bash setup_spi_no_cs.sh && sudo reboot
+ *   This disables kernel CE0 management so software CS works properly.
  *
- * CS (SDA) per reader — left side of header:
- *   Reader #1  : GPIO4   (Pin 7)
- *   Reader #2  : GPIO17  (Pin 11)
- *   Reader #3  : GPIO27  (Pin 13)
- *   Reader #4  : GPIO22  (Pin 15)
- *   Reader #5  : GPIO0   (Pin 27)
- *   Reader #6  : GPIO5   (Pin 29)
- *   Reader #7  : GPIO6   (Pin 31)
- *   Reader #8  : GPIO13  (Pin 33)
- *   Reader #9  : GPIO19  (Pin 35)
- *   Reader #10 : GPIO26  (Pin 37)
- * ─────────────────────────────────────────────────────────────────
+ * Wiring per reader:
+ *   SDA  → individual GPIO (see CS_MAP below)
+ *   SCK  → Pin 23 (GPIO11) — shared
+ *   MOSI → Pin 19 (GPIO10) — shared (NOTE: swap if board labels are reversed)
+ *   MISO → Pin 21 (GPIO9)  — shared (NOTE: swap if board labels are reversed)
+ *   RST  → 3.3V — shared
+ *   VCC  → 3.3V, GND → GND (common with RPi!)
  *
- * Prereqs (usually pre-installed on RPi OS Bookworm):
- *   sudo apt install python3-lgpio python3-spidev
- *
- * Run:  sudo node test_nfc_claude.cjs
+ * Run: sudo node test_nfc_claude.cjs
  */
 
 const { spawn } = require('child_process');
 
-// ─── Reader table (for display only — hardware config lives in Python) ──
 const CS_MAP = [
   { reader: 1,  gpio: 4,  pin: 7 },
   { reader: 2,  gpio: 17, pin: 11 },
@@ -53,15 +39,8 @@ const CS_MAP = [
 
 const VERSION_OK = [0x91, 0x92, 0x88, 0x18, 0x12];
 
-// ─── Embedded Python hardware helper ─────────────────────────────
-// Handles ALL SPI and GPIO. Ported from the working nfc_rc522_bridge.py.
-// Protocol (text lines over stdin/stdout):
-//   Startup     → prints "READY\n" when hardware is initialised
-//   INIT <slot> → soft-reset + init reader, responds "VER:XX\n" or "ERR:msg\n"
-//   READ <slot> → request + anticoll, responds "UID:XXXXXXXX\n" or "NONE\n" or "ERR:msg\n"
-//   QUIT        → clean shutdown
 const PY_HELPER = `
-import sys, time, subprocess, os
+import sys, time, os
 
 def log(msg):
     sys.stderr.write("[DBG] " + msg + "\\n")
@@ -69,27 +48,11 @@ def log(msg):
 
 log("Python helper starting (pid=" + str(os.getpid()) + ")")
 
-try:
-    import spidev
-    log("spidev imported OK — version: " + getattr(spidev, '__version__', 'unknown'))
-except ImportError as e:
-    sys.stderr.write("ERROR: python3-spidev not found: " + str(e) + "\\n")
-    sys.stderr.write("Install: sudo apt install python3-spidev\\n")
-    sys.stderr.flush()
-    sys.exit(1)
+import spidev
+import lgpio
 
-try:
-    import lgpio
-    log("lgpio imported OK — version: " + getattr(lgpio, 'VERSION', 'unknown'))
-except ImportError as e:
-    sys.stderr.write("ERROR: python3-lgpio not found: " + str(e) + "\\n")
-    sys.stderr.write("Install: sudo apt install python3-lgpio\\n")
-    sys.stderr.flush()
-    sys.exit(1)
-
-# ── Pin map ──
+# ── Pin map: GPIO per reader for software CS (SDA) ──
 SLOT_CS = {1:4, 2:17, 3:27, 4:22, 5:0, 6:5, 7:6, 8:13, 9:19, 10:26}
-RST_PIN = 7
 log("SLOT_CS=" + str(SLOT_CS))
 
 # ── MFRC522 registers ──
@@ -111,7 +74,6 @@ VersionReg    = 0x37
 
 PCD_IDLE       = 0x00
 PCD_TRANSCEIVE = 0x0C
-PCD_SOFTRESET  = 0x0F
 PICC_REQIDL    = 0x26
 PICC_ANTICOLL  = 0x93
 
@@ -133,7 +95,7 @@ class Rc522:
         self._wr(reg, self._rd(reg) & (~mask & 0xFF))
 
     def init_chip(self):
-        # Skip SoftReset — FM17522E clones don't recover properly
+        # No SoftReset — FM17522E clones don't recover properly
         self._wr(CommandReg, PCD_IDLE)
         self._wr(TModeReg, 0x8D)
         self._wr(TPrescalerReg, 0x3E)
@@ -147,7 +109,7 @@ class Rc522:
     def version(self):
         return self._rd(VersionReg)
 
-    def _to_card(self, cmd, data, timeout_ms=30):
+    def _to_card(self, cmd, data, timeout_ms=50):
         self._wr(CommandReg, PCD_IDLE)
         self._wr(ComIrqReg, 0x7F)
         self._set(FIFOLevelReg, 0x80)
@@ -202,27 +164,27 @@ class MultiReader:
     def __init__(self):
         # GPIO
         self.chip = lgpio.gpiochip_open(0)
+        log("gpiochip0 opened (handle=" + str(self.chip) + ")")
+
+        # Claim CS pins — all HIGH (deselected) initially
         self.cs_lines = {}
         self.gpio_ok = set()
         for slot, pin in SLOT_CS.items():
             try:
-                lgpio.gpio_claim_output(self.chip, pin, 1)
+                lgpio.gpio_claim_output(self.chip, pin, 1)  # HIGH = deselected
                 self.cs_lines[slot] = pin
                 self.gpio_ok.add(pin)
+                log("GPIO" + str(pin) + " (CS slot " + str(slot) + ") claimed — HIGH")
             except lgpio.error as e:
                 sys.stderr.write("WARN: GPIO" + str(pin) + ": " + str(e) + "\\n")
-        try:
-            lgpio.gpio_claim_output(self.chip, RST_PIN, 1)
-            self.gpio_ok.add(RST_PIN)
-        except lgpio.error:
-            sys.stderr.write("WARN: GPIO" + str(RST_PIN) + " (RST) busy — skipped\\n")
         sys.stderr.flush()
 
-        # SPI
+        # SPI — kernel no longer manages CE0 (after dtoverlay=spi0-0cs)
         self.spi = spidev.SpiDev()
         self.spi.open(0, 0)
         self.spi.max_speed_hz = 50_000
         self.spi.mode = 0
+        log("SPI opened: bus=0 dev=0 speed=50kHz (no kernel CS)")
 
         self.rc522 = Rc522(self.spi)
 
@@ -242,16 +204,20 @@ class MultiReader:
             pass
 
     def select(self, slot):
+        """Select ONE reader: set all CS HIGH, then target CS LOW."""
         pin = self.cs_lines.get(slot)
         if pin is None:
             return False
+        # Deselect all first
         for p in self.cs_lines.values():
             lgpio.gpio_write(self.chip, p, 1)
+        # Select target
         lgpio.gpio_write(self.chip, pin, 0)
-        time.sleep(0.003)
+        time.sleep(0.005)
         return True
 
     def deselect(self):
+        """Deselect all readers: all CS HIGH."""
         for p in self.cs_lines.values():
             lgpio.gpio_write(self.chip, p, 1)
 
@@ -261,8 +227,10 @@ class MultiReader:
         try:
             self.rc522.init_chip()
             v = self.rc522.version()
+            log("cmd_init slot " + str(slot) + ": Version=0x" + format(v, "02X"))
             return "VER:" + format(v, "02X")
         except Exception as e:
+            log("cmd_init slot " + str(slot) + " ERR: " + str(e))
             return "ERR:" + str(e)
         finally:
             self.deselect()
@@ -275,7 +243,7 @@ class MultiReader:
                 uid = self.rc522.read_uid_hex()
                 if uid:
                     return "UID:" + uid
-                time.sleep(0.005)
+                time.sleep(0.01)
             return "NONE"
         except Exception as e:
             return "ERR:" + str(e)
@@ -285,7 +253,6 @@ class MultiReader:
 
 def main():
     mr = MultiReader()
-    # Report which GPIO pins were claimed
     sys.stdout.write("READY:" + ",".join(str(g) for g in sorted(mr.gpio_ok)) + "\\n")
     sys.stdout.flush()
 
@@ -322,8 +289,6 @@ let pyProc = null;
 let pyBuffer = '';
 let cmdResolve = null;
 let claimedGpios = new Set();
-
-// ─── Python co-process management ────────────────────────────────
 
 function startHardwareHelper() {
   return new Promise((resolve, reject) => {
@@ -397,8 +362,6 @@ function sendCommand(cmd) {
   });
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────
-
 function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -409,8 +372,6 @@ function timestamp() {
     .map((n) => n.toString().padStart(2, '0'))
     .join(':');
 }
-
-// ─── Cleanup ──────────────────────────────────────────────────────
 
 function shutdown() {
   console.log('\nShutting down...');
@@ -425,28 +386,23 @@ function shutdown() {
   process.exit(0);
 }
 
-// ─── Main ─────────────────────────────────────────────────────────
-
 async function main() {
-  console.log('=== RC522 NFC Reader Test — RPi5 ===');
+  console.log('=== RC522 NFC Reader Test — RPi5 (Software CS) ===');
   console.log('Initializing readers...\n');
 
   try {
     await startHardwareHelper();
   } catch (err) {
     console.error('Hardware init failed:', err.message);
+    if (err.message.includes('0x00') || err.message.includes('not responding')) {
+      console.error('\nTip: Did you run setup_spi_no_cs.sh and reboot?');
+      console.error('     sudo bash setup_spi_no_cs.sh && sudo reboot');
+    }
     process.exit(1);
   }
 
-  // RST status
-  if (claimedGpios.has(7)) {
-    console.log('RST (GPIO7) : claimed OK');
-  } else {
-    console.log('RST (GPIO7) : busy (SPI CE1) — skipped, not required');
-  }
   console.log('');
 
-  // Init each reader and read version
   const enabled = [];
   for (let i = 0; i < CS_MAP.length; i++) {
     const { reader, gpio, pin } = CS_MAP[i];
@@ -460,7 +416,7 @@ async function main() {
       continue;
     }
 
-    const slot = i + 1; // slots are 1-based in the Python helper
+    const slot = i + 1;
     const resp = await sendCommand('INIT ' + slot);
 
     if (resp.startsWith('VER:')) {
@@ -482,7 +438,6 @@ async function main() {
 
   process.on('SIGINT', shutdown);
 
-  // Poll loop
   while (true) {
     for (let i = 0; i < CS_MAP.length; i++) {
       if (!enabled[i]) continue;
