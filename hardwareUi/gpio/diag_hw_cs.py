@@ -12,7 +12,7 @@ print("=" * 50)
 
 spi = spidev.SpiDev()
 spi.open(0, 0)
-spi.max_speed_hz = 1_000_000
+spi.max_speed_hz = 50_000
 spi.mode = 0
 
 PASS = "\033[92m[PASS]\033[0m"
