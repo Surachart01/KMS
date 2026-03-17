@@ -221,7 +221,7 @@ class MultiReader:
         # SPI
         self.spi = spidev.SpiDev()
         self.spi.open(0, 0)
-        self.spi.max_speed_hz = 1_000_000
+        self.spi.max_speed_hz = 100_000
         self.spi.mode = 0
 
         self.rc522 = Rc522(self.spi)
