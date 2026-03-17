@@ -51,7 +51,7 @@ const CS_MAP = [
   { reader: 10, gpio: 26, pin: 37 },
 ];
 
-const VERSION_OK = [0x91, 0x92, 0x88, 0x18];
+const VERSION_OK = [0x91, 0x92];
 
 // ─── Embedded Python hardware helper ─────────────────────────────
 // Handles ALL SPI and GPIO. Ported from the working nfc_rc522_bridge.py.
@@ -133,18 +133,14 @@ class Rc522:
         self._wr(reg, self._rd(reg) & (~mask & 0xFF))
 
     def init_chip(self):
-        # Skip SoftReset — FM17522E clones often don't recover properly.
-        # The chip is already running (proven by raw version read).
-        # Just configure registers directly.
-        v = self._rd(VersionReg)
-        log("init_chip: pre-config version=0x" + format(v, "02X"))
+        self._wr(CommandReg, PCD_SOFTRESET)
+        time.sleep(0.05)
         self._wr(TModeReg, 0x8D)
         self._wr(TPrescalerReg, 0x3E)
         self._wr(TReloadRegL, 30)
         self._wr(TReloadRegH, 0)
         self._wr(TxASKReg, 0x40)
         self._wr(ModeReg, 0x3D)
-        self._wr(CommandReg, PCD_IDLE)
         if (self._rd(TxControlReg) & 0x03) != 0x03:
             self._set(TxControlReg, 0x03)
 
@@ -205,9 +201,7 @@ class Rc522:
 class MultiReader:
     def __init__(self):
         # GPIO
-        log("Opening gpiochip0...")
         self.chip = lgpio.gpiochip_open(0)
-        log("gpiochip0 opened OK (handle=" + str(self.chip) + ")")
         self.cs_lines = {}
         self.gpio_ok = set()
         for slot, pin in SLOT_CS.items():
@@ -215,46 +209,20 @@ class MultiReader:
                 lgpio.gpio_claim_output(self.chip, pin, 1)
                 self.cs_lines[slot] = pin
                 self.gpio_ok.add(pin)
-                log("  GPIO" + str(pin) + " (slot " + str(slot) + ") claimed OK — set HIGH")
             except lgpio.error as e:
                 sys.stderr.write("WARN: GPIO" + str(pin) + ": " + str(e) + "\\n")
-                sys.stderr.flush()
         try:
             lgpio.gpio_claim_output(self.chip, RST_PIN, 1)
             self.gpio_ok.add(RST_PIN)
-            log("  GPIO" + str(RST_PIN) + " (RST) claimed OK")
         except lgpio.error:
             sys.stderr.write("WARN: GPIO" + str(RST_PIN) + " (RST) busy — skipped\\n")
-            sys.stderr.flush()
-
-        log("GPIO claimed: " + str(sorted(self.gpio_ok)))
-        log("cs_lines: " + str(self.cs_lines))
+        sys.stderr.flush()
 
         # SPI
-        log("Opening /dev/spidev0.0 ...")
         self.spi = spidev.SpiDev()
         self.spi.open(0, 0)
         self.spi.max_speed_hz = 1_000_000
         self.spi.mode = 0
-        log("SPI opened: bus=0 dev=0 mode=" + str(self.spi.mode) + " speed=" + str(self.spi.max_speed_hz))
-
-        # Raw SPI test on slot 1 (CS LOW → read VersionReg 0x37 → CS HIGH)
-        if 1 in self.cs_lines:
-            pin1 = self.cs_lines[1]
-            log("Raw SPI test on slot 1 (GPIO" + str(pin1) + "):")
-            lgpio.gpio_write(self.chip, pin1, 0)
-            time.sleep(0.005)
-            r1 = self.spi.xfer2([0xEE, 0x00])   # read VersionReg (addr=0x37 → 0x37<<1|0x80 = 0xEE)
-            r2 = self.spi.xfer2([0xEE, 0x00])
-            r3 = self.spi.xfer2([0xEE, 0x00])
-            lgpio.gpio_write(self.chip, pin1, 1)
-            log("  xfer2 result: " + str(r1) + " / " + str(r2) + " / " + str(r3))
-            if r1[1] == 0 and r2[1] == 0 and r3[1] == 0:
-                log("  *** All 0x00 — SPI bus not responding! Check MOSI/MISO/SCK wires ***")
-            else:
-                log("  SPI RESPONDING — version=0x" + format(r1[1], "02X"))
-        else:
-            log("Slot 1 not claimed — skipping raw SPI test")
 
         self.rc522 = Rc522(self.spi)
 
@@ -289,16 +257,12 @@ class MultiReader:
 
     def cmd_init(self, slot):
         if not self.select(slot):
-            log("cmd_init slot " + str(slot) + ": GPIO not claimed")
             return "ERR:GPIO_NOT_CLAIMED"
         try:
-            log("cmd_init slot " + str(slot) + ": configuring (no SoftReset)...")
             self.rc522.init_chip()
             v = self.rc522.version()
-            log("cmd_init slot " + str(slot) + ": VersionReg=0x" + format(v, "02X"))
             return "VER:" + format(v, "02X")
         except Exception as e:
-            log("cmd_init slot " + str(slot) + " ERROR: " + str(e))
             return "ERR:" + str(e)
         finally:
             self.deselect()
