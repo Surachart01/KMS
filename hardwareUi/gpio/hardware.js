@@ -29,7 +29,7 @@ const KEY_PULL_MISS_THRESHOLD = Number(process.env.KEY_PULL_MISS_THRESHOLD || 2)
 const KEY_PULL_SEEN_GRACE_MS = Number(process.env.KEY_PULL_SEEN_GRACE_MS || 2000); // เวลารอให้เห็นแท็กครั้งแรกหลัง unlock
 // Relay module บางรุ่นเป็น Active-LOW (สั่ง LOW แล้วรีเลย์ทำงาน)
 // ตั้งค่าได้ใน gpio/.env: RELAY_ACTIVE_STATE=LOW หรือ HIGH (default HIGH)
-const RELAY_ACTIVE_STATE = (process.env.RELAY_ACTIVE_STATE || 'HIGH').toUpperCase();
+const RELAY_ACTIVE_STATE = (process.env.RELAY_ACTIVE_STATE || 'LOW').toUpperCase();
 const FORCE_PY_NFC = (process.env.FORCE_PY_NFC || '').toLowerCase() === '1';
 const PY_NFC_READ_TIMEOUT_MS = Number(process.env.PY_NFC_READ_TIMEOUT_MS || 250);
 
