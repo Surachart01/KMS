@@ -79,7 +79,7 @@ import { exec } from 'child_process';
 let Mfrc522 = null;
 let Gpio = null;
 let IS_MOCK = true;
-let nfcMode = 'mock'; // 'mock' | 'node' | 'python'
+let nfcMode = 'node'; // 'mock' | 'node' | 'python'
 let isUnlocking = false; // Flag to pause NFC polling during relay operation
 const slotHasKey = {}; // กุญแจอยู่ในช่องหรือไม่ (true = Green, false = Red)
 const csPins = {}; // เก็บ object Gpio ของ CS แต่ละช่อง
@@ -164,11 +164,21 @@ function pyRequest(payload) {
     });
 }
 
+let _pyDebugCount = 0;
 async function readNfcAtSlotPython(slotNumber) {
     try {
         const res = await pyRequest({ cmd: 'read', slot: slotNumber });
+        // Debug: log first 30 responses so we can see what the bridge returns
+        if (_pyDebugCount < 30) {
+            _pyDebugCount++;
+            console.log(`[NFC-DBG #${_pyDebugCount}] slot=${slotNumber} → uid=${res.uid ?? 'null'} ok=${res.ok}`);
+        }
         return res.uid || null;
-    } catch {
+    } catch (e) {
+        if (_pyDebugCount < 30) {
+            _pyDebugCount++;
+            console.log(`[NFC-DBG #${_pyDebugCount}] slot=${slotNumber} → ERROR: ${e.message}`);
+        }
         return null;
     }
 }

@@ -266,6 +266,8 @@ class MultiReader:
 
 def main() -> int:
     mr = MultiReader()
+    _dbg_count = 0
+    _DBG_MAX = 30  # print first N reads to stderr for diagnostics
     try:
         for line in sys.stdin:
             line = line.strip()
@@ -282,6 +284,10 @@ def main() -> int:
                 if cmd == "read":
                     slot = int(req.get("slot"))
                     uid = mr.read_uid(slot)
+                    if _dbg_count < _DBG_MAX:
+                        _dbg_count += 1
+                        ver = mr.rc522._read_reg(0x37)
+                        print(f"[PY-DBG #{_dbg_count}] slot={slot} rst_pin={mr.rst_lines.get(slot)} uid={uid} ver=0x{ver:02X}", file=sys.stderr, flush=True)
                     print(json.dumps({"id": req_id, "ok": True, "uid": uid}), flush=True)
                     continue
 

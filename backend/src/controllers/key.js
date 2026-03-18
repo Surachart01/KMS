@@ -375,8 +375,15 @@ export const readNfcTag = async (req, res) => {
 
         console.log(`✅ [NFC Read] อ่านสำเร็จที่ช่อง ${result.slotNumber}: UID=${result.uid}`);
 
+        // บันทึก UID ลง DB ทันที
+        await prisma.key.update({
+            where: { id },
+            data: { nfcUid: result.uid.trim().toUpperCase() },
+        });
+        console.log(`💾 [NFC Read] บันทึก nfcUid=${result.uid} ลง Key id=${id} สำเร็จ`);
+
         return res.status(200).json({
-            message: `อ่าน NFC UID สำเร็จ (ห้อง ${key.roomCode}, ช่อง ${key.slotNumber})`,
+            message: `อ่านและบันทึก NFC UID สำเร็จ (ห้อง ${key.roomCode}, ช่อง ${key.slotNumber})`,
             data: {
                 uid: result.uid,
                 slotNumber: result.slotNumber

@@ -94,14 +94,12 @@ export default function KeysPage() {
         if (!nfcTargetKey?.id) return;
         setReadingNfc(true);
         try {
-            message.info("ระบบกำลังเปิดรับเหรียญ 15 วินาที กรุณานำเหรียญไปทาบที่ช่องตู้");
+            message.info("กรุณานำเหรียญ NFC ไปทาบที่ช่องตู้ ภายใน 15 วินาที...");
             const res = await keysAPI.readNfc(nfcTargetKey.id);
             const { uid } = res.data.data;
 
             setNfcUidInput(uid);
-            await keysAPI.update(nfcTargetKey.id, { nfcUid: uid });
-
-            message.success(res.data?.message || `สแกนสำเร็จ: ${uid}`);
+            message.success(res.data?.message || `สแกนและบันทึก UID สำเร็จ: ${uid}`);
             setNfcModalVisible(false);
             fetchKeys();
         } catch (e) {
