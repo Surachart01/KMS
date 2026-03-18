@@ -4,7 +4,7 @@ RC522 Multi-Reader Bridge (Raspberry Pi 5)
 
 Purpose:
 - Read UID from MFRC522 over SPI (spidev0.0)
-- Select 1 of N readers by toggling its CS line via lgpio
+- Select 1 of N readers by toggling its RST line via lgpio (CE0 shared as hardware CS)
 - Communicate with a Node.js parent process over stdin/stdout (JSON lines)
 
 Protocol (JSONL):
@@ -37,7 +37,9 @@ except Exception as e:  # pragma: no cover
 
 
 SLOT_CS_MAP = {
-    1: 4,    # Pin 7  — ฝั่งซ้ายของ header
+    # GPIO per reader → controls RST pin (LOW=disabled, HIGH=active)
+    # CE0 (Pin 24) is shared SDA for all readers (kernel hardware CS)
+    1: 4,    # Pin 7
     2: 17,   # Pin 11
     3: 27,   # Pin 13
     4: 22,   # Pin 15
@@ -193,23 +195,25 @@ class Rc522:
 class MultiReader:
     def __init__(self):
         self.chip = lgpio.gpiochip_open(0)
-        self.cs_lines = {}
+        self.rst_lines = {}
         for slot, pin in SLOT_CS_MAP.items():
-            lgpio.gpio_claim_output(self.chip, pin, 1)  # default HIGH (inactive)
-            self.cs_lines[slot] = pin
+            # default LOW (disabled) to avoid bus contention
+            lgpio.gpio_claim_output(self.chip, pin, 0)
+            self.rst_lines[slot] = pin
 
         self.spi = spidev.SpiDev()
         self.spi.open(0, 0)
-        self.spi.max_speed_hz = 1_000_000
+        # Long wires / multi-drop setups are noisy; keep it slow for stability
+        self.spi.max_speed_hz = 50_000
         self.spi.mode = 0
 
         self.rc522 = Rc522(self.spi)
 
     def close(self) -> None:
         try:
-            for pin in self.cs_lines.values():
+            for pin in self.rst_lines.values():
                 try:
-                    lgpio.gpio_write(self.chip, pin, 1)
+                    lgpio.gpio_write(self.chip, pin, 0)
                 except Exception:
                     pass
         finally:
@@ -222,37 +226,42 @@ class MultiReader:
             except Exception:
                 pass
 
-    def select_slot(self, slot: int) -> bool:
-        pin = self.cs_lines.get(slot)
+    def activate_slot(self, slot: int) -> bool:
+        pin = self.rst_lines.get(slot)
         if pin is None:
             return False
-        # Ensure all inactive, then activate one
-        for p in self.cs_lines.values():
-            lgpio.gpio_write(self.chip, p, 1)
-        lgpio.gpio_write(self.chip, pin, 0)
+        # Ensure all disabled (RST LOW), then enable one (RST HIGH)
+        for p in self.rst_lines.values():
+            lgpio.gpio_write(self.chip, p, 0)
+        lgpio.gpio_write(self.chip, pin, 1)
         return True
 
-    def deselect_all(self) -> None:
-        for p in self.cs_lines.values():
-            lgpio.gpio_write(self.chip, p, 1)
+    def deactivate_all(self) -> None:
+        for p in self.rst_lines.values():
+            lgpio.gpio_write(self.chip, p, 0)
 
     def read_uid(self, slot: int) -> Optional[str]:
-        if not self.select_slot(slot):
+        if not self.activate_slot(slot):
             return None
         try:
-            # After switching CS, give the reader a brief settle time.
-            time.sleep(0.003)
+            # After switching RST, give the reader a brief settle time.
+            time.sleep(0.01)
 
             # Retry a few times to avoid false negatives from noisy RF / timing.
             # Each attempt is quick (tens of ms). If a tag is present, we usually get it within 1-2 tries.
             for _ in range(3):
+                # Re-init per read to recover from clone quirks / after RST toggling
+                try:
+                    self.rc522._init_chip()
+                except Exception:
+                    pass
                 uid = self.rc522.read_uid_hex()
                 if uid:
                     return uid
                 time.sleep(0.005)
             return None
         finally:
-            self.deselect_all()
+            self.deactivate_all()
 
 
 def main() -> int:

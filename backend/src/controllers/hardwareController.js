@@ -102,6 +102,7 @@ export const getAllKey = async (req, res) => {
             id: key.id,
             roomCode: key.roomCode,
             slotNumber: key.slotNumber,
+            nfcUid: key.nfcUid,
             isAvailable: key.bookings.length === 0, // ว่างถ้าไม่มีคนเบิก
             currentBorrower: key.bookings.length > 0 ? key.bookings[0].user : null,
         }));

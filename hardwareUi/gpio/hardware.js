@@ -19,6 +19,7 @@ import { spawn } from 'child_process';
 dotenv.config();
  
 const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:4556';
+const HARDWARE_KEYS_URL = process.env.HARDWARE_KEYS_URL || `${BACKEND_URL}/api/hardware/keys`;
 const NFC_POLLING_INTERVAL_MS = 200; // loop NFC ทุก 200ms
 const KEY_PULL_TIMEOUT_S = 15;       // รอดึงกุญแจ 15 วินาทีคงที่
 const KEY_PULL_POLL_INTERVAL_MS = 1000; // ตรวจเช็คการดึงกุญแจทุก 1 วินาที
@@ -81,6 +82,9 @@ let nfcMode = 'mock'; // 'mock' | 'node' | 'python'
 let isUnlocking = false; // Flag to pause NFC polling during relay operation
 const slotHasKey = {}; // กุญแจอยู่ในช่องหรือไม่ (true = Green, false = Red)
 const csPins = {}; // เก็บ object Gpio ของ CS แต่ละช่อง
+
+// Cache: slotNumber -> expected key NFC UID (from backend)
+const expectedKeyUidBySlot = {};
 
 // ─────────────────────────────────────────────
 // Python NFC bridge
@@ -223,6 +227,28 @@ async function setupHardware() {
                 nfcMode = 'mock';
             }
         }
+    }
+}
+
+async function refreshKeyUidCache() {
+    try {
+        const res = await fetch(HARDWARE_KEYS_URL, { method: 'GET' });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const body = await res.json();
+        const data = body?.data;
+        if (!Array.isArray(data)) throw new Error('invalid response shape');
+
+        for (const row of data) {
+            const slot = Number(row.slotNumber);
+            const uid = typeof row.nfcUid === 'string' ? row.nfcUid.trim().toUpperCase() : null;
+            if (Number.isFinite(slot)) {
+                expectedKeyUidBySlot[slot] = uid;
+            }
+        }
+        console.log(`🧾 Key UID cache updated (${Object.keys(expectedKeyUidBySlot).length} slots)`);
+    } catch (e) {
+        console.log('🟡 Key UID cache not available yet (will retry later)');
+        console.error(e.message);
     }
 }
 
@@ -451,6 +477,49 @@ socket.on('gpio:unlock', async (data) => {
     socket.emit('slot:unlocked', { slotNumber, success });
 
     if (success) {
+        // Safety: verify the key tag UID exists/expected for this slot.
+        // If UID is missing/unknown/mismatched, retract solenoid immediately.
+        const expectedUid = expectedKeyUidBySlot[slotNumber] || null;
+        const actualUid = await readNfcAtSlot(slotNumber);
+
+        if (!actualUid) {
+            console.log(`⚠️  No NFC UID detected at slot ${slotNumber} right after unlock → retracting solenoid`);
+            lockSlot(slotNumber);
+            socket.emit('borrow:cancelled', {
+                slotNumber,
+                bookingId,
+                reason: 'NO_UID_DETECTED',
+            });
+            return;
+        }
+
+        if (expectedUid && expectedUid !== actualUid) {
+            console.log(
+                `⚠️  UID mismatch at slot ${slotNumber}: expected=${expectedUid} actual=${actualUid} → retracting solenoid`
+            );
+            lockSlot(slotNumber);
+            socket.emit('borrow:cancelled', {
+                slotNumber,
+                bookingId,
+                reason: 'KEY_UID_MISMATCH',
+                expectedUid,
+                actualUid,
+            });
+            return;
+        }
+
+        if (!expectedUid) {
+            console.log(`⚠️  Slot ${slotNumber} has UID=${actualUid} but no UID is registered in DB → retracting solenoid`);
+            lockSlot(slotNumber);
+            socket.emit('borrow:cancelled', {
+                slotNumber,
+                bookingId,
+                reason: 'UNKNOWN_KEY_UID',
+                actualUid,
+            });
+            return;
+        }
+
         // เริ่มรอดึงกุญแจออก
         startKeyPullCheck(slotNumber, bookingId);
     }
@@ -657,6 +726,9 @@ process.on('SIGTERM', () => {
     console.log('===========================================');
 
     await setupHardware();
+    await refreshKeyUidCache();
+    // Refresh periodically in case staff updates NFC UID mapping
+    setInterval(refreshKeyUidCache, 60_000);
     startNfcPolling();
 
     console.log('✅ Hardware Service running — waiting for events...');
