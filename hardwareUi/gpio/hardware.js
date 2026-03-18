@@ -20,6 +20,7 @@ dotenv.config();
  
 const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:4556';
 const HARDWARE_KEYS_URL = process.env.HARDWARE_KEYS_URL || `${BACKEND_URL}/api/hardware/keys`;
+const HARDWARE_TOKEN = process.env.HARDWARE_TOKEN || '';
 const NFC_POLLING_INTERVAL_MS = 200; // loop NFC ทุก 200ms
 const KEY_PULL_TIMEOUT_S = 15;       // รอดึงกุญแจ 15 วินาทีคงที่
 const KEY_PULL_POLL_INTERVAL_MS = 1000; // ตรวจเช็คการดึงกุญแจทุก 1 วินาที
@@ -232,7 +233,12 @@ async function setupHardware() {
 
 async function refreshKeyUidCache() {
     try {
-        const res = await fetch(HARDWARE_KEYS_URL, { method: 'GET' });
+        const res = await fetch(HARDWARE_KEYS_URL, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${HARDWARE_TOKEN}`,
+            },
+        });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const body = await res.json();
         const data = body?.data;
