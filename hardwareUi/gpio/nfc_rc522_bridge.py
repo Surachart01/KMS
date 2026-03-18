@@ -283,11 +283,17 @@ def main() -> int:
                     continue
                 if cmd == "read":
                     slot = int(req.get("slot"))
-                    uid = mr.read_uid(slot)
+                    # Activate slot, read version for debug, then read UID
                     if _dbg_count < _DBG_MAX:
-                        _dbg_count += 1
+                        mr.activate_slot(slot)
+                        time.sleep(0.01)
                         ver = mr.rc522._read_reg(0x37)
-                        print(f"[PY-DBG #{_dbg_count}] slot={slot} rst_pin={mr.rst_lines.get(slot)} uid={uid} ver=0x{ver:02X}", file=sys.stderr, flush=True)
+                        mr.deactivate_all()
+                        _dbg_count += 1
+                        print(f"[PY-DBG #{_dbg_count}] slot={slot} rst_pin={mr.rst_lines.get(slot)} ver=0x{ver:02X}", file=sys.stderr, flush=True)
+                    uid = mr.read_uid(slot)
+                    if _dbg_count <= _DBG_MAX and uid:
+                        print(f"[PY-DBG] slot={slot} uid={uid}", file=sys.stderr, flush=True)
                     print(json.dumps({"id": req_id, "ok": True, "uid": uid}), flush=True)
                     continue
 
