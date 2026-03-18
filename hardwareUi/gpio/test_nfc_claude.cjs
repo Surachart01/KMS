@@ -2,41 +2,26 @@
 /**
  * test_nfc_claude.cjs — Test 10× RC522 NFC readers on Raspberry Pi 5
  *
- * Architecture: CE0 shared SDA + RST per reader
- *   - CE0 (Pin 24) → all RC522 SDA pins (shared, kernel handles CS)
- *   - Each GPIO controls the RST pin of one reader
- *   - RST LOW = reader disabled (MISO tri-state)
- *   - RST HIGH = reader active
- *   - Only ONE reader active at a time
- *
- * PREREQUISITE: Restore normal SPI if spi0-0cs was applied:
- *   sudo bash restore_spi.sh && sudo reboot
+ * Architecture: Bit-banged SPI via GPIO
+ *   - Bypasses kernel SPI driver entirely (no spidev, no CE0 issue)
+ *   - MOSI, MISO, SCK, CS all controlled via lgpio
+ *   - Each reader has its own CS: LOW=selected, HIGH=deselected
+ *   - Only ONE reader selected at a time
  *
  * Wiring:
- *   SDA  → Pin 24 (CE0) — ALL readers share this
  *   SCK  → Pin 23 (GPIO11) — shared
  *   MOSI → Pin 19 (GPIO10) — shared (swap if board labels reversed)
  *   MISO → Pin 21 (GPIO9)  — shared (swap if board labels reversed)
+ *   RST  → 3.3V — shared
  *   VCC  → 3.3V, GND → GND (common with RPi!)
- *
- *   RST per reader (GPIO pin → RC522 RST):
- *     Reader #1  : GPIO4   (Pin 7)  → RST
- *     Reader #2  : GPIO17  (Pin 11) → RST
- *     Reader #3  : GPIO27  (Pin 13) → RST
- *     Reader #4  : GPIO22  (Pin 15) → RST
- *     Reader #5  : GPIO0   (Pin 27) → RST
- *     Reader #6  : GPIO5   (Pin 29) → RST
- *     Reader #7  : GPIO6   (Pin 31) → RST
- *     Reader #8  : GPIO13  (Pin 33) → RST
- *     Reader #9  : GPIO19  (Pin 35) → RST
- *     Reader #10 : GPIO26  (Pin 37) → RST
+ *   SDA per reader → individual GPIO (see CS_MAP)
  *
  * Run: sudo node test_nfc_claude.cjs
  */
 
 const { spawn } = require('child_process');
 
-const READER_MAP = [
+const CS_MAP = [
   { reader: 1,  gpio: 4,  pin: 7 },
   { reader: 2,  gpio: 17, pin: 11 },
   { reader: 3,  gpio: 27, pin: 13 },
@@ -49,7 +34,7 @@ const READER_MAP = [
   { reader: 10, gpio: 26, pin: 37 },
 ];
 
-const VERSION_OK = [0x91, 0x92, 0x88, 0x18, 0x12, 0x9A, 0x82];
+const VERSION_OK = [0x91, 0x92, 0x88, 0x18, 0x12, 0x9A, 0x82, 0x8A];
 
 const PY_HELPER = `
 import sys, time, os
@@ -60,13 +45,15 @@ def log(msg):
 
 log("Python helper starting (pid=" + str(os.getpid()) + ")")
 
-import spidev
 import lgpio
 
-# GPIO per reader → controls RST pin (LOW=disabled, HIGH=active)
-# CE0 (Pin 24) is shared SDA for all readers (hardware CS by kernel)
-SLOT_RST = {1:4, 2:17, 3:27, 4:22, 5:0, 6:5, 7:6, 8:13, 9:19, 10:26}
-log("SLOT_RST=" + str(SLOT_RST))
+# ── Pin assignments ──
+MOSI_PIN = 10   # GPIO10, Pin 19
+MISO_PIN = 9    # GPIO9,  Pin 21
+SCK_PIN  = 11   # GPIO11, Pin 23
+
+SLOT_CS = {1:4, 2:17, 3:27, 4:22, 5:0, 6:5, 7:6, 8:13, 9:19, 10:26}
+log("SLOT_CS=" + str(SLOT_CS))
 
 # ── MFRC522 registers ──
 CommandReg    = 0x01
@@ -91,6 +78,43 @@ PICC_REQIDL    = 0x26
 PICC_ANTICOLL  = 0x93
 
 
+class BitBangSPI:
+    """Bit-banged SPI via lgpio — bypasses kernel SPI driver entirely."""
+
+    def __init__(self, chip, mosi, miso, sck):
+        self.chip = chip
+        self.mosi = mosi
+        self.miso = miso
+        self.sck = sck
+        # Claim SPI pins
+        lgpio.gpio_claim_output(chip, mosi, 0)
+        lgpio.gpio_claim_output(chip, sck, 0)   # CPOL=0: idle LOW
+        lgpio.gpio_claim_input(chip, miso)
+        log("BitBangSPI: MOSI=GPIO" + str(mosi) + " MISO=GPIO" + str(miso) + " SCK=GPIO" + str(sck))
+
+    def xfer2(self, data):
+        """Transfer bytes (full-duplex). Returns received bytes."""
+        result = []
+        for byte_out in data:
+            byte_in = 0
+            for bit in range(8):
+                # Set MOSI (MSB first)
+                if byte_out & (0x80 >> bit):
+                    lgpio.gpio_write(self.chip, self.mosi, 1)
+                else:
+                    lgpio.gpio_write(self.chip, self.mosi, 0)
+                # Clock HIGH — sample MISO on rising edge (CPHA=0)
+                lgpio.gpio_write(self.chip, self.sck, 1)
+                # Read MISO
+                if lgpio.gpio_read(self.chip, self.miso):
+                    byte_in |= (0x80 >> bit)
+                # Clock LOW
+                lgpio.gpio_write(self.chip, self.sck, 0)
+            result.append(byte_in)
+        lgpio.gpio_write(self.chip, self.mosi, 0)
+        return result
+
+
 class Rc522:
     def __init__(self, spi):
         self.spi = spi
@@ -108,7 +132,6 @@ class Rc522:
         self._wr(reg, self._rd(reg) & (~mask & 0xFF))
 
     def init_chip(self):
-        # No SoftReset — FM17522E clones don't recover
         self._wr(CommandReg, PCD_IDLE)
         self._wr(TModeReg, 0x8D)
         self._wr(TPrescalerReg, 0x3E)
@@ -178,60 +201,52 @@ class MultiReader:
         self.chip = lgpio.gpiochip_open(0)
         log("gpiochip0 opened (handle=" + str(self.chip) + ")")
 
-        # Claim RST pins — all LOW (readers disabled) at start
-        self.rst_lines = {}
+        # Bit-banged SPI (no kernel driver)
+        self.spi = BitBangSPI(self.chip, MOSI_PIN, MISO_PIN, SCK_PIN)
+
+        # Claim CS pins — all HIGH (deselected) initially
+        self.cs_lines = {}
         self.gpio_ok = set()
-        for slot, pin in SLOT_RST.items():
+        for slot, pin in SLOT_CS.items():
             try:
-                lgpio.gpio_claim_output(self.chip, pin, 0)  # LOW = disabled
-                self.rst_lines[slot] = pin
+                lgpio.gpio_claim_output(self.chip, pin, 1)  # HIGH = deselected
+                self.cs_lines[slot] = pin
                 self.gpio_ok.add(pin)
-                log("GPIO" + str(pin) + " (RST slot " + str(slot) + ") claimed — LOW")
+                log("GPIO" + str(pin) + " (CS slot " + str(slot) + ") claimed — HIGH")
             except lgpio.error as e:
                 sys.stderr.write("WARN: GPIO" + str(pin) + ": " + str(e) + "\\n")
         sys.stderr.flush()
 
-        # SPI via /dev/spidev0.0 — CE0 (Pin 24) as hardware CS
-        self.spi = spidev.SpiDev()
-        self.spi.open(0, 0)
-        self.spi.max_speed_hz = 50_000
-        self.spi.mode = 0
-        log("SPI opened: CE0 (Pin 24) as hardware CS, speed=50kHz")
-
         self.rc522 = Rc522(self.spi)
 
     def close(self):
-        for pin in self.rst_lines.values():
+        for pin in self.cs_lines.values():
             try:
-                lgpio.gpio_write(self.chip, pin, 0)
+                lgpio.gpio_write(self.chip, pin, 1)
             except Exception:
                 pass
-        try:
-            self.spi.close()
-        except Exception:
-            pass
         try:
             lgpio.gpiochip_close(self.chip)
         except Exception:
             pass
 
-    def activate(self, slot):
-        """Enable ONE reader: all RST LOW, then target RST HIGH."""
-        pin = self.rst_lines.get(slot)
+    def select(self, slot):
+        """Select ONE reader: all CS HIGH, then target CS LOW."""
+        pin = self.cs_lines.get(slot)
         if pin is None:
             return False
-        for p in self.rst_lines.values():
-            lgpio.gpio_write(self.chip, p, 0)
-        lgpio.gpio_write(self.chip, pin, 1)
-        time.sleep(0.05)  # 50ms for chip to wake from reset
+        for p in self.cs_lines.values():
+            lgpio.gpio_write(self.chip, p, 1)
+        lgpio.gpio_write(self.chip, pin, 0)
+        time.sleep(0.005)
         return True
 
-    def deactivate_all(self):
-        for p in self.rst_lines.values():
-            lgpio.gpio_write(self.chip, p, 0)
+    def deselect(self):
+        for p in self.cs_lines.values():
+            lgpio.gpio_write(self.chip, p, 1)
 
     def cmd_init(self, slot):
-        if not self.activate(slot):
+        if not self.select(slot):
             return "ERR:GPIO_NOT_CLAIMED"
         try:
             self.rc522.init_chip()
@@ -242,13 +257,12 @@ class MultiReader:
             log("cmd_init slot " + str(slot) + " ERR: " + str(e))
             return "ERR:" + str(e)
         finally:
-            self.deactivate_all()
+            self.deselect()
 
     def cmd_read(self, slot):
-        if not self.activate(slot):
+        if not self.select(slot):
             return "NONE"
         try:
-            self.rc522.init_chip()
             for _ in range(3):
                 uid = self.rc522.read_uid_hex()
                 if uid:
@@ -258,7 +272,7 @@ class MultiReader:
         except Exception as e:
             return "ERR:" + str(e)
         finally:
-            self.deactivate_all()
+            self.deselect()
 
 
 def main():
@@ -347,7 +361,7 @@ function startHardwareHelper() {
         pyProc.kill();
         reject(new Error('Hardware helper timed out.\n' + stderrBuf.trim()));
       }
-    }, 10000);
+    }, 15000);
   });
 }
 
@@ -397,8 +411,7 @@ function shutdown() {
 }
 
 async function main() {
-  console.log('=== RC522 NFC Reader Test — RPi5 (CE0 + RST) ===');
-  console.log('CE0 (Pin 24) = shared SDA, GPIO = per-reader RST');
+  console.log('=== RC522 NFC Reader Test — RPi5 (Bit-bang SPI) ===');
   console.log('Initializing readers...\n');
 
   try {
@@ -411,8 +424,8 @@ async function main() {
   console.log('');
 
   const enabled = [];
-  for (let i = 0; i < READER_MAP.length; i++) {
-    const { reader, gpio, pin } = READER_MAP[i];
+  for (let i = 0; i < CS_MAP.length; i++) {
+    const { reader, gpio, pin } = CS_MAP[i];
     const col1 = ('Reader #' + reader).padEnd(11);
     const col2 = ('GPIO' + gpio).padEnd(6);
     const col3 = ('Pin ' + pin).padEnd(6);
@@ -440,15 +453,15 @@ async function main() {
   }
 
   const count = enabled.filter(Boolean).length;
-  console.log(`\nEnabled: ${count}/${READER_MAP.length} readers`);
+  console.log(`\nEnabled: ${count}/${CS_MAP.length} readers`);
   console.log('--- Waiting for NFC cards (Ctrl+C to exit) ---\n');
 
   process.on('SIGINT', shutdown);
 
   while (true) {
-    for (let i = 0; i < READER_MAP.length; i++) {
+    for (let i = 0; i < CS_MAP.length; i++) {
       if (!enabled[i]) continue;
-      const { reader, gpio } = READER_MAP[i];
+      const { reader, gpio } = CS_MAP[i];
       const slot = i + 1;
       try {
         const resp = await sendCommand('READ ' + slot);
@@ -460,7 +473,7 @@ async function main() {
         }
       } catch (_) {}
     }
-    await delay(200);
+    await delay(300);
   }
 }
 
