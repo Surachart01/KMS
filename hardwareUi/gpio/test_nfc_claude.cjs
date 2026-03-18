@@ -49,7 +49,7 @@ const READER_MAP = [
   { reader: 10, gpio: 26, pin: 37 },
 ];
 
-const VERSION_OK = [0x91, 0x92, 0x88, 0x18, 0x12];
+const VERSION_OK = [0x91, 0x92, 0x88, 0x18, 0x12, 0x9A, 0x82];
 
 const PY_HELPER = `
 import sys, time, os
