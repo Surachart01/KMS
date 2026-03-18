@@ -11,7 +11,7 @@ try:
 except ImportError:
     lgpio = None
 
-SLOT_RST = {1:17, 2:17, 3:27, 4:22, 5:0, 6:5, 7:6, 8:13, 9:19, 10:26}
+SLOT_RST = {1:4, 2:17, 3:27, 4:22, 5:0, 6:5, 7:6, 8:13, 9:19, 10:26}
 
 slot = int(sys.argv[1]) if len(sys.argv) > 1 else 1
 rst_pin = SLOT_RST.get(slot)
