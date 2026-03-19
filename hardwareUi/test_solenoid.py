@@ -12,6 +12,7 @@ from gpiozero import OutputDevice
 from signal import pause
 import signal
 import sys
+import os
 
 # Relay Pin Map (BCM) — ตรงกับ SLOT_PIN_MAP ใน hardware.js (ฝั่งขวาของ header)
 SLOT_PIN_MAP = {
@@ -29,14 +30,21 @@ SLOT_PIN_MAP = {
 
 # สร้าง OutputDevice สำหรับทุก slot
 relays = {}
+RELAY_ACTIVE_STATE = (os.getenv("RELAY_ACTIVE_STATE") or "LOW").upper()
+RELAY_IS_ACTIVE_LOW = RELAY_ACTIVE_STATE == "LOW"
 
 print("=" * 45)
 print("⚡ Test Solenoid — Raspberry Pi 5 (GPIO Zero)")
 print("=" * 45)
+print(f"Relay active state: {RELAY_ACTIVE_STATE} (default LOW)")
 
 for slot, pin in sorted(SLOT_PIN_MAP.items()):
-    relays[slot] = OutputDevice(pin, active_high=True, initial_value=True)
-    print(f"  📌 Slot {slot:2d} (GPIO {pin:2d}) → registered")
+    relays[slot] = OutputDevice(
+        pin,
+        active_high=not RELAY_IS_ACTIVE_LOW,
+        initial_value=False,  # start inactive/safe
+    )
+    print(f"  📌 Slot {slot:2d} (GPIO {pin:2d}) → registered (inactive)")
 
 
 def all_high():
