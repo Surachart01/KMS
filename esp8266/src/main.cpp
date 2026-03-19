@@ -43,6 +43,7 @@ static const uint8_t CS_PINS[READER_COUNT] = {
 MFRC522 rc522(SS, MFRC522::UNUSED_PIN);
 bool readerOK[READER_COUNT] = {};
 unsigned long lastDiagMs = 0;
+String lastUidByReader[READER_COUNT];
 
 // ── Helpers ──────────────────────────────────────────────────
 static String uidToHex(const MFRC522::Uid &uid) {
@@ -174,10 +175,21 @@ void loop() {
 
     if (rc522.PICC_IsNewCardPresent() && rc522.PICC_ReadCardSerial()) {
       String uid = uidToHex(rc522.uid);
-      Serial.printf("R%d UID:%s\n", i + 1, uid.c_str());
+
+      // ยึด UID เป็นตัวตัดสินหลัก และกัน log ซ้ำเมื่อยังวางบัตรใบเดิมค้างอยู่
+      if (uid != lastUidByReader[i]) {
+        lastUidByReader[i] = uid;
+        Serial.printf("UID:%s SLOT:%d\n", uid.c_str(), i + 1);
+      }
+
       rc522.PICC_HaltA();
       rc522.PCD_StopCrypto1();
       delay(300);  // debounce
+    } else {
+      // ไม่มีบัตรที่หัวอ่านนี้แล้ว -> reset cache เพื่อให้ทาบใหม่แล้ว log อีกครั้ง
+      if (lastUidByReader[i].length() > 0) {
+        lastUidByReader[i] = "";
+      }
     }
 
     digitalWrite(CS_PINS[i], HIGH);
