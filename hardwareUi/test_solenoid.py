@@ -69,5 +69,9 @@ def cleanup(sig=None, frame=None):
 
 
 
+signal.signal(signal.SIGINT, cleanup)
+signal.signal(signal.SIGTERM, cleanup)
+
 all_high()
+pause()
 
