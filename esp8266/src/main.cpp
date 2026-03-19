@@ -1,57 +1,60 @@
+// ============================================================
+//  Espino32 (ThaiEasyElec) — 4x RC522 Test
+//  Board: ESP32dev  |  PlatformIO
+// ============================================================
+//
+//  SPI Bus (shared ทุก reader):
+//    GPIO18  → SCK   ของ RC522 ทุกตัว
+//    GPIO23  → MOSI  ของ RC522 ทุกตัว
+//    GPIO19  → MISO  ของ RC522 ทุกตัว
+//    GPIO5   → RST   ของ RC522 ทุกตัว  (shared)
+//
+//  CS (SDA/SS) แยกทีละตัว (active-LOW):
+//    GPIO25  → RC522 #1  SDA/SS
+//    GPIO26  → RC522 #2  SDA/SS
+//    GPIO27  → RC522 #3  SDA/SS
+//    GPIO32  → RC522 #4  SDA/SS
+//
+//  Power:
+//    3V3 → VCC ของ RC522 ทุกตัว  ⚠️ ห้ามใช้ 5V
+//    GND → GND ร่วมกันทุกตัว
+//
+//  ⚠️ Clone board (FM17522E ฯลฯ):
+//    ถ้า VersionReg = 0x00 / 0xFF → ลอง swap สาย MOSI ↔ MISO แล้วเทสใหม่
+// ============================================================
+
 #include <Arduino.h>
 #include <SPI.h>
 #include <MFRC522.h>
 
-// ============================================================
-// NodeMCU v2 (ESP8266) + 3x RC522 — SPI + Software CS
-// ============================================================
-//
-// SPI Bus (shared ทุก reader):
-//   D5  (GPIO14) → SCK  ของ RC522 ทุกตัว
-//   D7  (GPIO13) → MOSI ของ RC522 ทุกตัว  ← ถ้า clone: ต่อเข้าขา MISO
-//   D6  (GPIO12) → MISO ของ RC522 ทุกตัว  ← ถ้า clone: ต่อเข้าขา MOSI
-//   D3  (GPIO0 ) → RST  ของ RC522 ทุกตัว  (shared)
-//
-// CS (SDA/SS) แยกทีละตัว (active-LOW):
-//   D1 (GPIO5 ) → RC522 #1 SDA/SS
-//   D2 (GPIO4 ) → RC522 #2 SDA/SS
-//   D0 (GPIO16) → RC522 #3 SDA/SS
-//
-// Power:
-//   3V3 → VCC ของ RC522 ทุกตัว   ⚠️ ห้ามใช้ 5V
-//   GND → GND ของ RC522 ทุกตัว   ⚠️ GND ต้องร่วมกันทั้งหมด
-//
-// ⚠️ Clone board หมายเหตุ:
-//   บางล็อต MOSI/MISO label สลับกัน
-//   ถ้า VersionReg=0x00/0xFF → สลับสาย D7 กับ D6 แล้วเทสใหม่
-// ============================================================
-
-#ifndef SERIAL_BAUD
-#define SERIAL_BAUD 115200
-#endif
-
-// ── Pin Definitions ─────────────────────────────────────────
-static constexpr uint8_t PIN_RST  = D3;   // GPIO0  — RST shared
-
-static constexpr uint8_t READER_COUNT = 3;
+// ── Constants ────────────────────────────────────────────────
+static constexpr uint8_t READER_COUNT = 4;
+static constexpr uint8_t PIN_RST      = 5;   // GPIO5 — shared RST
 
 static const uint8_t CS_PINS[READER_COUNT] = {
-  D1,   // GPIO5  — Reader #1
-  D2,   // GPIO4  — Reader #2
-  D0,   // GPIO16 — Reader #3
+  25,   // GPIO25 — Reader #1
+  26,   // GPIO26 — Reader #2
+  27,   // GPIO27 — Reader #3
+  32,   // GPIO32 — Reader #4
 };
 
-// ── MFRC522 object (จะสลับ CS ด้วยตัวเอง) ──────────────────
-MFRC522 rc522(CS_PINS[0], PIN_RST);
+// ── Objects ──────────────────────────────────────────────────
+// สร้าง 4 objects แยกกัน เพื่อให้ library จัดการ UID state แยกกัน
+MFRC522 readers[READER_COUNT] = {
+  MFRC522(CS_PINS[0], MFRC522::UNUSED_PIN),
+  MFRC522(CS_PINS[1], MFRC522::UNUSED_PIN),
+  MFRC522(CS_PINS[2], MFRC522::UNUSED_PIN),
+  MFRC522(CS_PINS[3], MFRC522::UNUSED_PIN),
+};
 
-// ── สถานะ reader ─────────────────────────────────────────────
 bool readerOK[READER_COUNT] = {};
 
 // ── Helpers ──────────────────────────────────────────────────
 static String uidToHex(const MFRC522::Uid &uid) {
   String out;
-  out.reserve(uid.size * 2);
-  for (byte i = 0; i < uid.size; i++) {
+  out.reserve(uid.size * 3);
+  for (uint8_t i = 0; i < uid.size; i++) {
+    if (i) out += ':';
     if (uid.uidByte[i] < 0x10) out += '0';
     out += String(uid.uidByte[i], HEX);
   }
@@ -59,82 +62,90 @@ static String uidToHex(const MFRC522::Uid &uid) {
   return out;
 }
 
-static bool versionOK(byte v) {
+static bool versionOK(uint8_t v) {
   switch (v) {
-    case 0x91: case 0x92: case 0x88:   // NXP แท้
-    case 0x18: case 0x12:              // FM17522E clone
-    case 0x82: case 0x8A: case 0x9A:  // clone อื่น
+    case 0x91: case 0x92: case 0x88:       // NXP แท้
+    case 0x18: case 0x12:                  // FM17522E clone
+    case 0x82: case 0x8A: case 0x9A:       // clone อื่น
       return true;
-    default: return false;
+    default:
+      return false;
   }
 }
 
-// ── CS Control ───────────────────────────────────────────────
-static void csAllHigh() {
+static void resetAllCS() {
   for (uint8_t i = 0; i < READER_COUNT; i++) {
     digitalWrite(CS_PINS[i], HIGH);
   }
 }
 
-static void csSelect(uint8_t idx) {
-  csAllHigh();
-  digitalWrite(CS_PINS[idx], LOW);
-  delayMicroseconds(100);
+// ── RST hardware pulse (shared) ───────────────────────────────
+static void hardReset() {
+  pinMode(PIN_RST, OUTPUT);
+  digitalWrite(PIN_RST, LOW);
+  delay(50);
+  digitalWrite(PIN_RST, HIGH);
+  delay(50);
 }
 
 // ── Setup ────────────────────────────────────────────────────
 void setup() {
   Serial.begin(SERIAL_BAUD);
-  delay(200);
+  delay(300);
   Serial.println();
-  Serial.println("=== NodeMCU v2 — 3x RC522 Test ===");
-  Serial.println("CS: D1(R1) D2(R2) D0(R3) | RST: D3");
+  Serial.println("============================================");
+  Serial.println(" Espino32 — 4x RC522 Test");
+  Serial.println(" SCK=18 MOSI=23 MISO=19 RST=5");
+  Serial.println(" CS: #1=25  #2=26  #3=27  #4=32");
+  Serial.println("============================================");
   Serial.println();
 
-  // ตั้ง CS pins ทุกตัวเป็น OUTPUT HIGH (deselect)
+  // ตั้ง CS pins
   for (uint8_t i = 0; i < READER_COUNT; i++) {
     pinMode(CS_PINS[i], OUTPUT);
     digitalWrite(CS_PINS[i], HIGH);
   }
 
-  SPI.begin(); // ESP8266: SCK=D5, MISO=D6, MOSI=D7
+  // Hardware reset ก่อน init
+  hardReset();
+
+  // ESP32 VSPI: SCK=18, MISO=19, MOSI=23
+  SPI.begin(18, 19, 23, -1);
 
   // Probe ทุก reader
   Serial.println("Probing readers...");
-  Serial.println("-----------------------------------");
+  Serial.println("--------------------------------------------");
 
   uint8_t found = 0;
   for (uint8_t i = 0; i < READER_COUNT; i++) {
-    csSelect(i);
-    delay(10);
-    rc522.PCD_Init(CS_PINS[i], PIN_RST);
-    delay(5);
+    resetAllCS();
+    digitalWrite(CS_PINS[i], LOW);
+    delayMicroseconds(200);
 
-    const byte ver = rc522.PCD_ReadRegister(MFRC522::VersionReg);
-    const bool ok  = versionOK(ver);
+    readers[i].PCD_Init();
+    delay(10);
+
+    uint8_t ver = readers[i].PCD_ReadRegister(MFRC522::VersionReg);
+    bool ok = versionOK(ver);
     readerOK[i] = ok;
     if (ok) found++;
 
-    Serial.printf("Reader #%d | CS=D%-2d | VersionReg=0x%02X | %s\n",
-      i + 1,
-      (CS_PINS[i] == D1) ? 1 :
-      (CS_PINS[i] == D2) ? 2 : 0,
-      ver,
-      ok ? "OK" : "FAIL (check wiring)"
+    Serial.printf("Reader #%d | CS=GPIO%-2d | Version=0x%02X | %s\n",
+      i + 1, CS_PINS[i], ver,
+      ok ? "OK" : "FAIL (ตรวจสาย SDA/CS)"
     );
+
+    digitalWrite(CS_PINS[i], HIGH);
   }
 
-  csAllHigh();
-  Serial.println("-----------------------------------");
+  Serial.println("--------------------------------------------");
   Serial.printf("Enabled: %d/%d readers\n\n", found, READER_COUNT);
 
   if (found == 0) {
-    Serial.println("⚠  ไม่พบ reader เลย:");
-    Serial.println("   1. เช็คสาย VCC=3.3V, GND, SCK, MOSI, MISO, SDA, RST");
-    Serial.println("   2. ถ้าได้ 0x00/0xFF ลองสลับสาย D6 กับ D7 (MOSI/MISO clone)");
+    Serial.println("⚠️  ไม่พบ reader เลย — ตรวจสาย SCK/MOSI/MISO/VCC/GND");
+    Serial.println("   ถ้าเป็น clone FM17522E ลอง swap MOSI ↔ MISO");
   } else {
-    Serial.println("Place NFC card/tag on any reader...");
-    Serial.println("Output format:  R1 UID:58A8A027");
+    Serial.println("--- ทาบบัตร NFC เพื่ออ่าน UID ---");
   }
   Serial.println();
 }
@@ -144,27 +155,22 @@ void loop() {
   for (uint8_t i = 0; i < READER_COUNT; i++) {
     if (!readerOK[i]) continue;
 
-    csSelect(i);
-    rc522.PCD_Init(CS_PINS[i], PIN_RST);
-    delay(2);
+    resetAllCS();
+    digitalWrite(CS_PINS[i], LOW);
+    delayMicroseconds(200);
 
-    if (!rc522.PICC_IsNewCardPresent()) continue;
-    if (!rc522.PICC_ReadCardSerial())   continue;
+    // ต้อง re-init หลัง switch CS เพื่อปลุก reader ขึ้นมา
+    readers[i].PCD_Init();
 
-    const String uid = uidToHex(rc522.uid);
+    if (readers[i].PICC_IsNewCardPresent() && readers[i].PICC_ReadCardSerial()) {
+      String uid = uidToHex(readers[i].uid);
+      Serial.printf("R%d UID:%s\n", i + 1, uid.c_str());
+      readers[i].PICC_HaltA();
+      readers[i].PCD_StopCrypto1();
+      delay(300);  // debounce
+    }
 
-    // Format ที่ RPi parse ได้ง่าย: "R1 UID:58A8A027"
-    Serial.print("R");
-    Serial.print(i + 1);
-    Serial.print(" UID:");
-    Serial.println(uid);
-
-    rc522.PICC_HaltA();
-    rc522.PCD_StopCrypto1();
-
-    delay(300); // debounce
+    digitalWrite(CS_PINS[i], HIGH);
+    delay(20);
   }
-
-  csAllHigh();
-  delay(10);
 }
