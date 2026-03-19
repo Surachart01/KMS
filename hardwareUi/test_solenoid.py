@@ -31,7 +31,7 @@ SLOT_PIN_MAP = {
 # สร้าง OutputDevice สำหรับทุก slot
 relays = {}
 RELAY_ACTIVE_STATE = (os.getenv("RELAY_ACTIVE_STATE") or "LOW").upper()
-RELAY_IS_ACTIVE_LOW = RELAY_ACTIVE_STATE == "LOW"
+RELAY_IS_ACTIVE_LOW = RELAY_ACTIVE_STATE == "HIGH"
 
 print("=" * 45)
 print("⚡ Test Solenoid — Raspberry Pi 5 (GPIO Zero)")
