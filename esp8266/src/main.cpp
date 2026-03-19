@@ -39,15 +39,10 @@ static const uint8_t CS_PINS[READER_COUNT] = {
 };
 
 // ── Objects ──────────────────────────────────────────────────
-// สร้าง 4 objects แยกกัน เพื่อให้ library จัดการ UID state แยกกัน
-MFRC522 readers[READER_COUNT] = {
-  MFRC522(CS_PINS[0], MFRC522::UNUSED_PIN),
-  MFRC522(CS_PINS[1], MFRC522::UNUSED_PIN),
-  MFRC522(CS_PINS[2], MFRC522::UNUSED_PIN),
-  MFRC522(CS_PINS[3], MFRC522::UNUSED_PIN),
-};
-
+// ใช้ object เดียว แล้วสลับ CS ทีละหัวเพื่อลด state ค้างใน library
+MFRC522 rc522(SS, MFRC522::UNUSED_PIN);
 bool readerOK[READER_COUNT] = {};
+unsigned long lastDiagMs = 0;
 
 // ── Helpers ──────────────────────────────────────────────────
 static String uidToHex(const MFRC522::Uid &uid) {
@@ -77,6 +72,17 @@ static void resetAllCS() {
   for (uint8_t i = 0; i < READER_COUNT; i++) {
     digitalWrite(CS_PINS[i], HIGH);
   }
+}
+
+static uint8_t readVersionAt(uint8_t idx) {
+  resetAllCS();
+  digitalWrite(CS_PINS[idx], LOW);
+  delayMicroseconds(200);
+  rc522.PCD_Init(CS_PINS[idx], MFRC522::UNUSED_PIN);
+  delay(2);
+  const uint8_t ver = rc522.PCD_ReadRegister(MFRC522::VersionReg);
+  digitalWrite(CS_PINS[idx], HIGH);
+  return ver;
 }
 
 // ── RST hardware pulse (shared) ───────────────────────────────
@@ -118,14 +124,7 @@ void setup() {
 
   uint8_t found = 0;
   for (uint8_t i = 0; i < READER_COUNT; i++) {
-    resetAllCS();
-    digitalWrite(CS_PINS[i], LOW);
-    delayMicroseconds(200);
-
-    readers[i].PCD_Init();
-    delay(10);
-
-    uint8_t ver = readers[i].PCD_ReadRegister(MFRC522::VersionReg);
+    uint8_t ver = readVersionAt(i);
     bool ok = versionOK(ver);
     readerOK[i] = ok;
     if (ok) found++;
@@ -135,7 +134,6 @@ void setup() {
       ok ? "OK" : "FAIL (ตรวจสาย SDA/CS)"
     );
 
-    digitalWrite(CS_PINS[i], HIGH);
   }
 
   Serial.println("--------------------------------------------");
@@ -152,6 +150,18 @@ void setup() {
 
 // ── Loop ─────────────────────────────────────────────────────
 void loop() {
+  // Diagnostic heartbeat: อ่าน VersionReg ของทุกหัวทุก 5 วินาที
+  if (millis() - lastDiagMs > 5000) {
+    lastDiagMs = millis();
+    Serial.print("[DIAG] ");
+    for (uint8_t i = 0; i < READER_COUNT; i++) {
+      uint8_t ver = readVersionAt(i);
+      readerOK[i] = versionOK(ver);
+      Serial.printf("R%d=0x%02X%s ", i + 1, ver, readerOK[i] ? "" : "!");
+    }
+    Serial.println();
+  }
+
   for (uint8_t i = 0; i < READER_COUNT; i++) {
     if (!readerOK[i]) continue;
 
@@ -159,14 +169,14 @@ void loop() {
     digitalWrite(CS_PINS[i], LOW);
     delayMicroseconds(200);
 
-    // ต้อง re-init หลัง switch CS เพื่อปลุก reader ขึ้นมา
-    readers[i].PCD_Init();
+    // re-init หลัง switch CS เพื่อปลุก reader ขึ้นมา
+    rc522.PCD_Init(CS_PINS[i], MFRC522::UNUSED_PIN);
 
-    if (readers[i].PICC_IsNewCardPresent() && readers[i].PICC_ReadCardSerial()) {
-      String uid = uidToHex(readers[i].uid);
+    if (rc522.PICC_IsNewCardPresent() && rc522.PICC_ReadCardSerial()) {
+      String uid = uidToHex(rc522.uid);
       Serial.printf("R%d UID:%s\n", i + 1, uid.c_str());
-      readers[i].PICC_HaltA();
-      readers[i].PCD_StopCrypto1();
+      rc522.PICC_HaltA();
+      rc522.PCD_StopCrypto1();
       delay(300);  // debounce
     }
 
