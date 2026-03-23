@@ -12,3 +12,5 @@ hardwareUi/package-lock.json
 hardwareUi/gpio/node_modules
 hardwareUi/gpio/yarn.lock
 hardwareUi/gpio/package-lock.json
+
+esp8266/.pio

@@ -47,13 +47,14 @@
 #endif
 
 // ── CS pins ──────────────────────────────────────────────────
-// Board A (4 NFC): GPIO 4, 5, 16, 2
-// Board B/C (3 NFC): GPIO 4, 5, 16
+// ตรงกับสายที่ต่อจริง:
+// Board A (4 NFC): GPIO 5, 4, 2, 15
+// Board B/C (3 NFC): GPIO 5, 4, 2
 const uint8_t CS_PINS[] = {
-  4,    // D2 → NFC #1
-  5,    // D1 → NFC #2
-  16,   // D0 → NFC #3
-  2,    // D4 → NFC #4 (Board A only)
+  5,    // D1 → NFC #1
+  4,    // D2 → NFC #2
+  2,    // D4 → NFC #3
+  15,   // D8 → NFC #4 (Board A only, ⚠️มี pull-down)
 };
 // Only NFC_COUNT pins are actually used
 
