@@ -90,28 +90,22 @@ static bool versionOK(uint8_t v) {
 static void initReader(uint8_t i) {
   readers[i]->PCD_Init();
   delay(20);
-
-  uint8_t cmdReg = readers[i]->PCD_ReadRegister(MFRC522::CommandReg);
-  if (cmdReg & 0x10) {
-    readers[i]->PCD_WriteRegister(MFRC522::CommandReg, 0x00);
-    delay(10);
-  }
-
-  for (uint8_t t = 0; t < 5; t++) {
-    readers[i]->PCD_WriteRegister(MFRC522::TxControlReg, 0x83);
-    delay(5);
-  }
+  
+  // Ensure antenna is on explicitly
+  readers[i]->PCD_AntennaOn();
+  
+  // Set to max gain for better reading distance
   readers[i]->PCD_SetAntennaGain(MFRC522::RxGain_max);
 }
+// ── Cached UIDs ──────────────────────────────────────────────
+String cachedUid[10] = {"", "", "", "", "", "", "", "", "", ""};
+unsigned long uidExpireMs[10] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
 static String readSlot(uint8_t idx) {
   if (idx >= NFC_COUNT || !readerOK[idx]) return "";
 
-  if (readers[idx]->PICC_IsNewCardPresent() && readers[idx]->PICC_ReadCardSerial()) {
-    String uid = uidToHex(readers[idx]->uid);
-    readers[idx]->PICC_HaltA();
-    readers[idx]->PCD_StopCrypto1();
-    return uid;
+  if (millis() < uidExpireMs[idx] && cachedUid[idx].length() > 0) {
+    return cachedUid[idx];
   }
   return "";
 }
@@ -286,6 +280,31 @@ void setup() {
 
 // ── Loop ─────────────────────────────────────────────────────
 void loop() {
+  unsigned long now = millis();
+
+  // อ่าน UID ตลอดเวลาเพื่อรักษาคลื่นสัญญาณ
+  for (uint8_t i = 0; i < NFC_COUNT; i++) {
+    if (!readerOK[i]) continue;
+
+    // ส่ง WakeupA เพื่อปลุกบัตรที่ถูก Halt ไปแล้วจากรอบก่อนหน้า
+    byte bufferATQA[2];
+    byte bufferSize = sizeof(bufferATQA);
+    
+    // ลองใช้ Wakeup หรือ Request A ถ้าเจอบัตร แปลว่ามีคนแตะอยู่
+    if (readers[i]->PICC_WakeupA(bufferATQA, &bufferSize) == MFRC522::STATUS_OK ||
+        readers[i]->PICC_RequestA(bufferATQA, &bufferSize) == MFRC522::STATUS_OK) 
+    {
+      if (readers[i]->PICC_ReadCardSerial()) {
+        cachedUid[i] = uidToHex(readers[i]->uid);
+        uidExpireMs[i] = millis() + 2000; // จำไว้ 2 วินาที (เพื่อให้ทดสอบมือกดทัน)
+        
+        readers[i]->PICC_HaltA();
+        readers[i]->PCD_StopCrypto1();
+      }
+    }
+  }
+
+  // Handle incoming Serial commands
   while (Serial.available()) {
     char c = Serial.read();
     if (c == '\n' || c == '\r') {
@@ -301,9 +320,9 @@ void loop() {
     }
   }
 
-  // Diag heartbeat every 10s
-  if (millis() - lastDiagMs > 10000) {
-    lastDiagMs = millis();
+  // Diag heartbeat every 5s (เหมือนผู้ใช้ทำไว้)
+  if (now - lastDiagMs > 5000) {
+    lastDiagMs = now;
 
     JsonDocument diag;
     diag["diag"] = true;
