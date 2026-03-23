@@ -1,49 +1,73 @@
 // ============================================================
-//  Espino32 (ThaiEasyElec) — 4x RC522 Test
-//  Board: ESP32dev  |  PlatformIO
+//  ESP8266 NFC Bridge — Multi-board Serial JSON
+//  Board: NodeMCU v2 (ESP8266)  |  PlatformIO
 // ============================================================
+//  SPI (fixed on ESP8266):
+//    SCK  = GPIO 14 (D5)
+//    MOSI = GPIO 13 (D7)
+//    MISO = GPIO 12 (D6)
 //
-//  SPI Bus (shared ทุก reader):
-//    GPIO18  → SCK   ของ RC522 ทุกตัว
-//    GPIO23  → MOSI  ของ RC522 ทุกตัว
-//    GPIO19  → MISO  ของ RC522 ทุกตัว
-//    GPIO5   → RST   ของ RC522 ทุกตัว  (shared)
+//  CS pins (safe GPIO):
+//    GPIO 4  (D2) → NFC #1
+//    GPIO 5  (D1) → NFC #2
+//    GPIO 16 (D0) → NFC #3
+//    GPIO 2  (D4) → NFC #4 (Board A only, ปกติเป็น RST)
 //
-//  CS (SDA/SS) แยกทีละตัว (active-LOW):
-//    GPIO25  → RC522 #1  SDA/SS
-//    GPIO26  → RC522 #2  SDA/SS
-//    GPIO27  → RC522 #3  SDA/SS
-//    GPIO32  → RC522 #4  SDA/SS
+//  Build flags per board:
+//    BOARD_ID    — board identifier (1, 2, 3)
+//    NFC_COUNT   — number of NFC readers (3 or 4)
+//    SLOT_OFFSET — global slot offset (0, 4, or 7)
+//    PIN_RST     — RST pin (0 for Board A, 2 for Board B/C)
 //
-//  Power:
-//    3V3 → VCC ของ RC522 ทุกตัว  ⚠️ ห้ามใช้ 5V
-//    GND → GND ร่วมกันทุกตัว
-//
-//  ⚠️ Clone board (FM17522E ฯลฯ):
-//    ถ้า VersionReg = 0x00 / 0xFF → ลอง swap สาย MOSI ↔ MISO แล้วเทสใหม่
+//  Board A: BOARD_ID=1, NFC_COUNT=4, SLOT_OFFSET=0, PIN_RST=0
+//           → slots 1,2,3,4  CS: GPIO 4,5,16,2
+//  Board B: BOARD_ID=2, NFC_COUNT=3, SLOT_OFFSET=4, PIN_RST=2
+//           → slots 5,6,7    CS: GPIO 4,5,16
+//  Board C: BOARD_ID=3, NFC_COUNT=3, SLOT_OFFSET=7, PIN_RST=2
+//           → slots 8,9,10   CS: GPIO 4,5,16
 // ============================================================
 
 #include <Arduino.h>
 #include <SPI.h>
 #include <MFRC522.h>
+#include <ArduinoJson.h>
 
-// ── Constants ────────────────────────────────────────────────
-static constexpr uint8_t READER_COUNT = 4;
-static constexpr uint8_t PIN_RST      = 5;   // GPIO5 — shared RST
+// ── Build flags (set in platformio.ini) ──────────────────────
+#ifndef BOARD_ID
+#define BOARD_ID 1
+#endif
+#ifndef NFC_COUNT
+#define NFC_COUNT 3
+#endif
+#ifndef SLOT_OFFSET
+#define SLOT_OFFSET 0
+#endif
+#ifndef PIN_RST
+#define PIN_RST 2
+#endif
 
-static const uint8_t CS_PINS[READER_COUNT] = {
-  25,   // GPIO25 — Reader #1
-  26,   // GPIO26 — Reader #2
-  27,   // GPIO27 — Reader #3
-  32,   // GPIO32 — Reader #4
+// ── CS pins ──────────────────────────────────────────────────
+// Board A (4 NFC): GPIO 4, 5, 16, 2
+// Board B/C (3 NFC): GPIO 4, 5, 16
+const uint8_t CS_PINS[] = {
+  4,    // D2 → NFC #1
+  5,    // D1 → NFC #2
+  16,   // D0 → NFC #3
+  2,    // D4 → NFC #4 (Board A only)
 };
+// Only NFC_COUNT pins are actually used
 
-// ── Objects ──────────────────────────────────────────────────
-// ใช้ object เดียว แล้วสลับ CS ทีละหัวเพื่อลด state ค้างใน library
-MFRC522 rc522(SS, MFRC522::UNUSED_PIN);
-bool readerOK[READER_COUNT] = {};
+// Global slot = SLOT_OFFSET + localIndex + 1
+static uint8_t localToGlobalSlot(uint8_t localIdx) {
+  return SLOT_OFFSET + localIdx + 1;
+}
+
+// ── Reader Objects ───────────────────────────────────────────
+MFRC522* readers[4]; // max 4
+bool readerOK[4] = {};
+
 unsigned long lastDiagMs = 0;
-String lastUidByReader[READER_COUNT];
+String serialBuffer = "";
 
 // ── Helpers ──────────────────────────────────────────────────
 static String uidToHex(const MFRC522::Uid &uid) {
@@ -59,140 +83,250 @@ static String uidToHex(const MFRC522::Uid &uid) {
 }
 
 static bool versionOK(uint8_t v) {
-  switch (v) {
-    case 0x91: case 0x92: case 0x88:       // NXP แท้
-    case 0x18: case 0x12:                  // FM17522E clone
-    case 0x82: case 0x8A: case 0x9A:       // clone อื่น
-      return true;
-    default:
-      return false;
+  return (v != 0x00 && v != 0xFF);
+}
+
+static void initReader(uint8_t i) {
+  readers[i]->PCD_Init();
+  delay(20);
+
+  uint8_t cmdReg = readers[i]->PCD_ReadRegister(MFRC522::CommandReg);
+  if (cmdReg & 0x10) {
+    readers[i]->PCD_WriteRegister(MFRC522::CommandReg, 0x00);
+    delay(10);
   }
-}
 
-static void resetAllCS() {
-  for (uint8_t i = 0; i < READER_COUNT; i++) {
-    digitalWrite(CS_PINS[i], HIGH);
+  for (uint8_t t = 0; t < 5; t++) {
+    readers[i]->PCD_WriteRegister(MFRC522::TxControlReg, 0x83);
+    delay(5);
   }
+  readers[i]->PCD_SetAntennaGain(MFRC522::RxGain_max);
 }
 
-static uint8_t readVersionAt(uint8_t idx) {
-  resetAllCS();
-  digitalWrite(CS_PINS[idx], LOW);
-  delayMicroseconds(200);
-  rc522.PCD_Init(CS_PINS[idx], MFRC522::UNUSED_PIN);
-  delay(2);
-  const uint8_t ver = rc522.PCD_ReadRegister(MFRC522::VersionReg);
-  digitalWrite(CS_PINS[idx], HIGH);
-  return ver;
+static String readSlot(uint8_t idx) {
+  if (idx >= NFC_COUNT || !readerOK[idx]) return "";
+
+  if (readers[idx]->PICC_IsNewCardPresent() && readers[idx]->PICC_ReadCardSerial()) {
+    String uid = uidToHex(readers[idx]->uid);
+    readers[idx]->PICC_HaltA();
+    readers[idx]->PCD_StopCrypto1();
+    return uid;
+  }
+  return "";
 }
 
-// ── RST hardware pulse (shared) ───────────────────────────────
-static void hardReset() {
-  pinMode(PIN_RST, OUTPUT);
-  digitalWrite(PIN_RST, LOW);
-  delay(50);
-  digitalWrite(PIN_RST, HIGH);
-  delay(50);
+// Convert global slot → local index (-1 if not on this board)
+static int8_t globalSlotToLocal(int globalSlot) {
+  int first = SLOT_OFFSET + 1;
+  int last  = SLOT_OFFSET + NFC_COUNT;
+  if (globalSlot < first || globalSlot > last) return -1;
+  return globalSlot - first;
+}
+
+// ── Command Handlers ─────────────────────────────────────────
+static void handlePing(JsonDocument& req) {
+  JsonDocument resp;
+  resp["ok"] = true;
+  resp["pong"] = true;
+  resp["boardId"] = BOARD_ID;
+  resp["readers"] = NFC_COUNT;
+
+  uint8_t active = 0;
+  for (uint8_t i = 0; i < NFC_COUNT; i++) {
+    if (readerOK[i]) active++;
+  }
+  resp["active"] = active;
+
+  JsonArray slotsArr = resp["slots"].to<JsonArray>();
+  for (uint8_t i = 0; i < NFC_COUNT; i++) {
+    slotsArr.add(localToGlobalSlot(i));
+  }
+
+  serializeJson(resp, Serial);
+  Serial.println();
+}
+
+static void handleRead(JsonDocument& req) {
+  int slot = req["slot"] | 0;
+  JsonDocument resp;
+  resp["ok"] = true;
+  resp["slot"] = slot;
+  resp["boardId"] = BOARD_ID;
+
+  int8_t local = globalSlotToLocal(slot);
+  if (local < 0) {
+    resp["ok"] = false;
+    resp["error"] = "slot not on this board";
+    resp["uid"] = (const char*)nullptr;
+    serializeJson(resp, Serial);
+    Serial.println();
+    return;
+  }
+
+  if (!readerOK[local]) {
+    resp["uid"] = (const char*)nullptr;
+    resp["error"] = "reader offline";
+    serializeJson(resp, Serial);
+    Serial.println();
+    return;
+  }
+
+  String uid = readSlot(local);
+  if (uid.length() > 0) {
+    resp["uid"] = uid;
+  } else {
+    resp["uid"] = (const char*)nullptr;
+  }
+
+  serializeJson(resp, Serial);
+  Serial.println();
+}
+
+static void handleScan(JsonDocument& req) {
+  JsonDocument resp;
+  resp["ok"] = true;
+  resp["boardId"] = BOARD_ID;
+  JsonArray slots = resp["slots"].to<JsonArray>();
+
+  for (uint8_t i = 0; i < NFC_COUNT; i++) {
+    JsonObject s = slots.add<JsonObject>();
+    s["slot"] = localToGlobalSlot(i);
+    s["online"] = readerOK[i];
+
+    if (readerOK[i]) {
+      String uid = readSlot(i);
+      if (uid.length() > 0) {
+        s["uid"] = uid;
+      } else {
+        s["uid"] = (const char*)nullptr;
+      }
+    } else {
+      s["uid"] = (const char*)nullptr;
+    }
+    delay(50);
+  }
+
+  serializeJson(resp, Serial);
+  Serial.println();
+}
+
+static void processSerialCommand(const String& line) {
+  JsonDocument doc;
+  DeserializationError err = deserializeJson(doc, line);
+  if (err) return;
+
+  const char* cmd = doc["cmd"] | "";
+
+  if (strcmp(cmd, "ping") == 0) {
+    handlePing(doc);
+  } else if (strcmp(cmd, "read") == 0) {
+    handleRead(doc);
+  } else if (strcmp(cmd, "scan") == 0) {
+    handleScan(doc);
+  } else {
+    JsonDocument resp;
+    resp["ok"] = false;
+    resp["error"] = "unknown command";
+    resp["boardId"] = BOARD_ID;
+    serializeJson(resp, Serial);
+    Serial.println();
+  }
 }
 
 // ── Setup ────────────────────────────────────────────────────
 void setup() {
-  Serial.begin(SERIAL_BAUD);
+  Serial.begin(115200);
   delay(300);
-  Serial.println();
-  Serial.println("============================================");
-  Serial.println(" Espino32 — 4x RC522 Test");
-  Serial.println(" SCK=18 MOSI=23 MISO=19 RST=5");
-  Serial.println(" CS: #1=25  #2=26  #3=27  #4=32");
-  Serial.println("============================================");
-  Serial.println();
 
-  // ตั้ง CS pins
-  for (uint8_t i = 0; i < READER_COUNT; i++) {
+  // CS pins HIGH (inactive)
+  for (uint8_t i = 0; i < NFC_COUNT; i++) {
     pinMode(CS_PINS[i], OUTPUT);
     digitalWrite(CS_PINS[i], HIGH);
   }
 
-  // Hardware reset ก่อน init
-  hardReset();
+  // RST pulse
+  pinMode(PIN_RST, OUTPUT);
+  digitalWrite(PIN_RST, LOW);
+  delay(50);
+  digitalWrite(PIN_RST, HIGH);
+  delay(100);
 
-  // ESP32 VSPI: SCK=18, MISO=19, MOSI=23
-  SPI.begin(18, 19, 23, -1);
-
-  // Probe ทุก reader
-  Serial.println("Probing readers...");
-  Serial.println("--------------------------------------------");
+  // Init SPI (ESP8266 default: SCK=14, MISO=12, MOSI=13)
+  SPI.begin();
 
   uint8_t found = 0;
-  for (uint8_t i = 0; i < READER_COUNT; i++) {
-    uint8_t ver = readVersionAt(i);
-    bool ok = versionOK(ver);
-    readerOK[i] = ok;
-    if (ok) found++;
+  for (uint8_t i = 0; i < NFC_COUNT; i++) {
+    readers[i] = new MFRC522(CS_PINS[i], MFRC522::UNUSED_PIN);
+    initReader(i);
+    delay(50);
 
-    Serial.printf("Reader #%d | CS=GPIO%-2d | Version=0x%02X | %s\n",
-      i + 1, CS_PINS[i], ver,
-      ok ? "OK" : "FAIL (ตรวจสาย SDA/CS)"
-    );
-
+    uint8_t ver = readers[i]->PCD_ReadRegister(MFRC522::VersionReg);
+    readerOK[i] = versionOK(ver);
+    if (readerOK[i]) found++;
   }
 
-  Serial.println("--------------------------------------------");
-  Serial.printf("Enabled: %d/%d readers\n\n", found, READER_COUNT);
+  // Boot message
+  JsonDocument bootMsg;
+  bootMsg["boot"] = true;
+  bootMsg["boardId"] = BOARD_ID;
+  bootMsg["readers_found"] = found;
+  bootMsg["readers_total"] = NFC_COUNT;
 
-  if (found == 0) {
-    Serial.println("⚠️  ไม่พบ reader เลย — ตรวจสาย SCK/MOSI/MISO/VCC/GND");
-    Serial.println("   ถ้าเป็น clone FM17522E ลอง swap MOSI ↔ MISO");
-  } else {
-    Serial.println("--- ทาบบัตร NFC เพื่ออ่าน UID ---");
+  JsonArray slotsArr = bootMsg["slots"].to<JsonArray>();
+  for (uint8_t i = 0; i < NFC_COUNT; i++) {
+    slotsArr.add(localToGlobalSlot(i));
   }
+
+  serializeJson(bootMsg, Serial);
   Serial.println();
+
+  serialBuffer.reserve(256);
 }
 
 // ── Loop ─────────────────────────────────────────────────────
 void loop() {
-  // Diagnostic heartbeat: อ่าน VersionReg ของทุกหัวทุก 5 วินาที
-  if (millis() - lastDiagMs > 5000) {
-    lastDiagMs = millis();
-    Serial.print("[DIAG] ");
-    for (uint8_t i = 0; i < READER_COUNT; i++) {
-      uint8_t ver = readVersionAt(i);
-      readerOK[i] = versionOK(ver);
-      Serial.printf("R%d=0x%02X%s ", i + 1, ver, readerOK[i] ? "" : "!");
+  while (Serial.available()) {
+    char c = Serial.read();
+    if (c == '\n' || c == '\r') {
+      if (serialBuffer.length() > 0) {
+        processSerialCommand(serialBuffer);
+        serialBuffer = "";
+      }
+    } else {
+      serialBuffer += c;
+      if (serialBuffer.length() > 512) {
+        serialBuffer = "";
+      }
     }
-    Serial.println();
   }
 
-  for (uint8_t i = 0; i < READER_COUNT; i++) {
-    if (!readerOK[i]) continue;
+  // Diag heartbeat every 10s
+  if (millis() - lastDiagMs > 10000) {
+    lastDiagMs = millis();
 
-    resetAllCS();
-    digitalWrite(CS_PINS[i], LOW);
-    delayMicroseconds(200);
+    JsonDocument diag;
+    diag["diag"] = true;
+    diag["boardId"] = BOARD_ID;
+    JsonArray arr = diag["readers"].to<JsonArray>();
 
-    // re-init หลัง switch CS เพื่อปลุก reader ขึ้นมา
-    rc522.PCD_Init(CS_PINS[i], MFRC522::UNUSED_PIN);
+    for (uint8_t i = 0; i < NFC_COUNT; i++) {
+      uint8_t ver = readers[i]->PCD_ReadRegister(MFRC522::VersionReg);
+      bool ok = versionOK(ver);
 
-    if (rc522.PICC_IsNewCardPresent() && rc522.PICC_ReadCardSerial()) {
-      String uid = uidToHex(rc522.uid);
-
-      // ยึด UID เป็นตัวตัดสินหลัก และกัน log ซ้ำเมื่อยังวางบัตรใบเดิมค้างอยู่
-      if (uid != lastUidByReader[i]) {
-        lastUidByReader[i] = uid;
-        Serial.printf("UID:%s SLOT:%d\n", uid.c_str(), i + 1);
+      if (!readerOK[i] && ok) {
+        initReader(i);
+        ver = readers[i]->PCD_ReadRegister(MFRC522::VersionReg);
+        ok = versionOK(ver);
       }
+      readerOK[i] = ok;
 
-      rc522.PICC_HaltA();
-      rc522.PCD_StopCrypto1();
-      delay(300);  // debounce
-    } else {
-      // ไม่มีบัตรที่หัวอ่านนี้แล้ว -> reset cache เพื่อให้ทาบใหม่แล้ว log อีกครั้ง
-      if (lastUidByReader[i].length() > 0) {
-        lastUidByReader[i] = "";
-      }
+      JsonObject r = arr.add<JsonObject>();
+      r["slot"] = localToGlobalSlot(i);
+      r["ver"] = ver;
+      r["ok"] = ok;
     }
 
-    digitalWrite(CS_PINS[i], HIGH);
-    delay(20);
+    serializeJson(diag, Serial);
+    Serial.println();
   }
 }

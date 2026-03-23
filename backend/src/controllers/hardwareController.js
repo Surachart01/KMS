@@ -370,6 +370,59 @@ export const borrowKey = async (req, res) => {
             });
         }
 
+        // === ขั้นตอนที่ 3.5: ตรวจว่าเวลาเบิกนอกตาราง ไม่ทับคาบเรียนถัดไป ===
+        if (!authorization && req.body.returnByTime) {
+            const returnBy = new Date(req.body.returnByTime);
+
+            // หาคาบเรียนในห้องนี้ที่ทับกับช่วงเวลา [now .. returnByTime]
+            // overlap: startTime < returnByTime AND endTime > now
+            const conflicting = await prisma.dailyAuthorization.findFirst({
+                where: {
+                    roomCode: roomCode,
+                    date: {
+                        gte: startOfDay,
+                        lte: endOfDay,
+                    },
+                    startTime: { lt: returnBy },
+                    endTime: { gt: now },
+                },
+                include: {
+                    subject: { select: { code: true, name: true } },
+                    user: { select: { firstName: true, lastName: true, studentCode: true } },
+                },
+                orderBy: { startTime: 'asc' },
+            });
+
+            if (conflicting) {
+                const startStr = new Date(conflicting.startTime).toLocaleTimeString('th-TH', {
+                    hour: '2-digit', minute: '2-digit',
+                });
+                const endStr = new Date(conflicting.endTime).toLocaleTimeString('th-TH', {
+                    hour: '2-digit', minute: '2-digit',
+                });
+                const subjectName = conflicting.subject?.name || 'ไม่ระบุวิชา';
+
+                console.log(`⚠️ [Hardware] borrow: เวลาคืนทับกับคาบเรียน ${subjectName} (${startStr}-${endStr})`);
+
+                return res.status(409).json({
+                    success: false,
+                    message: `ช่วงเวลาที่เลือกทับกับคาบเรียน "${subjectName}" เวลา ${startStr}-${endStr} กรุณาเปลี่ยนเวลาคืน`,
+                    error_code: "SCHEDULE_OVERLAP",
+                    data: {
+                        conflictingSchedule: {
+                            roomCode: conflicting.roomCode,
+                            startTime: conflicting.startTime,
+                            endTime: conflicting.endTime,
+                            subjectName,
+                            subjectCode: conflicting.subject?.code || null,
+                        },
+                        // แนะนำเวลาคืนที่ปลอดภัย (ก่อนคาบเรียนเริ่ม)
+                        suggestedReturnBy: conflicting.startTime,
+                    },
+                });
+            }
+        }
+
         // === ขั้นตอนที่ 4: ค้นหากุญแจในระบบ ===
         const key = await prisma.key.findUnique({
             where: { roomCode },
