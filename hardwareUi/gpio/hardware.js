@@ -828,6 +828,51 @@ socket.on('gpio:unlock', async (data) => {
     }
 });
 
+// ── nfc:register-mode — Staff ต้องการสแกน NFC เพื่อลงทะเบียนกุญแจ ──
+socket.on('nfc:register-mode', async (data) => {
+    const { slotNumber, staffSocketId } = data;
+    console.log(`🏷️  nfc:register-mode → slot=${slotNumber ?? 'all'}, staff=${staffSocketId}`);
+
+    if (nfcMode !== 'esp8266') {
+        console.log('⚠️  nfc:register-mode: ไม่ใช่ ESP8266 mode, ข้าม');
+        return;
+    }
+
+    const REGISTER_TIMEOUT_S = 15;
+    const POLL_INTERVAL_MS = 500;
+    const maxAttempts = (REGISTER_TIMEOUT_S * 1000) / POLL_INTERVAL_MS;
+    let found = false;
+
+    for (let attempt = 0; attempt < maxAttempts && !found; attempt++) {
+        // กำหนดว่าจะสแกน slot ไหนบ้าง
+        const slotsToScan = slotNumber
+            ? [slotNumber]
+            : Array.from({ length: 10 }, (_, i) => i + 1);
+
+        for (const slot of slotsToScan) {
+            try {
+                const uid = await readNfcAtSlot(slot);
+                if (uid) {
+                    console.log(`🏷️  nfc:register-mode → พบ NFC! slot=${slot}, uid=${uid}`);
+                    socket.emit('nfc:tag', { slotNumber: slot, uid, staffSocketId });
+                    found = true;
+                    break;
+                }
+            } catch (err) {
+                // ข้าม slot ที่ไม่มี board
+            }
+        }
+
+        if (!found) {
+            await new Promise(r => setTimeout(r, POLL_INTERVAL_MS));
+        }
+    }
+
+    if (!found) {
+        console.log(`⏰ nfc:register-mode → timeout ${REGISTER_TIMEOUT_S}s ไม่พบ NFC tag`);
+    }
+});
+
 // รับคำสั่งเขียน UID ลง NFC Tag ที่ช่องใดๆ
 socket.on('nfc:write', async (data) => {
     const { slotNumber, uid, roomCode } = data;
