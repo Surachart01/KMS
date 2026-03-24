@@ -37,9 +37,9 @@ LED_PIN_MAP = {
     5: 10,   # Pin 19
     6: 9,    # Pin 21
     7: 11,   # Pin 23
-    8: 6,    # Pin 31
-    9: 0,    # Pin 27
-    10: 5,   # Pin 29
+    8: 0,    # Pin 27
+    9: 5,    # Pin 29
+    10: 6,   # Pin 31
 }
 
 # สร้าง OutputDevice สำหรับทุก slot
