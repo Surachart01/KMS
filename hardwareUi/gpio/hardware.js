@@ -54,7 +54,7 @@ const SLOT_PIN_MAP = {
     5: 24,   // Pin 18
     6: 25,   // Pin 22
     7: 8,    // Pin 24
-    8: 1,    // Pin 26
+    8: 7,    // Pin 26 (แก้ไขจาก 1 เป็น 7)
     9: 12,   // Pin 32
     10: 16,  // Pin 36
 };
@@ -69,7 +69,7 @@ const LED_PIN_MAP = {
     5: 10,   // Pin 19
     6: 9,    // Pin 21
     7: 11,   // Pin 23
-    8: 7,    // Pin 25
+    8: 6,    // Pin 31 (ย้ายหนี GND/SPI มาเป็น GP6)
     9: 0,    // Pin 27
     10: 5,   // Pin 29
 };
@@ -690,15 +690,14 @@ async function readNfcAtSlot(slotNumber) {
  * - ถ้าครบเวลาแล้วยังเจอ tag อยู่ → emit 'borrow:cancelled' (ถือว่าไม่ได้ดึง)
  * แล้วค่อย lock/restore LED ตามเงื่อนไขเดิม
  */
-function startKeyPullCheck(slotNumber, bookingId) {
+async function startKeyPullCheck(slotNumber, bookingId) {
     pullCheckingSlots.add(slotNumber);
-    console.log(`⏳ Solenoid UNLOCKED... monitoring NFC removal at slot=${slotNumber} (max ${KEY_PULL_TIMEOUT_S}s)`);
+    console.log(`⏳ Solenoid UNLOCKED for ${KEY_PULL_TIMEOUT_S}s at slot=${slotNumber}`);
 
     // Mock mode
     if (nfcMode === 'mock') {
         setTimeout(() => {
             pullCheckingSlots.delete(slotNumber);
-            // จำลองว่ากุญแจถูกดึงออกเสมอใน mock
             console.log(`✅ [MOCK] 15s passed. Key pulled from slot ${slotNumber}!`);
             lockSlot(slotNumber);
             setLedRelay(slotNumber, true); // 🔴 กุญแจถูกเบิก
@@ -707,65 +706,39 @@ function startKeyPullCheck(slotNumber, bookingId) {
         return;
     }
 
-    // Real hardware: poll NFC removal every 1s, stop early if removed
-    const startedAt = Date.now();
-    const timeoutMs = KEY_PULL_TIMEOUT_S * 1000;
+    // 1. เปิดล็อกค้างไว้ 15 วินาที
+    await new Promise(resolve => setTimeout(resolve, KEY_PULL_TIMEOUT_S * 1000));
 
-    let isChecking = false;
-    let seenTag = false;
-    let missCount = 0;
-    const intervalId = setInterval(async () => {
-        if (isChecking) return;
-        isChecking = true;
-        const elapsedMs = Date.now() - startedAt;
+    // 2. หมดเวลา 15 วินาที ดัน Solenoid กลับลงมา (Lock)
+    console.log(`🔒 15s elapsed. Locking solenoid at slot=${slotNumber}. Starting 5x NFC check...`);
+    await lockSlot(slotNumber);
 
+    // 3. เช็ค NFC 5 รอบ รอบละ 500ms
+    let foundCount = 0;
+    for (let i = 0; i < 5; i++) {
         const uid = await readNfcAtSlot(slotNumber);
-            if (uid) {
-            seenTag = true;
-            missCount = 0;
-        } else {
-            // ถ้ายังไม่เคยเห็นแท็กหลัง unlock ให้รอก่อน (กันกรณีอ่านหลุด/เริ่มต้นช้า)
-            if (KEY_PULL_REQUIRE_SEEN_TAG && !seenTag) {
-                if (elapsedMs >= KEY_PULL_SEEN_GRACE_MS) {
-                    console.log(
-                        `⚠️  NFC not seen within ${Math.round(KEY_PULL_SEEN_GRACE_MS / 1000)}s at slot ${slotNumber} — will keep waiting until timeout`
-                    );
-                }
-            } else {
-                missCount += 1;
-                if (missCount >= Math.max(1, KEY_PULL_MISS_THRESHOLD)) {
-                    clearInterval(intervalId);
-                    pullCheckingSlots.delete(slotNumber);
-
-                    // tag หายไปติดกันหลายครั้ง = กุญแจถูกดึงออกสำเร็จ
-                    slotHasKey[slotNumber] = false;
-                    console.log(
-                        `✅ Key pulled from slot ${slotNumber} (missing ${missCount}x, detected at ~${Math.round(elapsedMs / 1000)}s)`
-                    );
-                    lockSlot(slotNumber); // ดึง solenoid กลับทันที
-                    setLedRelay(slotNumber, true); // 🔴 กุญแจถูกเบิก
-                    socket.emit('key:pulled', { slotNumber, bookingId });
-                    isChecking = false;
-                    return;
-                }
-            }
+        if (uid) {
+            foundCount++;
         }
+        await new Promise(resolve => setTimeout(resolve, 500));
+    }
 
-        if (elapsedMs >= timeoutMs) {
-            clearInterval(intervalId);
-            pullCheckingSlots.delete(slotNumber);
+    pullCheckingSlots.delete(slotNumber);
 
-            // tag ยังอยู่ครบเวลา = ไม่ได้ดึงกุญแจออก
-            console.log(`⏰ ${KEY_PULL_TIMEOUT_S}s elapsed... Key STILL in slot ${slotNumber} → cancelling borrow`);
-            slotHasKey[slotNumber] = true;
-            setLedRelay(slotNumber, false); // 🟢 กุญแจยังอยู่
-            socket.emit('borrow:cancelled', { slotNumber, bookingId });
-
-            // กลับสู่สถานะ LOCK เพื่อให้ solenoid ยุบกลับ (ปลอดภัยกว่าให้ค้าง)
-            lockSlot(slotNumber);
-        }
-        isChecking = false;
-    }, KEY_PULL_POLL_INTERVAL_MS);
+    // 4. สรุปผล
+    // ถ้าอ่านเจอ 3 ใน 5 แสดงว่ากุญแจยังไม่ถูกดึง (Cancelling borrow)
+    if (foundCount >= 3) {
+        console.log(`⏰ NFC found ${foundCount}/5 times. Key STILL in slot ${slotNumber} → cancelling borrow`);
+        slotHasKey[slotNumber] = true;
+        setLedRelay(slotNumber, false); // 🟢 กุญแจยังอยู่
+        socket.emit('borrow:cancelled', { slotNumber, bookingId });
+    } else {
+        // ถ้าไม่เจอเกิน 3 ครั้งแสดงว่าเอากุญแจออกไปแล้ว (Borrow success)
+        slotHasKey[slotNumber] = false;
+        console.log(`✅ Key pulled from slot ${slotNumber} (NFC found only ${foundCount}/5 times). Borrow successful!`);
+        setLedRelay(slotNumber, true); // 🔴 กุญแจถูกเบิก
+        socket.emit('key:pulled', { slotNumber, bookingId });
+    }
 }
 
 // รับคำสั่ง unlock จาก Backend → เปิด solenoid → เริ่ม key-pull check
@@ -780,50 +753,7 @@ socket.on('gpio:unlock', async (data) => {
     socket.emit('slot:unlocked', { slotNumber, success });
 
     if (success) {
-        // Safety: verify the key tag UID exists/expected for this slot.
-        // If UID is missing/unknown/mismatched, retract solenoid immediately.
-        const expectedUid = expectedKeyUidBySlot[slotNumber] || null;
-        const actualUid = await readNfcAtSlot(slotNumber);
-
-        if (!actualUid) {
-            console.log(`⚠️  No NFC UID detected at slot ${slotNumber} right after unlock → retracting solenoid`);
-            lockSlot(slotNumber);
-            socket.emit('borrow:cancelled', {
-                slotNumber,
-                bookingId,
-                reason: 'NO_UID_DETECTED',
-            });
-            return;
-        }
-
-        if (expectedUid && expectedUid !== actualUid) {
-            console.log(
-                `⚠️  UID mismatch at slot ${slotNumber}: expected=${expectedUid} actual=${actualUid} → retracting solenoid`
-            );
-            lockSlot(slotNumber);
-            socket.emit('borrow:cancelled', {
-                slotNumber,
-                bookingId,
-                reason: 'KEY_UID_MISMATCH',
-                expectedUid,
-                actualUid,
-            });
-            return;
-        }
-
-        if (!expectedUid) {
-            console.log(`⚠️  Slot ${slotNumber} has UID=${actualUid} but no UID is registered in DB → retracting solenoid`);
-            lockSlot(slotNumber);
-            socket.emit('borrow:cancelled', {
-                slotNumber,
-                bookingId,
-                reason: 'UNKNOWN_KEY_UID',
-                actualUid,
-            });
-            return;
-        }
-
-        // เริ่มรอดึงกุญแจออก
+        // เริ่มรอดึงกุญแจออก (รอ 15 วิ -> ดันล็อกลง -> ตรวจ NFC 5 รอบ)
         startKeyPullCheck(slotNumber, bookingId);
     }
 });
