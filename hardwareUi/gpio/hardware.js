@@ -693,10 +693,16 @@ async function readNfcAtSlot(slotNumber) {
 async function startKeyPullCheck(slotNumber, bookingId) {
     pullCheckingSlots.add(slotNumber);
     console.log(`⏳ Solenoid UNLOCKED for ${KEY_PULL_TIMEOUT_S}s at slot=${slotNumber}`);
-
     // Mock mode
     if (nfcMode === 'mock') {
+        let isLedRed = false;
+        const mockBlink = setInterval(() => {
+            isLedRed = !isLedRed;
+            setLedRelay(slotNumber, isLedRed);
+        }, 500);
+
         setTimeout(() => {
+            clearInterval(mockBlink);
             pullCheckingSlots.delete(slotNumber);
             console.log(`✅ [MOCK] 15s passed. Key pulled from slot ${slotNumber}!`);
             lockSlot(slotNumber);
@@ -706,8 +712,17 @@ async function startKeyPullCheck(slotNumber, bookingId) {
         return;
     }
 
-    // 1. เปิดล็อกค้างไว้ 15 วินาที
+    // 1. เปิดล็อกค้างไว้ 15 วินาที พร้อมกระพริบไฟเขียว-แดงสลับกัน 🚦
+    let isLedRed = false;
+    const blinkInterval = setInterval(() => {
+        isLedRed = !isLedRed;
+        setLedRelay(slotNumber, isLedRed);
+    }, 500); // สลับสีทุก 0.5 วินาที
+
     await new Promise(resolve => setTimeout(resolve, KEY_PULL_TIMEOUT_S * 1000));
+
+    // หยุดกระพริบไฟ
+    clearInterval(blinkInterval);
 
     // 2. หมดเวลา 15 วินาที ดัน Solenoid กลับลงมา (Lock)
     console.log(`🔒 15s elapsed. Locking solenoid at slot=${slotNumber}. Starting 5x NFC check...`);
