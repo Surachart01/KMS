@@ -31,9 +31,9 @@ SLOT_PIN_MAP = {
 # Relay Pin Map สำหรับ LED (ตรงกับ hardware.js)
 LED_PIN_MAP = {
     1: 4,    # Pin 7
-    2: 17,   # Pin 11
-    3: 27,   # Pin 13
-    4: 22,   # Pin 15
+    2: 26,   # Pin 37
+    3: 19,   # Pin 35
+    4: 13,   # Pin 33
     5: 10,   # Pin 19
     6: 9,    # Pin 21
     7: 11,   # Pin 23
