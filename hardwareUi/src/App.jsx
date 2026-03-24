@@ -104,14 +104,30 @@ export default function App() {
             }
         }
 
+        function onBorrowCancelled(data) {
+            console.log('❌ borrow:cancelled received in UI:', data);
+            setErrorPopup(`หมดเวลาดึงกุญแจช่อง ${data.slotNumber}! การเบิกถูกยกเลิก (ข้อมูลถูกลบทิ้งแล้ว)`);
+            goHome();
+        }
+
+        function onKeyPulled(data) {
+            console.log('✅ key:pulled received in UI:', data);
+            // ถ้าหน้า Success กำลังรออยู่ ให้มันจัดการตัวเองได้ 
+            // หรือจะ goHome() ทันทีก็ได้ 
+        }
+
         socket.on('connect', onConnect);
         socket.on('disconnect', onDisconnect);
         socket.on('scan:received', onScanReceived);
+        socket.on('borrow:cancelled', onBorrowCancelled);
+        socket.on('key:pulled', onKeyPulled);
 
         return () => {
             socket.off('connect', onConnect);
             socket.off('disconnect', onDisconnect);
             socket.off('scan:received', onScanReceived);
+            socket.off('borrow:cancelled', onBorrowCancelled);
+            socket.off('key:pulled', onKeyPulled);
         };
     }, [mode, page, transferStep, swapStep, moveStep]);
 

@@ -497,6 +497,30 @@ io.on('connection', (socket) => {
   socket.on('key:pulled', async (data) => {
     const { slotNumber, bookingId } = data;
     console.log(`✅ key:pulled: slot=${slotNumber}, bookingId=${bookingId}`);
+    try {
+      if (bookingId) {
+        const booking = await prisma.booking.findUnique({
+          where: { id: bookingId },
+          include: { key: true }
+        });
+        if (booking) {
+          await prisma.systemLog.create({
+            data: {
+              userId: booking.userId,
+              action: "HARDWARE_KEY_PULLED",
+              details: JSON.stringify({
+                bookingId,
+                roomCode: booking.key?.roomCode,
+                slotNumber,
+                message: "Physical key successfully removed from slot"
+              }),
+            }
+          });
+        }
+      }
+    } catch (err) {
+      console.error('❌ Key pulled log error:', err.message);
+    }
     io.to('kiosk').emit('key:pulled', { slotNumber, bookingId });
   });
 
@@ -506,8 +530,30 @@ io.on('connection', (socket) => {
     console.log(`❌ borrow:cancelled: slot=${slotNumber}, bookingId=${bookingId}`);
     try {
       if (bookingId) {
-        await prisma.booking.delete({ where: { id: bookingId } });
-        console.log(`🗑️  Booking ${bookingId} deleted (borrow cancelled)`);
+        const booking = await prisma.booking.findUnique({
+          where: { id: bookingId },
+          include: { key: true }
+        });
+        
+        if (booking) {
+          // 1. บันทึก log ว่าผู้ใช้ไม่ยอมดึงกุญแจในเวลาที่กำหนด
+          await prisma.systemLog.create({
+            data: {
+              userId: booking.userId,
+              action: "HARDWARE_BORROW_CANCELLED",
+              details: JSON.stringify({
+                bookingId,
+                roomCode: booking.key?.roomCode,
+                slotNumber,
+                reason: "Key was not physically pulled from slot within 15 seconds"
+              }),
+            }
+          });
+          
+          // 2. ลบรายการเบิกทิ้ง
+          await prisma.booking.delete({ where: { id: bookingId } });
+          console.log(`🗑️  Booking ${bookingId} deleted and log created (borrow cancelled)`);
+        }
       }
     } catch (err) {
       console.error('❌ Cancel booking error:', err.message);
