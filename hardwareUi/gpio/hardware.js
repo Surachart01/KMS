@@ -18,7 +18,7 @@ import { spawn } from 'child_process';
 import { readdirSync } from 'fs';
 
 dotenv.config();
- 
+
 const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:4556';
 const HARDWARE_KEYS_URL = process.env.HARDWARE_KEYS_URL || `${BACKEND_URL}/api/hardware/keys`;
 const HARDWARE_TOKEN = process.env.HARDWARE_TOKEN || '';
@@ -67,9 +67,9 @@ const LED_PIN_MAP = {
     3: 19,   // Pin 35 
     4: 13,   // Pin 33 
     5: 10,   // Pin 19
-    6: 9,    // Pin 21
-    7: 11,   // Pin 23
-    8: 0,    // Pin 27
+    6: 22,   // Pin 15 (ย้ายหนี SPI)
+    7: 20,   // Pin 38 (ย้ายหนี SPI)
+    8: 21,   // Pin 40 (ย้ายหนี EEPROM)
     9: 5,    // Pin 29
     10: 6,   // Pin 31
 };
