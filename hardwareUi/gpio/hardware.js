@@ -1028,6 +1028,37 @@ process.on('SIGTERM', () => {
     await refreshKeyUidCache();
     // Refresh periodically in case staff updates NFC UID mapping
     setInterval(refreshKeyUidCache, 60_000);
+
+    // ─────────────────────────────────────────────
+    // INIT ALL LEDS STATE BEFORE POLLING LOOP
+    // ─────────────────────────────────────────────
+    console.log('\n💡 Checking initial NFC state of all slots...');
+    for (let slot = 1; slot <= 10; slot++) {
+        if (nfcMode === 'mock') {
+            setLedRelay(slot, false); // สมมติว่าเขียวหมด
+            continue;
+        }
+        try {
+            const uid = await readNfcAtSlot(slot);
+            if (uid) {
+                slotHasKey[slot] = true;
+                slotHasKey[`last_uid_${slot}`] = uid;
+                setLedRelay(slot, false); // 🟢 กุญแจอยู่ (HIGH)
+                console.log(`   [Boot] Slot ${slot}: Key detected (${uid}) -> GREEN`);
+            } else {
+                slotHasKey[slot] = false;
+                slotHasKey[`last_uid_${slot}`] = null;
+                setLedRelay(slot, true); // 🔴 กุญแจไม่อยู่ (LOW)
+                console.log(`   [Boot] Slot ${slot}: Empty -> RED`);
+            }
+        } catch (e) {
+            slotHasKey[slot] = false;
+            setLedRelay(slot, true); // 🔴 Error = มองไม่เห็นกุญแจ
+            console.log(`   [Boot] Slot ${slot}: Error -> RED`);
+        }
+    }
+    console.log('✅ Initial LED states applied.\n');
+
     startNfcPolling();
 
     console.log('✅ Hardware Service running — waiting for events...');
