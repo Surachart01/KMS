@@ -728,11 +728,35 @@ async function startKeyPullCheck(slotNumber, bookingId) {
     // ทยอยเช็คไปเรื่อยๆ สูงสุด 15 วินาที (30 รอบ × 500ms)
     for (let i = 0; i < 30; i++) {
         await new Promise(resolve => setTimeout(resolve, 500));
-        const uid = await readNfcAtSlot(slotNumber);
+
+        // รอจนกว่าพอร์ต Serial จะว่าง
+        while (isPollingSlot) await new Promise(r => setTimeout(r, 50));
+        isPollingSlot = true;
+        let uid = null;
+        try {
+            uid = await readNfcAtSlot(slotNumber);
+        } catch(e) { /* ignore */ }
+        finally {
+            isPollingSlot = false;
+        }
+
+        console.log(`   [PullCheck ${i+1}/30] Slot ${slotNumber} -> UID=${uid || 'NONE'}`);
+
         if (!uid) {
             // ดึงออกแล้วจังหวะนึง เช็คซ้ำกันพลาด 200ms
             await new Promise(resolve => setTimeout(resolve, 200));
-            const confirmUid = await readNfcAtSlot(slotNumber);
+            
+            while (isPollingSlot) await new Promise(r => setTimeout(r, 50));
+            isPollingSlot = true;
+            let confirmUid = null;
+            try {
+                confirmUid = await readNfcAtSlot(slotNumber);
+            } catch(e) { /* ignore */ }
+            finally {
+                isPollingSlot = false;
+            }
+            
+            console.log(`   [PullCheck Confirm] Slot ${slotNumber} -> confirm UID=${confirmUid || 'NONE'}`);
             if (!confirmUid) {
                 keyPulled = true;
                 break;
