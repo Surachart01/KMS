@@ -191,23 +191,46 @@ async function openEsp8266Port(serialPath, SerialPort) {
                 if (!line) continue;
                 try {
                     const msg = JSON.parse(line);
+                    
+                    // 1. Handle Boot message (ESP8266 reset)
                     if (msg.boot) {
                         const bid = msg.boardId;
-                        console.log(`🔌 ESP8266 Board ${bid} boot: ${msg.readers_found}/${msg.readers_total} readers (slots ${msg.slots?.join(',')})`);
-                        // Register board
+                        console.log(`🔌 ESP8266 Board ${bid} rebooted! — readers: ${msg.readers_found}/${msg.readers_total}`);
+                        
+                        // Clear all pending requests for this board as it just reset
+                        for (const [pid, p] of ctx.pending.entries()) {
+                            clearTimeout(p.timer);
+                            p.reject(new Error('ESP8266 rebooted during request'));
+                        }
+                        ctx.pending.clear();
+                        
+                        // Re-register board in global map
                         esp8266Boards.set(bid, ctx);
                         continue;
                     }
+
                     if (msg.diag) continue;
-                    // FIFO resolve
-                    if (ctx.pending.size > 0) {
+
+                    // 2. Match by Request ID (Robust)
+                    if (msg.id) {
+                        const pending = ctx.pending.get(msg.id);
+                        if (pending) {
+                            clearTimeout(pending.timer);
+                            ctx.pending.delete(msg.id);
+                            pending.resolve(msg);
+                            continue;
+                        }
+                    }
+
+                    // 3. Fallback: FIFO for legacy/unidentified messages (optional, but keep for safety)
+                    if (ctx.pending.size > 0 && !msg.id) {
                         const [firstId, p] = ctx.pending.entries().next().value;
                         clearTimeout(p.timer);
                         ctx.pending.delete(firstId);
                         p.resolve(msg);
                     }
-                } catch {
-                    // Not JSON
+                } catch (e) {
+                    // Not JSON or parse error
                 }
             }
         });
@@ -754,106 +777,101 @@ async function readNfcAtSlot(slotNumber) {
  */
 async function startKeyPullCheck(slotNumber, bookingId) {
     pullCheckingSlots.add(slotNumber);
-    logDebug(`⏳ Solenoid UNLOCKED for ${KEY_PULL_TIMEOUT_S}s at slot=${slotNumber}`);
-
+    
     // ═══════════════════════════════════════════════
     // หยุด Background Polling ทั้งหมดก่อน (ป้องกัน Serial ชนกัน)
     // ═══════════════════════════════════════════════
     isUnlocking = true;
-    logDebug(`▶️ เริ่มตรวจจับการดึงกุญแจช่อง ${slotNumber} (${KEY_PULL_TIMEOUT_S} วิ) — หยุด Background Polling แล้ว`);
+    logDebug(`⏳ Solenoid UNLOCKED at slot=${slotNumber} (Mode: ${nfcMode}) — หยุด Background Polling แล้ว`);
 
-    // 1. กระพริบไฟเขียว-แดงสลับกัน 🚦
-    let isLedRed = false;
-    const blinkInterval = setInterval(() => {
-        isLedRed = !isLedRed;
-        setLedRelay(slotNumber, isLedRed);
-    }, 500);
+    let blinkInterval = null;
 
-    // 2. ช่วงเวลาเปิด Solenoid (10 วินาที)
-    logDebug(`▶️ เริ่มช่วงเวลาเบิก ${KEY_PULL_TIMEOUT_S} วินาที (อ่าน NFC สดทุก 1 วิ)...`);
-    
-    let hasBeenSeen = false;
-    let consecutiveMisses = 0;
-    const MISS_THRESHOLD = 3; 
-    let earlyPulled = false;
+    try {
+        // 1. กระพริบไฟเขียว-แดงสลับกัน 🚦
+        let isLedRed = false;
+        blinkInterval = setInterval(() => {
+            isLedRed = !isLedRed;
+            setLedRelay(slotNumber, isLedRed);
+        }, 500);
 
-    const numSteps = KEY_PULL_TIMEOUT_S;
-    for (let i = 0; i < numSteps; i++) {
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        // 2. ช่วงเวลาเปิด Solenoid (10 วินาที)
+        logDebug(`▶️ เริ่มช่วงเวลาเบิก (${KEY_PULL_TIMEOUT_S} วิ)...`);
         
-        // ลองอ่าน NFC
-        let uid = null;
-        try {
-            uid = await readNfcAtSlot(slotNumber);
-        } catch (e) { /* ignore */ }
+        let hasBeenSeen = false;
+        let consecutiveMisses = 0;
+        const MISS_THRESHOLD = 3; 
+        let earlyPulled = false;
 
-        if (uid) {
-            if (!hasBeenSeen) {
-                logDebug(`✨ [InstantCheck] เจอกุญแจครั้งแรก (${uid}) -> เปิดโหมดเฝ้าระวังการดึงออกทันที`);
-                hasBeenSeen = true;
-            }
-            consecutiveMisses = 0;
-            logDebug(`⏱️ [${i+1}/${numSteps}] ช่อง ${slotNumber} -> ยังอยู่ (${uid})`);
-        } else {
-            if (hasBeenSeen) {
-                consecutiveMisses++;
-                logDebug(`⏱️ [${i+1}/${numSteps}] ช่อง ${slotNumber} -> ไม่เจอ (นับถอยหลังการดึง: ${consecutiveMisses}/${MISS_THRESHOLD})`);
-                if (consecutiveMisses >= MISS_THRESHOLD) {
-                    logDebug(`⚡ [Confirm] คุณดึงกุญแจออกแล้วจริงๆ (Instant Lock!)`);
-                    earlyPulled = true;
-                    break;
+        for (let i = 0; i < KEY_PULL_TIMEOUT_S; i++) {
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            // อ่าน NFC
+            const uid = await readNfcAtSlot(slotNumber);
+
+            if (uid) {
+                if (!hasBeenSeen) {
+                    logDebug(`✨ [InstantCheck] เจอกุญแจครั้งแรก (${uid})`);
+                    hasBeenSeen = true;
                 }
+                consecutiveMisses = 0;
+                logDebug(`⏱️ [${i+1}/${KEY_PULL_TIMEOUT_S}] ช่อง ${slotNumber} -> ยังอยู่ (${uid})`);
             } else {
-                logDebug(`⏱️ [${i+1}/${numSteps}] ช่อง ${slotNumber} -> อ่านไม่ได้ (อาจโดนกวน)`);
+                if (hasBeenSeen) {
+                    consecutiveMisses++;
+                    logDebug(`⏱️ [${i+1}/${KEY_PULL_TIMEOUT_S}] ช่อง ${slotNumber} -> หายไป! (นับถอยหลัง: ${consecutiveMisses}/${MISS_THRESHOLD})`);
+                    if (consecutiveMisses >= MISS_THRESHOLD) {
+                        logDebug(`⚡ [Confirm] ดึงออกแล้ว! (Instant Lock)`);
+                        earlyPulled = true;
+                        break;
+                    }
+                } else {
+                    logDebug(`⏱️ [${i+1}/${KEY_PULL_TIMEOUT_S}] ไม่เจอการวาง หรืออ่านบกพร่อง`);
+                }
             }
         }
-    }
 
-    // 3. ท้ายช่วงเวลา: ล็อค Solenoid และหยุดไฟกระพริบ
-    clearInterval(blinkInterval);
-    await lockSlot(slotNumber);
-    
-    if (earlyPulled) {
-        logDebug(`✅ [Early Success] การเบิกสำเร็จ (ล็อกทันทีจากการดึงออก)`);
-        setLedRelay(slotNumber, true); // เป็นสีแดง (กุญแจหายไป)
-        socket.emit('key:pulled', { slotNumber, bookingId });
-    } else {
-        logDebug(`🔒 ครบเวลา 10 วินาที -> ล็อค Solenoid และเช็คขั้นสุดท้าย (Final Verification)`);
+        // 3. ท้ายช่วงเวลา: ล็อค Solenoid 
+        await lockSlot(slotNumber);
         
-        // 4. ขั้นตอนการตรวจสอบ "ผลลัพธ์สุดท้าย" (Final Verification)
-        await new Promise(r => setTimeout(r, 2000));
-        let keyStillThere = false;
-        for (let attempt = 1; attempt <= 3; attempt++) {
-            try {
-                const finalUid = await readNfcAtSlot(slotNumber);
-                if (finalUid) {
+        if (earlyPulled) {
+            logDebug(`✅ การเบิกสำเร็จ (ดึงออกเร็ว)`);
+            setLedRelay(slotNumber, true); // 🔴 แดง
+            socket.emit('key:pulled', { slotNumber, bookingId });
+        } else {
+            logDebug(`🔒 ครบเวลา -> Final Verification...`);
+            await new Promise(r => setTimeout(r, 2000));
+            let keyStillThere = false;
+            for (let a = 1; a <= 3; a++) {
+                if (await readNfcAtSlot(slotNumber)) {
                     keyStillThere = true;
-                    logDebug(`✨ [Final #${attempt}] เจอกุญแจ ${finalUid} ยังอยู่ที่ช่อง ${slotNumber}`);
                     break;
                 }
-            } catch (e) { /* ignore */ }
-            await new Promise(r => setTimeout(r, 300));
-        }
+                await new Promise(r => setTimeout(r, 300));
+            }
 
-        // 5. สรุปผล
-        if (keyStillThere) {
-            logDebug(`❌ การเบิกยกเลิก: กุญแจยังเสียบอยู่ที่ช่อง ${slotNumber} (ไม่บันทึก Log)`);
-            setLedRelay(slotNumber, false); // 🟢 กลับเป็นสีเขียว
-            socket.emit('borrow:cancelled', { slotNumber, bookingId });
-        } else {
-            logDebug(`✅ การเบิกสำเร็จ: กุญแจถูกดึงออกไปแล้ว!`);
-            setLedRelay(slotNumber, true); // 🔴 เป็นสีแดง
-            socket.emit('key:pulled', { slotNumber, bookingId });
+            if (keyStillThere) {
+                logDebug(`❌ ยกเลิก: กุญแจยังคาอยู่`);
+                setLedRelay(slotNumber, false); // 🟢 เขียว
+                socket.emit('borrow:cancelled', { slotNumber, bookingId });
+            } else {
+                logDebug(`✅ สำเร็จ: กุญแจไม่อยู่แล้ว`);
+                setLedRelay(slotNumber, true); // 🔴 แดง
+                socket.emit('key:pulled', { slotNumber, bookingId });
+            }
         }
+    } catch (err) {
+        logDebug(`❌ Error ใน startKeyPullCheck: ${err.message}`);
+    } finally {
+        if (blinkInterval) clearInterval(blinkInterval);
+        
+        // สำคัญที่สุด: คืนสิทธิ์การ Scan Background เสมอ!
+        pullCheckingSlots.delete(slotNumber);
+        isUnlocking = false;
+        logDebug(`🔄 คืนสิทธิ์ Background Polling แล้ว (slot=${slotNumber})`);
+        
+        // เช็คสถานะใหม่ทั้งหมดหลังจากนี้ 1.5 วินาที
+        setTimeout(() => checkAllSlots(), 1500);
     }
-
-    // 6. เคลียร์ Flag และคืนสิทธิ์การ Scan Background
-    pullCheckingSlots.delete(slotNumber);
-    isUnlocking = false;
-    logDebug(`🔄 คืนสิทธิ์ Background Polling แล้ว`);
-
-    // 6. เช็คสถานะทั้งหมดอีกรอบหลังจากเบิกเสร็จ
-    setTimeout(() => checkAllSlots(), 1000);
 }
 
 // เช็คสถานะ NFC ของช่องทุกช่องบน Hardware Service

@@ -120,7 +120,9 @@ static int8_t globalSlotToLocal(int globalSlot) {
 
 // ── Command Handlers ─────────────────────────────────────────
 static void handlePing(JsonDocument& req) {
+  int id = req["id"] | 0;
   JsonDocument resp;
+  resp["id"] = id;
   resp["ok"] = true;
   resp["pong"] = true;
   resp["boardId"] = BOARD_ID;
@@ -142,8 +144,10 @@ static void handlePing(JsonDocument& req) {
 }
 
 static void handleRead(JsonDocument& req) {
+  int id = req["id"] | 0;
   int slot = req["slot"] | 0;
   JsonDocument resp;
+  resp["id"] = id;
   resp["ok"] = true;
   resp["slot"] = slot;
   resp["boardId"] = BOARD_ID;
@@ -178,7 +182,9 @@ static void handleRead(JsonDocument& req) {
 }
 
 static void handleScan(JsonDocument& req) {
+  int id = req["id"] | 0;
   JsonDocument resp;
+  resp["id"] = id;
   resp["ok"] = true;
   resp["boardId"] = BOARD_ID;
   JsonArray slots = resp["slots"].to<JsonArray>();
@@ -198,7 +204,7 @@ static void handleScan(JsonDocument& req) {
     } else {
       s["uid"] = (const char*)nullptr;
     }
-    delay(50);
+    delay(10); // Reduced delay
   }
 
   serializeJson(resp, Serial);
@@ -220,6 +226,7 @@ static void processSerialCommand(const String& line) {
     handleScan(doc);
   } else {
     JsonDocument resp;
+    resp["id"] = doc["id"] | 0;
     resp["ok"] = false;
     resp["error"] = "unknown command";
     resp["boardId"] = BOARD_ID;
