@@ -100,7 +100,7 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const VERSION = "1.0.9 — Final Verification & 10s Timeout Fix";
+const VERSION = "1.1.0 — Serial Fix & Multi-Board Detection";
 let Mfrc522 = null;
 let Gpio = null;
 let IS_MOCK = true;
@@ -252,13 +252,12 @@ async function initEsp8266Board(path, SerialPort) {
         if (!ctx) return false;
 
         // Ping to get boardId
-        // Wait a moment then send ping
-        const pingPayload = JSON.stringify({ cmd: 'ping' }) + '\n';
+        const id = ++ctx.reqId; // Generate ID
+        const pingPayload = JSON.stringify({ id, cmd: 'ping' }) + '\n';
         ctx.port.write(pingPayload);
 
         const pong = await new Promise((resolve, reject) => {
             const timer = setTimeout(() => reject(new Error('ping timeout')), 3000);
-            const id = ++ctx.reqId;
             ctx.pending.set(id, {
                 resolve: (msg) => { clearTimeout(timer); resolve(msg); },
                 reject: (err) => { clearTimeout(timer); reject(err); },
@@ -310,13 +309,12 @@ async function initAllEsp8266Boards() {
             if (!ctx) continue;
 
             // Ping to get boardId
-            // Wait a moment then send ping
-            const pingPayload = JSON.stringify({ cmd: 'ping' }) + '\n';
+            const id = ++ctx.reqId; // Generate ID
+            const pingPayload = JSON.stringify({ id, cmd: 'ping' }) + '\n';
             ctx.port.write(pingPayload);
 
             const pong = await new Promise((resolve, reject) => {
                 const timer = setTimeout(() => reject(new Error('ping timeout')), 3000);
-                const id = ++ctx.reqId;
                 ctx.pending.set(id, {
                     resolve: (msg) => { clearTimeout(timer); resolve(msg); },
                     reject: (err) => { clearTimeout(timer); reject(err); },
