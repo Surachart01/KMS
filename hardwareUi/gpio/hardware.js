@@ -99,6 +99,7 @@ let Gpio = null;
 let IS_MOCK = true;
 let nfcMode = 'node'; // 'mock' | 'node' | 'python' | 'esp8266'
 let isUnlocking = false; // Flag to pause NFC polling during relay operation
+let isPollingSlot = false; // Flag to sync polling and checkAllSlots
 const slotHasKey = {}; // กุญแจอยู่ในช่องหรือไม่ (true = Green, false = Red)
 const csPins = {}; // เก็บ object Gpio ของ CS แต่ละช่อง
 
@@ -560,7 +561,11 @@ function setLedRelay(slotNumber, keyBorrowed) {
 
     const activeLevel = RELAY_ACTIVE_STATE === 'LOW' ? 'dl' : 'dh';
     const inactiveLevel = RELAY_ACTIVE_STATE === 'LOW' ? 'dh' : 'dl';
-    const level = keyBorrowed ? activeLevel : inactiveLevel;
+    
+    // สลับสีตามที่ต่อสายฮาร์ดแวร์ไว้:
+    // keyBorrowed = true (ไม่มีกุญแจ) -> inactive (Red)
+    // keyBorrowed = false (มีกุญแจ) -> active (Green)
+    const level = keyBorrowed ? inactiveLevel : activeLevel;
 
     exec(`pinctrl set ${pin} ${level}`, (err) => {
         if (err) {
@@ -762,6 +767,13 @@ async function startKeyPullCheck(slotNumber, bookingId) {
 
 // เช็คสถานะ NFC ของช่องทุกช่องบน Hardware Service
 async function checkAllSlots() {
+    // ถ้ากำลังปลดล็อค หรือกำลังอ่านกุญแจอยู่ ให้ข้ามไปก่อนเพื่อป้องกันการชนกัน (serial collision)
+    if (isUnlocking || isPollingSlot) {
+        console.log('⏳ checkAllSlots: System is busy, skipping this cycle.');
+        return;
+    }
+    
+    isPollingSlot = true; // Lock the serial polling
     console.log('\n🔍 Checking NFC state of all slots...');
     for (let slot = 1; slot <= 10; slot++) {
         if (nfcMode === 'mock') {
@@ -786,7 +798,10 @@ async function checkAllSlots() {
             setLedRelay(slot, true); // Error = ถือว่าหลุด -> แดง
             console.log(`   [Update] Slot ${slot}: Error -> RED`);
         }
+        // Small delay to prevent ESP8266 serial overflow
+        await new Promise(r => setTimeout(r, 100));
     }
+    isPollingSlot = false; // Unlock
     console.log('✅ LED states updated.\n');
 }
 
@@ -822,33 +837,40 @@ socket.on('nfc:register-mode', async (data) => {
     const maxAttempts = (REGISTER_TIMEOUT_S * 1000) / POLL_INTERVAL_MS;
     let found = false;
 
-    for (let attempt = 0; attempt < maxAttempts && !found; attempt++) {
-        // กำหนดว่าจะสแกน slot ไหนบ้าง
-        const slotsToScan = slotNumber
-            ? [slotNumber]
-            : Array.from({ length: 10 }, (_, i) => i + 1);
+    // Pause the background scanner loops while we fast-scan for registration
+    isUnlocking = true;
 
-        for (const slot of slotsToScan) {
-            try {
-                const uid = await readNfcAtSlot(slot);
-                if (uid) {
-                    console.log(`🏷️  nfc:register-mode → พบ NFC! slot=${slot}, uid=${uid}`);
-                    socket.emit('nfc:tag', { slotNumber: slot, uid, staffSocketId });
-                    found = true;
-                    break;
+    try {
+        for (let attempt = 0; attempt < maxAttempts && !found; attempt++) {
+            // กำหนดว่าจะสแกน slot ไหนบ้าง
+            const slotsToScan = slotNumber
+                ? [slotNumber]
+                : Array.from({ length: 10 }, (_, i) => i + 1);
+
+            for (const slot of slotsToScan) {
+                try {
+                    const uid = await readNfcAtSlot(slot);
+                    if (uid) {
+                        console.log(`🏷️  nfc:register-mode → พบ NFC! slot=${slot}, uid=${uid}`);
+                        socket.emit('nfc:tag', { slotNumber: slot, uid, staffSocketId });
+                        found = true;
+                        break;
+                    }
+                } catch (err) {
+                    // ข้าม slot ที่ไม่มี board
                 }
-            } catch (err) {
-                // ข้าม slot ที่ไม่มี board
+            }
+
+            if (!found) {
+                await new Promise(r => setTimeout(r, POLL_INTERVAL_MS));
             }
         }
 
         if (!found) {
-            await new Promise(r => setTimeout(r, POLL_INTERVAL_MS));
+            console.log(`⏰ nfc:register-mode → timeout ${REGISTER_TIMEOUT_S}s ไม่พบ NFC tag`);
         }
-    }
-
-    if (!found) {
-        console.log(`⏰ nfc:register-mode → timeout ${REGISTER_TIMEOUT_S}s ไม่พบ NFC tag`);
+    } finally {
+        isUnlocking = false; // Resume background scanner
     }
 });
 
@@ -966,7 +988,6 @@ function startNfcPolling() {
     let currentSlot = 1;
     const totalSlots = Object.keys(SLOT_CS_MAP).length;
 
-    let isPollingSlot = false;
     setInterval(async () => {
         // Pause NFC polling if we are currently trying to unlock a slot
         if (isUnlocking) return;

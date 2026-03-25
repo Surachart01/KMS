@@ -350,6 +350,7 @@ export const readNfcTag = async (req, res) => {
         const readPromise = new Promise((resolve) => {
             const timeout = setTimeout(() => {
                 resolve({ success: false, message: "หมดเวลารอให้อ่าน NFC เหรียญ (15 วินาที)" });
+                HardwareEvents.removeListener('nfc:tag', handler);
             }, 15000);
 
             // ฟัง result จาก RPi (ครั้งเดียว)
@@ -363,6 +364,12 @@ export const readNfcTag = async (req, res) => {
 
             // ฟังจาก global emitter ที่มาจาก socket.on ใน server.js
             HardwareEvents.on('nfc:tag', handler);
+
+            // ส่งคำสั่งให้ hardware เข้าสู่ Fast Scan (Register) Mode
+            const io = req.app.get('io');
+            if (io) {
+                io.to('gpio').emit('nfc:register-mode', { slotNumber: key.slotNumber });
+            }
 
             console.log(`🏷️ [NFC Read] รอการทาบเหรียญที่ช่อง ${key.slotNumber} (${key.roomCode})...`);
         });
