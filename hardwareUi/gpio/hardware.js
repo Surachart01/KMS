@@ -732,85 +732,80 @@ async function startKeyPullCheck(slotNumber, bookingId) {
         return;
     }
 
-    // 1. เปิดล็อกค้างไว้ 15 วินาที พร้อมกระพริบไฟเขียว-แดงสลับกัน 🚦
+    // ═══════════════════════════════════════════════
+    // หยุด Background Polling ทั้งหมดก่อน (ป้องกัน Serial ชนกัน)
+    // ═══════════════════════════════════════════════
+    isUnlocking = true;
+    logDebug(`▶️ เริ่มตรวจจับการดึงกุญแจช่อง ${slotNumber} (${KEY_PULL_TIMEOUT_S} วิ) — หยุด Background Polling แล้ว`);
+
+    // 1. กระพริบไฟเขียว-แดงสลับกัน 🚦
     let isLedRed = false;
     const blinkInterval = setInterval(() => {
         isLedRed = !isLedRed;
         setLedRelay(slotNumber, isLedRed);
-    }, 500); // สลับสีทุก 0.5 วินาที
+    }, 500);
 
+    // 2. วนเช็ค NFC ทุก 500ms (30 รอบ = 15 วินาที)
+    //    ถ้าไม่เจอ NFC → ล็อค Solenoid ทันที + หยุดไฟกระพริบ
     let keyPulled = false;
-    logDebug(`▶️ เริ่มตรวจจับการดึงกุญแจช่อง ${slotNumber} (15 วิ)`);
-    // ทยอยเช็คไปเรื่อยๆ สูงสุด 15 วินาที (30 รอบ × 500ms)
-    for (let i = 0; i < 30; i++) {
+    const maxRounds = (KEY_PULL_TIMEOUT_S * 1000) / 500;
+
+    for (let i = 0; i < maxRounds; i++) {
         await new Promise(resolve => setTimeout(resolve, 500));
 
-        // รอจนกว่าพอร์ต Serial จะว่าง
-        let waitedLoops = 0;
-        while (isPollingSlot) {
-            await new Promise(r => setTimeout(r, 50));
-            if (++waitedLoops > 20) {
-                logDebug(`[Warning] Slot ${slotNumber} รอคิว Serial ครบ 1 วินาที (isPollingSlot ค้าง?)`);
-                break; // หลุดลูปถ้าต้องรอนานเกินไป
-            }
-        }
-        
-        isPollingSlot = true;
         let uid = null;
         try {
             uid = await readNfcAtSlot(slotNumber);
-        } catch(e) { /* ignore */ }
-        finally {
-            isPollingSlot = false;
+        } catch (e) {
+            logDebug(`⚠️ [รอบ ${i+1}/${maxRounds}] ช่อง ${slotNumber} อ่าน NFC Error: ${e.message}`);
         }
 
-        logDebug(`🔍 [รอบที่ ${i+1}/30] เช็คช่อง ${slotNumber} -> UID=${uid || 'ว่างเปล่า'}`);
+        logDebug(`🔍 [รอบ ${i+1}/${maxRounds}] ช่อง ${slotNumber} → UID=${uid || 'ว่างเปล่า (ดึงออกแล้ว?)'}`);
 
         if (!uid) {
-            // ดึงออกแล้วจังหวะนึง เช็คซ้ำกันพลาด 200ms
+            // ไม่เจอ NFC! → ยืนยันอีกครั้ง 200ms ถัดไป
             await new Promise(resolve => setTimeout(resolve, 200));
-            
-            while (isPollingSlot) await new Promise(r => setTimeout(r, 50));
-            isPollingSlot = true;
             let confirmUid = null;
             try {
                 confirmUid = await readNfcAtSlot(slotNumber);
-            } catch(e) { /* ignore */ }
-            finally {
-                isPollingSlot = false;
-            }
-            
-            logDebug(`✅ [ยืนยันการดึง] ช่อง ${slotNumber} -> UID ซ้ำคือ=${confirmUid || 'ว่างเปล่า'}`);
+            } catch (e) { /* ignore */ }
+
+            logDebug(`✅ [ยืนยัน] ช่อง ${slotNumber} → UID=${confirmUid || 'ว่างเปล่า → กุญแจถูกดึงออกแล้ว!'}`);
+
             if (!confirmUid) {
                 keyPulled = true;
-                break;
+                break; // ออกจากลูปทันที!
             }
         }
     }
 
-    // หยุดกระพริบไฟ
+    // ═══════════════════════════════════════════════
+    // 3. หยุดกระพริบ + ล็อค Solenoid ทันที
+    // ═══════════════════════════════════════════════
     clearInterval(blinkInterval);
-
-    // 2. ดัน Solenoid กลับลงมา (Lock) ไม่ว่าจะเบิกสำเร็จ หรือหมดเวลา
-    logDebug(`🔒 สั่งล็อคแม่เหล็ก (Solenoid) ช่อง ${slotNumber} ทันที`);
+    logDebug(`🔒 ล็อค Solenoid ช่อง ${slotNumber} ทันที`);
     await lockSlot(slotNumber);
     pullCheckingSlots.delete(slotNumber);
 
-    // สรุปผล
+    // 4. สรุปผล
     if (keyPulled) {
         slotHasKey[slotNumber] = false;
-        console.log(`✅ Key pulled from slot ${slotNumber} before timeout. Borrow successful!`);
+        logDebug(`✅ กุญแจช่อง ${slotNumber} ถูกดึงออกแล้ว — เบิกสำเร็จ!`);
         setLedRelay(slotNumber, true); // 🔴 กุญแจถูกเบิก
         socket.emit('key:pulled', { slotNumber, bookingId });
-        
-        // สั่งเช็คสถานะทุกช่องเพื่ออัปเดตระบบ
-        setTimeout(() => checkAllSlots(), 1000);
     } else {
-        console.log(`⏰ 15s elapsed. Key STILL in slot ${slotNumber} → cancelling borrow`);
+        logDebug(`⏰ หมดเวลา ${KEY_PULL_TIMEOUT_S} วิ กุญแจช่อง ${slotNumber} ยังอยู่ → ยกเลิกการเบิก`);
         slotHasKey[slotNumber] = true;
         setLedRelay(slotNumber, false); // 🟢 กุญแจยังอยู่
         socket.emit('borrow:cancelled', { slotNumber, bookingId });
     }
+
+    // 5. คืนสิทธิ์ Background Polling กลับมา
+    isUnlocking = false;
+    logDebug(`🔄 คืนสิทธิ์ Background Polling แล้ว`);
+
+    // 6. เช็คสถานะทั้งหมดอีกรอบหลังจากเบิกเสร็จ
+    setTimeout(() => checkAllSlots(), 1000);
 }
 
 // เช็คสถานะ NFC ของช่องทุกช่องบน Hardware Service
