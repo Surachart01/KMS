@@ -771,39 +771,42 @@ async function startKeyPullCheck(slotNumber, bookingId) {
     }, 500);
 
     // 2. วนเช็ค NFC ทุก 500ms (30 รอบ = 15 วินาที)
-    //    ต้องอ่านไม่เจอ NFC ติดต่อกัน 3 ครั้ง (ประมาณ 1.5 วินาที) ถึงจะนับว่าดึงออกจริง
+    //    ต้องอ่านไม่เจอ NFC ติดต่อกัน 6 ครั้ง (~3-4 วินาที) ถึงจะนับว่าดึงออกจริง
     let keyPulled = false;
     let consecutiveMisses = 0;
-    const MISS_THRESHOLD = 3; 
+    const MISS_THRESHOLD = 6; 
     const maxRounds = (KEY_PULL_TIMEOUT_S * 1000) / 500;
 
-    logDebug(`⏳ [Stabilization] รอ 1 วินาทีเพื่อให้ Solenoid นิ่งก่อนเริ่มตรวจจับ...`);
-    await new Promise(r => setTimeout(r, 1000));
+    logDebug(`⏳ [Stabilization] รอ 2 วินาทีเพื่อให้กลไกและสัญญาณนิ่งก่อนเริ่มตรวจจับ...`);
+    await new Promise(r => setTimeout(r, 2000));
 
     for (let i = 0; i < maxRounds; i++) {
         let uid = null;
+        let readError = false;
         try {
             uid = await readNfcAtSlot(slotNumber);
         } catch (e) {
-            logDebug(`⚠️ [รอบ ${i+1}/${maxRounds}] ช่อง ${slotNumber} Error: ${e.message}`);
+            readError = true;
+            logDebug(`⚠️ [รอบ ${i+1}/${maxRounds}] ช่อง ${slotNumber} เกิดปัญหาการอ่าน: ${e.message}`);
         }
 
         if (!uid) {
             consecutiveMisses++;
-            logDebug(`🔍 [รอบ ${i+1}/${maxRounds}] ช่อง ${slotNumber} → ว่างเปล่า (Miss count: ${consecutiveMisses}/${MISS_THRESHOLD})`);
+            const reason = readError ? "ERROR (Timeout/Serial)" : "NULL (No Tag Found)";
+            logDebug(`🔍 [รอบ ${i+1}/${maxRounds}] ช่อง ${slotNumber} → ${reason} (Miss count: ${consecutiveMisses}/${MISS_THRESHOLD})`);
             
             if (consecutiveMisses >= MISS_THRESHOLD) {
-                logDebug(`✅ [ยืนยัน] ช่อง ${slotNumber} ตรวจไม่พบกุญแจครบ ${MISS_THRESHOLD} ครั้งถัดกัน → ยืนยันว่าถูกดึงออกแล้ว!`);
+                logDebug(`✅ [ยืนยัน] ตรวจไม่พบกุญแจครบ ${MISS_THRESHOLD} ครั้งถัดกัน → ยืนยันว่าถูกดึงออกแล้ว!`);
                 keyPulled = true;
                 break;
             }
         } else {
             if (consecutiveMisses > 0) {
-                logDebug(`✨ [รอบ ${i+1}/${maxRounds}] ช่อง ${slotNumber} → กลับมาเจอกุญแจอีกครั้ง (${uid}) (Reset miss count)`);
+                logDebug(`✨ [รอบ ${i+1}/${maxRounds}] ช่อง ${slotNumber} → กลับมาเจอ UID: ${uid} (Reset miss count)`);
             } else {
-                logDebug(`🔍 [รอบ ${i+1}/${maxRounds}] ช่อง ${slotNumber} → ยังเจอกุญแจอยู่ (${uid})`);
+                logDebug(`🔍 [รอบ ${i+1}/${maxRounds}] ช่อง ${slotNumber} → ยังคงมีกุญแจอยู่ (UID: ${uid})`);
             }
-            consecutiveMisses = 0; // Reset ถ้ากลับมาเจอ
+            consecutiveMisses = 0;
         }
 
         await new Promise(resolve => setTimeout(resolve, 500));
