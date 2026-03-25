@@ -771,37 +771,42 @@ async function startKeyPullCheck(slotNumber, bookingId) {
     }, 500);
 
     // 2. วนเช็ค NFC ทุก 500ms (30 รอบ = 15 วินาที)
-    //    ถ้าไม่เจอ NFC → ล็อค Solenoid ทันที + หยุดไฟกระพริบ
+    //    ต้องอ่านไม่เจอ NFC ติดต่อกัน 3 ครั้ง (ประมาณ 1.5 วินาที) ถึงจะนับว่าดึงออกจริง
     let keyPulled = false;
+    let consecutiveMisses = 0;
+    const MISS_THRESHOLD = 3; 
     const maxRounds = (KEY_PULL_TIMEOUT_S * 1000) / 500;
 
-    for (let i = 0; i < maxRounds; i++) {
-        await new Promise(resolve => setTimeout(resolve, 500));
+    logDebug(`⏳ [Stabilization] รอ 1 วินาทีเพื่อให้ Solenoid นิ่งก่อนเริ่มตรวจจับ...`);
+    await new Promise(r => setTimeout(r, 1000));
 
+    for (let i = 0; i < maxRounds; i++) {
         let uid = null;
         try {
             uid = await readNfcAtSlot(slotNumber);
         } catch (e) {
-            logDebug(`⚠️ [รอบ ${i+1}/${maxRounds}] ช่อง ${slotNumber} อ่าน NFC Error: ${e.message}`);
+            logDebug(`⚠️ [รอบ ${i+1}/${maxRounds}] ช่อง ${slotNumber} Error: ${e.message}`);
         }
-
-        logDebug(`🔍 [รอบ ${i+1}/${maxRounds}] ช่อง ${slotNumber} → UID=${uid || 'ว่างเปล่า (ดึงออกแล้ว?)'}`);
 
         if (!uid) {
-            // ไม่เจอ NFC! → ยืนยันอีกครั้ง 200ms ถัดไป
-            await new Promise(resolve => setTimeout(resolve, 200));
-            let confirmUid = null;
-            try {
-                confirmUid = await readNfcAtSlot(slotNumber);
-            } catch (e) { /* ignore */ }
-
-            logDebug(`✅ [ยืนยัน] ช่อง ${slotNumber} → UID=${confirmUid || 'ว่างเปล่า → กุญแจถูกดึงออกแล้ว!'}`);
-
-            if (!confirmUid) {
+            consecutiveMisses++;
+            logDebug(`🔍 [รอบ ${i+1}/${maxRounds}] ช่อง ${slotNumber} → ว่างเปล่า (Miss count: ${consecutiveMisses}/${MISS_THRESHOLD})`);
+            
+            if (consecutiveMisses >= MISS_THRESHOLD) {
+                logDebug(`✅ [ยืนยัน] ช่อง ${slotNumber} ตรวจไม่พบกุญแจครบ ${MISS_THRESHOLD} ครั้งถัดกัน → ยืนยันว่าถูกดึงออกแล้ว!`);
                 keyPulled = true;
-                break; // ออกจากลูปทันที!
+                break;
             }
+        } else {
+            if (consecutiveMisses > 0) {
+                logDebug(`✨ [รอบ ${i+1}/${maxRounds}] ช่อง ${slotNumber} → กลับมาเจอกุญแจอีกครั้ง (${uid}) (Reset miss count)`);
+            } else {
+                logDebug(`🔍 [รอบ ${i+1}/${maxRounds}] ช่อง ${slotNumber} → ยังเจอกุญแจอยู่ (${uid})`);
+            }
+            consecutiveMisses = 0; // Reset ถ้ากลับมาเจอ
         }
+
+        await new Promise(resolve => setTimeout(resolve, 500));
     }
 
     // ═══════════════════════════════════════════════
