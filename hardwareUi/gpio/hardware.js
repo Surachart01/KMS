@@ -100,7 +100,7 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const VERSION = "1.1.1 — Hybrid Instant Lock (Seen-to-Pull)";
+const VERSION = "1.1.2 — Startup Stability & Hybrid Lock";
 let Mfrc522 = null;
 let Gpio = null;
 let IS_MOCK = true;
@@ -887,8 +887,8 @@ async function checkAllSlots() {
                 slotHasKey[slot] = false;
                 setLedRelay(slot, true); // Error = ถือว่าหลุด -> แดง
             }
-            // Small delay to prevent ESP8266 serial overflow
-            await new Promise(r => setTimeout(r, 100));
+            // เพิ่ม Delay ระหว่างช่องให้มากขึ้น (300ms) เพื่อความชัวร์ของ Serial Bus
+            await new Promise(r => setTimeout(r, 300));
         }
     } finally {
         isPollingSlot = false; // Unlock
@@ -1182,6 +1182,8 @@ process.on('SIGTERM', () => {
     // ─────────────────────────────────────────────
     // INIT ALL LEDS STATE BEFORE POLLING LOOP
     // ─────────────────────────────────────────────
+    console.log('⏳ Waiting 3s for system stabilization before first status check...');
+    await new Promise(r => setTimeout(r, 3000));
     await checkAllSlots();
     
     // ตั้งเวลาเช็คทุกๆ 1 ชั่วโมง (3600000 ms)
