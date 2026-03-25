@@ -23,7 +23,7 @@ const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:4556';
 const HARDWARE_KEYS_URL = process.env.HARDWARE_KEYS_URL || `${BACKEND_URL}/api/hardware/keys`;
 const HARDWARE_TOKEN = process.env.HARDWARE_TOKEN || '';
 const NFC_POLLING_INTERVAL_MS = 200; // loop NFC ทุก 200ms
-const KEY_PULL_TIMEOUT_S = 15;       // รอดึงกุญแจ 15 วินาทีคงที่
+const KEY_PULL_TIMEOUT_S = 10;       // รอดึงกุญแจ 10 วินาทีคงที่
 const KEY_PULL_POLL_INTERVAL_MS = 1000; // ตรวจเช็คการดึงกุญแจทุก 1 วินาที
 // กันอ่าน NFC หลุดเป็นจังหวะแล้วคิดว่าดึงกุญแจ: ต้องเห็นแท็กก่อน และต้องหายติดกันหลายครั้ง
 const KEY_PULL_REQUIRE_SEEN_TAG = true;
@@ -100,7 +100,7 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const VERSION = "1.0.8 — Final Verification & 10s Timeout";
+const VERSION = "1.0.9 — Final Verification & 10s Timeout Fix";
 let Mfrc522 = null;
 let Gpio = null;
 let IS_MOCK = true;
@@ -785,9 +785,9 @@ async function startKeyPullCheck(slotNumber, bookingId) {
     await lockSlot(slotNumber);
 
     // 4. ขั้นตอนการตรวจสอบ "ผลลัพธ์สุดท้าย" (Final Verification)
-    //    รอ 800ms ให้สนามแม่เหล็กนิ่ง แล้วเช็ค 3 ครั้งว่ากุญแจยังอยู่ที่เดิมไหม
+    //    รอ 2000ms (2 วินาที) ให้เข็ม Solenoid หดกลับจนสุดและสนามแม่เหล็กนิ่ง
     logDebug(`🔍 เริ่มการตรวจสอบผลลัพธ์สุดท้าย (Final Verification)...`);
-    await new Promise(r => setTimeout(r, 800));
+    await new Promise(r => setTimeout(r, 2000));
     
     let keyStillThere = false;
     for (let attempt = 1; attempt <= 3; attempt++) {
