@@ -100,7 +100,7 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const VERSION = "1.1.2 — Startup Stability & Hybrid Lock";
+const VERSION = "1.2.0 — Return Flow & LED Feedback";
 let Mfrc522 = null;
 let Gpio = null;
 let IS_MOCK = true;
@@ -1052,6 +1052,31 @@ socket.on('nfc:write', async (data) => {
     }
 });
 
+// รับคำสั่งให้ไฟกระพริบ Success (เขียว) หรือ Error (แดง)
+socket.on('led:success', async (data) => {
+    const { slotNumber } = data;
+    logDebug(`✨ [Feedback] Slot ${slotNumber} -> SUCCESS (Green Blink)`);
+    // กระพริบเขียว 3 ครั้ง
+    for (let i = 0; i < 3; i++) {
+        setLedRelay(slotNumber, true); // แดง
+        await new Promise(r => setTimeout(r, 200));
+        setLedRelay(slotNumber, false); // เขียว
+        await new Promise(r => setTimeout(r, 200));
+    }
+});
+
+socket.on('led:error', async (data) => {
+    const { slotNumber } = data;
+    logDebug(`🛑 [Feedback] Slot ${slotNumber} -> ERROR (Red Blink)`);
+    // กระพริบแดง 5 ครั้ง
+    for (let i = 0; i < 5; i++) {
+        setLedRelay(slotNumber, false); // เขียว
+        await new Promise(r => setTimeout(r, 150));
+        setLedRelay(slotNumber, true); // แดง
+        await new Promise(r => setTimeout(r, 150));
+    }
+});
+
 // ─────────────────────────────────────────────
 // NFC Polling (RC522 ×10 SPI + CS GPIO)
 // ─────────────────────────────────────────────
@@ -1100,6 +1125,7 @@ function startNfcPolling() {
             if (uid) {
                 if (slotHasKey[currentSlot] !== true) {
                     slotHasKey[currentSlot] = true;
+                    logDebug(`📥 [Return] พบกุญแจคืนที่ช่อง ${currentSlot} (UID: ${uid})`);
                     setLedRelay(currentSlot, false); // 🟢 กุญแจอยู่
                 }
                 if (!slotHasKey[`last_uid_${currentSlot}`] || slotHasKey[`last_uid_${currentSlot}`] !== uid) {

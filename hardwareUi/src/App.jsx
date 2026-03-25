@@ -10,6 +10,7 @@ import SuccessPage from './pages/SuccessPage.jsx';
 import TransferConfirmPage from './pages/TransferConfirmPage.jsx';
 import SwapConfirmPage from './pages/SwapConfirmPage.jsx';
 import MoveConfirmPage from './pages/MoveConfirmPage.jsx';
+import WaitForKeyReturnPage from './pages/WaitForKeyReturnPage.jsx';
 
 /**
  * Flow การเบิกกุญแจ (Borrow):
@@ -442,13 +443,7 @@ export default function App() {
         setLoading(true);
         try {
             if (mode === 'return') {
-                const result = await returnKey(scannedUser.userId);
-                setBorrowResult(result);
-                if (result?.success) {
-                    setPage('success');
-                } else {
-                    setErrorPopup(result?.message || 'เกิดข้อผิดพลาดในการคืนกุญแจ');
-                }
+                setPage('waitForKeyReturn');
             } else {
                 if (!selectedRoom) return;
                 const result = await borrowKey(scannedUser.userId, selectedRoom);
@@ -463,6 +458,26 @@ export default function App() {
             }
         } catch {
             setErrorPopup('เกิดข้อผิดพลาดในการเชื่อมต่อ');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // ── Final Return (After Physical Key Detected) ──
+    const handleFinalReturn = async () => {
+        if (!scannedUser?.userId) return;
+        setLoading(true);
+        try {
+            const result = await returnKey(scannedUser.userId);
+            setBorrowResult(result);
+            if (result?.success) {
+                setPage('success');
+            } else {
+                setErrorPopup(result?.message || 'เกิดข้อผิดพลาดในการคืนกุญแจในระบบ');
+                goHome();
+            }
+        } catch {
+            setErrorPopup('เกิดข้อผิดพลาดในการเชื่อมต่อ (Return)');
         } finally {
             setLoading(false);
         }
@@ -580,6 +595,14 @@ export default function App() {
                         onSubmit={handleReasonSubmit}
                         onCancel={goHome}
                         loading={loading}
+                    />
+                )}
+
+                {page === 'waitForKeyReturn' && (
+                    <WaitForKeyReturnPage
+                        booking={returningKey}
+                        onKeyDetected={handleFinalReturn}
+                        onCancel={goHome}
                     />
                 )}
 
