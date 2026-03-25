@@ -100,7 +100,7 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const VERSION = "1.0.7 — Final Verification Fix";
+const VERSION = "1.0.8 — Final Verification & 10s Timeout";
 let Mfrc522 = null;
 let Gpio = null;
 let IS_MOCK = true;
@@ -355,6 +355,7 @@ async function esp8266Request(boardId, payload) {
     });
 }
 
+let _esp8266DebugCount = 0;
 async function readNfcAtSlotEsp8266(slotNumber) {
     const boardId = slotToBoardId(slotNumber);
     try {
@@ -770,9 +771,9 @@ async function startKeyPullCheck(slotNumber, bookingId) {
         setLedRelay(slotNumber, isLedRed);
     }, 500);
 
-    // 2. ช่วงเวลาเปิด Solenoid (15 วินาที)
-    logDebug(`▶️ เริ่มช่วงเวลาเบิก 15 วินาที (ไฟกระพริบ)...`);
-    const numSteps = 15;
+    // 2. ช่วงเวลาเปิด Solenoid (10 วินาที)
+    logDebug(`▶️ เริ่มช่วงเวลาเบิก ${KEY_PULL_TIMEOUT_S} วินาที (ไฟกระพริบ)...`);
+    const numSteps = KEY_PULL_TIMEOUT_S;
     for (let i = 0; i < numSteps; i++) {
         await new Promise(resolve => setTimeout(resolve, 1000));
         logDebug(`⏱️ [${i+1}/${numSteps}] ช่อง ${slotNumber} กำลังรอการดึงกุญแจ...`);
