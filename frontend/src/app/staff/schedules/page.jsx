@@ -398,17 +398,6 @@ export default function SchedulesPage() {
         },
 
         {
-            title: "อาจารย์",
-            key: "teachers",
-            width: 200,
-            render: (_, record) => {
-                const teachers = record.subject?.teachers?.map(st => st.teacher).filter(Boolean) || [];
-                return teachers.length > 0
-                    ? teachers.map(t => `${t.firstName} ${t.lastName}`).join(', ')
-                    : '-';
-            }
-        },
-        {
             title: "นักศึกษา",
             key: "students",
             width: 120,

@@ -719,41 +719,75 @@ async function startKeyPullCheck(slotNumber, bookingId) {
         setLedRelay(slotNumber, isLedRed);
     }, 500); // สลับสีทุก 0.5 วินาที
 
-    await new Promise(resolve => setTimeout(resolve, KEY_PULL_TIMEOUT_S * 1000));
+    let keyPulled = false;
+    // ทยอยเช็คไปเรื่อยๆ สูงสุด 15 วินาที (30 รอบ × 500ms)
+    for (let i = 0; i < 30; i++) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+        const uid = await readNfcAtSlot(slotNumber);
+        if (!uid) {
+            // ดึงออกแล้วจังหวะนึง เช็คซ้ำกันพลาด 200ms
+            await new Promise(resolve => setTimeout(resolve, 200));
+            const confirmUid = await readNfcAtSlot(slotNumber);
+            if (!confirmUid) {
+                keyPulled = true;
+                break;
+            }
+        }
+    }
 
     // หยุดกระพริบไฟ
     clearInterval(blinkInterval);
 
-    // 2. หมดเวลา 15 วินาที ดัน Solenoid กลับลงมา (Lock)
-    console.log(`🔒 15s elapsed. Locking solenoid at slot=${slotNumber}. Starting 5x NFC check...`);
+    // 2. ดัน Solenoid กลับลงมา (Lock) ไม่ว่าจะเบิกสำเร็จ หรือหมดเวลา
+    console.log(`🔒 Locking solenoid at slot=${slotNumber}.`);
     await lockSlot(slotNumber);
-
-    // 3. เช็ค NFC 5 รอบ รอบละ 500ms
-    let foundCount = 0;
-    for (let i = 0; i < 5; i++) {
-        const uid = await readNfcAtSlot(slotNumber);
-        if (uid) {
-            foundCount++;
-        }
-        await new Promise(resolve => setTimeout(resolve, 500));
-    }
-
     pullCheckingSlots.delete(slotNumber);
 
-    // 4. สรุปผล
-    // ถ้าอ่านเจอ 3 ใน 5 แสดงว่ากุญแจยังไม่ถูกดึง (Cancelling borrow)
-    if (foundCount >= 3) {
-        console.log(`⏰ NFC found ${foundCount}/5 times. Key STILL in slot ${slotNumber} → cancelling borrow`);
+    // สรุปผล
+    if (keyPulled) {
+        slotHasKey[slotNumber] = false;
+        console.log(`✅ Key pulled from slot ${slotNumber} before timeout. Borrow successful!`);
+        setLedRelay(slotNumber, true); // 🔴 กุญแจถูกเบิก
+        socket.emit('key:pulled', { slotNumber, bookingId });
+        
+        // สั่งเช็คสถานะทุกช่องเพื่ออัปเดตระบบ
+        setTimeout(() => checkAllSlots(), 1000);
+    } else {
+        console.log(`⏰ 15s elapsed. Key STILL in slot ${slotNumber} → cancelling borrow`);
         slotHasKey[slotNumber] = true;
         setLedRelay(slotNumber, false); // 🟢 กุญแจยังอยู่
         socket.emit('borrow:cancelled', { slotNumber, bookingId });
-    } else {
-        // ถ้าไม่เจอเกิน 3 ครั้งแสดงว่าเอากุญแจออกไปแล้ว (Borrow success)
-        slotHasKey[slotNumber] = false;
-        console.log(`✅ Key pulled from slot ${slotNumber} (NFC found only ${foundCount}/5 times). Borrow successful!`);
-        setLedRelay(slotNumber, true); // 🔴 กุญแจถูกเบิก
-        socket.emit('key:pulled', { slotNumber, bookingId });
     }
+}
+
+// เช็คสถานะ NFC ของช่องทุกช่องบน Hardware Service
+async function checkAllSlots() {
+    console.log('\n🔍 Checking NFC state of all slots...');
+    for (let slot = 1; slot <= 10; slot++) {
+        if (nfcMode === 'mock') {
+            setLedRelay(slot, false); // สมมติว่าเขียวหมด (มีกุญแจ)
+            continue;
+        }
+        try {
+            const uid = await readNfcAtSlot(slot);
+            if (uid) {
+                slotHasKey[slot] = true;
+                slotHasKey[`last_uid_${slot}`] = uid;
+                setLedRelay(slot, false); // กุญแจอยู่ -> เขียว
+                console.log(`   [Update] Slot ${slot}: Key detected (${uid}) -> GREEN`);
+            } else {
+                slotHasKey[slot] = false;
+                slotHasKey[`last_uid_${slot}`] = null;
+                setLedRelay(slot, true); // ไม่มีกุญแจ -> แดง
+                console.log(`   [Update] Slot ${slot}: Empty -> RED`);
+            }
+        } catch (e) {
+            slotHasKey[slot] = false;
+            setLedRelay(slot, true); // Error = ถือว่าหลุด -> แดง
+            console.log(`   [Update] Slot ${slot}: Error -> RED`);
+        }
+    }
+    console.log('✅ LED states updated.\n');
 }
 
 // รับคำสั่ง unlock จาก Backend → เปิด solenoid → เริ่ม key-pull check
@@ -1032,32 +1066,10 @@ process.on('SIGTERM', () => {
     // ─────────────────────────────────────────────
     // INIT ALL LEDS STATE BEFORE POLLING LOOP
     // ─────────────────────────────────────────────
-    console.log('\n💡 Checking initial NFC state of all slots...');
-    for (let slot = 1; slot <= 10; slot++) {
-        if (nfcMode === 'mock') {
-            setLedRelay(slot, false); // สมมติว่าเขียวหมด
-            continue;
-        }
-        try {
-            const uid = await readNfcAtSlot(slot);
-            if (uid) {
-                slotHasKey[slot] = true;
-                slotHasKey[`last_uid_${slot}`] = uid;
-                setLedRelay(slot, false); // 🟢 กุญแจอยู่ (HIGH)
-                console.log(`   [Boot] Slot ${slot}: Key detected (${uid}) -> GREEN`);
-            } else {
-                slotHasKey[slot] = false;
-                slotHasKey[`last_uid_${slot}`] = null;
-                setLedRelay(slot, true); // 🔴 กุญแจไม่อยู่ (LOW)
-                console.log(`   [Boot] Slot ${slot}: Empty -> RED`);
-            }
-        } catch (e) {
-            slotHasKey[slot] = false;
-            setLedRelay(slot, true); // 🔴 Error = มองไม่เห็นกุญแจ
-            console.log(`   [Boot] Slot ${slot}: Error -> RED`);
-        }
-    }
-    console.log('✅ Initial LED states applied.\n');
+    await checkAllSlots();
+    
+    // ตั้งเวลาเช็คทุกๆ 1 ชั่วโมง (3600000 ms)
+    setInterval(checkAllSlots, 60 * 60 * 1000);
 
     startNfcPolling();
 

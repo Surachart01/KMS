@@ -616,9 +616,19 @@ export const importRepclasslist = async (req, res) => {
 
 
 
-        // 4. Create Schedule
+        // 4. Create/Ensure Room Key exists before creating schedule
         let schedule = null;
         if (dayOfWeek !== undefined && startTime && endTime && roomCode) {
+            
+            // Create Key if it doesn't exist
+            const existKey = await prisma.key.findFirst({ where: { roomCode } });
+            if (!existKey) {
+                const lastKey = await prisma.key.findFirst({ orderBy: { slotNumber: 'desc' } });
+                await prisma.key.create({
+                    data: { roomCode, slotNumber: (lastKey?.slotNumber || 0) + 1 }
+                });
+            }
+
             const existing = await prisma.schedule.findFirst({
                 where: {
                     subjectId: subject.id,
@@ -718,16 +728,7 @@ export const importRepclasslist = async (req, res) => {
             });
         }
 
-        // 6. Create Key
-        if (roomCode) {
-            const existKey = await prisma.key.findFirst({ where: { roomCode } });
-            if (!existKey) {
-                const lastKey = await prisma.key.findFirst({ orderBy: { slotNumber: 'desc' } });
-                await prisma.key.create({
-                    data: { roomCode, slotNumber: (lastKey?.slotNumber || 0) + 1 }
-                });
-            }
-        }
+
 
         return res.status(200).json({
             message: 'นำเข้าข้อมูลสำเร็จ',
