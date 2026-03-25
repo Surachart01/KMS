@@ -626,23 +626,21 @@ async function unlockSlot(slotNumber) {
         return false;
     }
 
-    console.log(`🔓 Unlocking slot ${slotNumber} (GPIO ${pin})`);
+    logDebug(`🔓 Unlocking slot ${slotNumber} (GPIO ${pin})`);
 
     if (IS_MOCK) {
-        console.log(`✅ [MOCK] Slot ${slotNumber} (Pin ${pin}) → HIGH`);
+        logDebug(`✅ [MOCK] Slot ${slotNumber} (Pin ${pin}) → HIGH`);
         return true;
     }
 
     return new Promise((resolve) => {
-        isUnlocking = true; // Pause NFC polling temporarily
         const activeLevel = RELAY_ACTIVE_STATE === 'LOW' ? 'dl' : 'dh';
         exec(`pinctrl set ${pin} ${activeLevel}`, (err) => {
-            isUnlocking = false; // Resume NFC polling
             if (err) {
-                console.error(`❌ GPIO error slot ${slotNumber}:`, err.message);
+                logDebug(`❌ GPIO error slot ${slotNumber}: ${err.message}`);
                 resolve(false);
             } else {
-                console.log(`✅ Slot ${slotNumber} (Pin ${pin}) → ${activeLevel.toUpperCase()} (UNLOCK)`);
+                logDebug(`✅ Slot ${slotNumber} (Pin ${pin}) → ${activeLevel.toUpperCase()} (UNLOCK)`);
                 resolve(true);
             }
         });
@@ -852,16 +850,20 @@ async function checkAllSlots() {
 socket.on('gpio:unlock', async (data) => {
     const { slotNumber, bookingId } = data;
 
-    console.log(`📩 gpio:unlock → slot=${slotNumber}, bookingId=${bookingId}`);
+    logDebug(`📩 gpio:unlock → slot=${slotNumber}, bookingId=${bookingId} (Mode: ${nfcMode})`);
 
     const success = await unlockSlot(slotNumber);
 
     // แจ้ง backend ว่าปลดล็อคแล้ว (UI จะแสดง "ดึงกุญแจได้เลย")
     socket.emit('slot:unlocked', { slotNumber, success });
+    logDebug(`📤 slot:unlocked emitted → success=${success}`);
 
     if (success) {
-        // เริ่มรอดึงกุญแจออก (รอ 15 วิ -> ดันล็อกลง -> ตรวจ NFC 5 รอบ)
+        // เริ่มรอดึงกุญแจออก
+        logDebug(`🚀 เรียก startKeyPullCheck(slot=${slotNumber}, booking=${bookingId})`);
         startKeyPullCheck(slotNumber, bookingId);
+    } else {
+        logDebug(`❌ unlockSlot ล้มเหลว ไม่เริ่ม startKeyPullCheck`);
     }
 });
 
