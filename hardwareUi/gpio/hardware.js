@@ -146,17 +146,19 @@ function slotToBoardId(slotNumber) {
 /** Find all serial devices in /dev/ */
 function detectAllSerialPaths() {
     try {
-        const devFiles = readdirSync('/dev');
-        const paths = [];
-        for (const prefix of ['ttyUSB', 'ttyACM']) {
-            const found = devFiles
-                .filter(f => f.startsWith(prefix))
-                .sort()
-                .map(f => `/dev/${f}`);
-            paths.push(...found);
+        const files = readdirSync('/dev');
+        console.log(`📂 [Diagnostic] Files in /dev: ${files.length} total`);
+        const usbPorts = files
+            .filter((f) => f.startsWith('ttyUSB') || f.startsWith('ttyACM'))
+            .sort(); // Sort for consistent order
+        if (usbPorts.length > 0) {
+            console.log(`🔍 [Diagnostic] Found USB/Serial ports: ${usbPorts.join(', ')}`);
+        } else {
+            console.log('⚠️ [Diagnostic] No ttyUSB or ttyACM ports found in /dev');
         }
-        return paths;
-    } catch {
+        return usbPorts.map((p) => `/dev/${p}`);
+    } catch (e) {
+        console.error('❌ [Diagnostic] Failed to read /dev:', e.message);
         return [];
     }
 }
@@ -239,21 +241,40 @@ async function openEsp8266Port(serialPath, SerialPort) {
     });
 }
 
-/** Send JSON command to a specific board and wait for response */
-function esp8266Request(boardId, payload) {
-    const ctx = esp8266Boards.get(boardId);
-    if (!ctx?.port?.isOpen) {
-        throw new Error(`esp8266 board ${boardId} not connected`);
+/** Helper to initialize a single ESP8266 board */
+async function initEsp8266Board(path, SerialPort) {
+    try {
+        const ctx = await openEsp8266Port(path, SerialPort);
+        if (!ctx) return false;
+
+        // Ping to get boardId
+        // Wait a moment then send ping
+        const pingPayload = JSON.stringify({ cmd: 'ping' }) + '\n';
+        ctx.port.write(pingPayload);
+
+        const pong = await new Promise((resolve, reject) => {
+            const timer = setTimeout(() => reject(new Error('ping timeout')), 3000);
+            const id = ++ctx.reqId;
+            ctx.pending.set(id, {
+                resolve: (msg) => { clearTimeout(timer); resolve(msg); },
+                reject: (err) => { clearTimeout(timer); reject(err); },
+                timer,
+            });
+        });
+
+        if (pong?.pong && pong?.boardId) {
+            esp8266Boards.set(pong.boardId, ctx);
+            console.log(`✅ ESP8266 Board ${pong.boardId} ready at ${path} — ${pong.active}/${pong.readers} NFC online (slots ${pong.slots?.join(',')})`);
+            return true;
+        } else {
+            console.log(`🟡 ${path} responded but no boardId — skipping`);
+            ctx.port.close();
+            return false;
+        }
+    } catch (e) {
+        console.log(`🟡 ${path}: ${e.message}`);
+        return false;
     }
-    const id = ++ctx.reqId;
-    return new Promise((resolve, reject) => {
-        const timer = setTimeout(() => {
-            ctx.pending.delete(id);
-            reject(new Error(`esp8266 board ${boardId} timeout`));
-        }, ESP8266_READ_TIMEOUT_MS);
-        ctx.pending.set(id, { resolve, reject, timer });
-        ctx.port.write(JSON.stringify(payload) + '\n');
-    });
 }
 
 /**
@@ -263,7 +284,10 @@ function esp8266Request(boardId, payload) {
  */
 async function initAllEsp8266Boards() {
     const paths = detectAllSerialPaths();
-    if (paths.length === 0) return 0;
+    if (paths.length === 0) {
+        console.log('⚠️ [ESP8266] No serial paths detected.');
+        return 0;
+    }
 
     let SerialPort;
     try {
@@ -466,11 +490,13 @@ async function setupHardware() {
 
     // ── Try Multi-ESP8266 Serial NFC ──
     {
+        console.log(`🔍 [NFC] Mode search: FORCE_ESP8266_NFC=${FORCE_ESP8266_NFC}`);
         console.log('🔍 Scanning for ESP8266 NFC boards...');
         const boardCount = await initAllEsp8266Boards();
-        if (boardCount > 0) {
+        
+        if (boardCount > 0 || FORCE_ESP8266_NFC) {
             nfcMode = 'esp8266';
-            console.log(`🟢 NFC: ESP8266 multi-board mode — ${boardCount} board(s) connected`);
+            console.log(`🟢 NFC: ESP8266 mode active — boards found: ${boardCount}`);
         } else {
             console.log('🟡 No ESP8266 boards found → fallback to other NFC modes');
 
@@ -510,6 +536,7 @@ async function setupHardware() {
             }
         }
     }
+    console.log(`🎯 [Final Mode Selection] nfcMode = '${nfcMode}', IS_MOCK = ${IS_MOCK}`);
 }
 
 async function refreshKeyUidCache() {

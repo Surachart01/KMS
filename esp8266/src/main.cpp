@@ -290,17 +290,21 @@ void loop() {
     byte bufferATQA[2];
     byte bufferSize = sizeof(bufferATQA);
     
-    // ลองใช้ Wakeup หรือ Request A ถ้าเจอบัตร แปลว่ามีคนแตะอยู่
+    // Try to see if there's a card
     if (readers[i]->PICC_WakeupA(bufferATQA, &bufferSize) == MFRC522::STATUS_OK ||
         readers[i]->PICC_RequestA(bufferATQA, &bufferSize) == MFRC522::STATUS_OK) 
     {
       if (readers[i]->PICC_ReadCardSerial()) {
         cachedUid[i] = uidToHex(readers[i]->uid);
-        uidExpireMs[i] = millis() + 2000; // จำไว้ 2 วินาที (เพื่อให้ทดสอบมือกดทัน)
+        uidExpireMs[i] = millis() + 1000; // Keep valid for 1s
         
         readers[i]->PICC_HaltA();
         readers[i]->PCD_StopCrypto1();
       }
+    } else {
+      // Card gone! Clear cache immediately for "Instant Lock"
+      cachedUid[i] = "";
+      uidExpireMs[i] = 0;
     }
   }
 
