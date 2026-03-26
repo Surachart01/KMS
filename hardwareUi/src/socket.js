@@ -38,8 +38,16 @@ export function getKeys() {
 }
 
 export function identifyUser(studentCode) {
+    console.log('📡 identifyUser: Sending user:identify for', studentCode);
     return new Promise((resolve) => {
+        const timeout = setTimeout(() => {
+            console.error('⏰ identifyUser: Timeout after 10s for', studentCode);
+            resolve({ success: false, message: 'หมดเวลาในการตรวจสอบผู้ใช้ กรุณาลองใหม่' });
+        }, 10000);
+
         socket.emit('user:identify', studentCode, (response) => {
+            clearTimeout(timeout);
+            console.log('📡 identifyUser: Got response', JSON.stringify(response)?.substring(0, 200));
             resolve(response);
         });
     });

@@ -6,5 +6,8 @@ export default defineConfig({
     server: {
         host: '0.0.0.0',
         port: 5173,
+        hmr: {
+            overlay: false,  // ปิด error overlay บน Kiosk (เครื่องหมาย ⚠ ที่มุมล่างซ้าย)
+        },
     },
 })
