@@ -99,13 +99,6 @@ export default function App() {
         function onConnect() { setConnected(true); }
         function onDisconnect() { setConnected(false); }
 
-        function onScanReceived(data) {
-            console.log('😄 Scan received:', data);
-            if (document.querySelector('.scan-page')) {
-                handleScanProcess(data);
-            }
-        }
-
         function onBorrowCancelled(data) {
             console.log('❌ borrow:cancelled received in UI:', data);
             setErrorPopup(`หมดเวลาดึงกุญแจช่อง ${data.slotNumber}! การเบิกถูกยกเลิก (ข้อมูลถูกลบทิ้งแล้ว)`);
