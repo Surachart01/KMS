@@ -33,6 +33,7 @@ export default function App() {
     const [page, setPage] = useState('home');
     const [mode, setMode] = useState('borrow'); // 'borrow' | 'return' | 'transfer'
     const [connected, setConnected] = useState(socket.connected);
+    const [hardwareStatus, setHardwareStatus] = useState({ ready: false, message: 'กำลังเชื่อมต่อระบบ...' });
     const [keys, setKeys] = useState([]);
     const [selectedRoom, setSelectedRoom] = useState(null);
     const [returningKey, setReturningKey] = useState(null);
@@ -117,11 +118,17 @@ export default function App() {
             // หรือจะ goHome() ทันทีก็ได้ 
         }
 
+        function onHardwareStatus(data) {
+            console.log('🔌 Hardware status:', data);
+            setHardwareStatus(data);
+        }
+
         socket.on('connect', onConnect);
         socket.on('disconnect', onDisconnect);
         socket.on('scan:received', onScanReceived);
         socket.on('borrow:cancelled', onBorrowCancelled);
         socket.on('key:pulled', onKeyPulled);
+        socket.on('hardware:status', onHardwareStatus);
 
         return () => {
             socket.off('connect', onConnect);
@@ -129,6 +136,7 @@ export default function App() {
             socket.off('scan:received', onScanReceived);
             socket.off('borrow:cancelled', onBorrowCancelled);
             socket.off('key:pulled', onKeyPulled);
+            socket.off('hardware:status', onHardwareStatus);
         };
     }, [mode, page, transferStep, swapStep, moveStep]);
 
@@ -620,6 +628,37 @@ export default function App() {
                         <div className="popup-icon">⚠️</div>
                         <p className="popup-message">{errorPopup}</p>
                         <button className="btn btn-primary" onClick={closePopup}>ตกลง</button>
+                    </div>
+                </div>
+            )}
+
+            {/* ── Hardware Initialization Overlay ── */}
+            {(!hardwareStatus.ready || !connected) && (
+                <div className="hardware-init-overlay">
+                    <div className="init-content">
+                        <div className="init-spinner">
+                            <div className="spinner-ring"></div>
+                            <div className="spinner-center">
+                                <span className="init-percentage">
+                                    {connected ? (hardwareStatus.attempt || 1) * 20 : '0'}%
+                                </span>
+                            </div>
+                        </div>
+                        <h2 className="init-title">
+                            {!connected ? 'กำลังเชื่อมต่อ Server...' : 'กำลังเริ่มต้นระบบ...'}
+                        </h2>
+                        <p className="init-status">
+                            {hardwareStatus.message}
+                        </p>
+                        {hardwareStatus.attempt > 0 && (
+                            <div className="init-progress-track">
+                                <div 
+                                    className="init-progress-fill" 
+                                    style={{ width: `${(hardwareStatus.attempt / (hardwareStatus.maxAttempts || 5)) * 100}%` }}
+                                ></div>
+                            </div>
+                        )}
+                        <p className="init-subtext">กรุณารอสักครู่ ระบบกำลังสื่อสารกับตู้กุญแจ</p>
                     </div>
                 </div>
             )}

@@ -523,7 +523,21 @@ async function readNfcAtSlotPython(slotNumber) {
     }
 }
 
+/** Broadcast hardware readiness to all UI clients via Socket.io */
+function broadcastHardwareStatus(ready, attempt = 0, message = '') {
+    const payload = { 
+        ready, 
+        attempt, 
+        maxAttempts: 5,
+        message: message || (ready ? 'System Ready' : 'Initializing Hardware...')
+    };
+    if (socket?.connected) {
+        socket.emit('hardware:status', payload);
+    }
+}
+
 async function setupHardware() {
+    broadcastHardwareStatus(false, 1, 'Initializing GPIO...');
     // Check if pinctrl is available
     await new Promise((resolve) => {
         exec('command -v pinctrl', (error) => {
@@ -552,17 +566,37 @@ async function setupHardware() {
         });
     });
 
-    // ── Try Multi-ESP8266 Serial NFC ──
+    // ── Try Multi-ESP8266 Serial NFC with Retry (for Reboot Resilience) ──
     {
         console.log(`🔍 [NFC] Mode search: FORCE_ESP8266_NFC=${FORCE_ESP8266_NFC}`);
-        console.log('🔍 Scanning for ESP8266 NFC boards...');
-        const boardCount = await initAllEsp8266Boards();
+        
+        let boardCount = 0;
+        let attempts = 0;
+        const MAX_ATTEMPTS = 5;
+        const RETRY_DELAY = 5000;
+
+        while (attempts < MAX_ATTEMPTS) {
+            attempts++;
+            broadcastHardwareStatus(false, attempts, `Scanning NFC Boards (${attempts}/${MAX_ATTEMPTS})...`);
+            console.log(`🔍 Scanning for ESP8266 NFC boards... (Attempt ${attempts}/${MAX_ATTEMPTS})`);
+            boardCount = await initAllEsp8266Boards();
+            
+            if (boardCount > 0) break;
+            
+            if (attempts < MAX_ATTEMPTS) {
+                console.log(`🟡 No boards found yet. Kernel might be initializing USB. Retrying in ${RETRY_DELAY/1000}s...`);
+                await new Promise(r => setTimeout(r, RETRY_DELAY));
+            }
+        }
         
         if (boardCount > 0 || FORCE_ESP8266_NFC) {
             nfcMode = 'esp8266';
-            console.log(`🟢 NFC: ESP8266 mode active — boards found: ${boardCount}`);
+            console.log(`🟢 NFC: ESP8266 mode active — boards connected: ${boardCount}`);
+            broadcastHardwareStatus(true, attempts, 'Hardware Ready');
         } else {
-            console.log('🟡 No ESP8266 boards found → fallback to other NFC modes');
+            console.log('🔴 [CRITICAL] No ESP8266 boards found after multiple retries → fallback to other NFC modes');
+            broadcastHardwareStatus(false, attempts, 'Fallback searching...');
+
 
             if (!IS_MOCK) {
                 try {
