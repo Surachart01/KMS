@@ -123,6 +123,14 @@ export default function App() {
             setHardwareStatus(data);
         }
 
+        const onScanReceived = (data) => {
+            console.log('😄 Scan received:', data);
+            // Safety check: ensure we are on a page that expects a scan
+            if (document.querySelector('.scan-page')) {
+                handleScanProcess(data);
+            }
+        };
+
         socket.on('connect', onConnect);
         socket.on('disconnect', onDisconnect);
         socket.on('scan:received', onScanReceived);
@@ -138,10 +146,15 @@ export default function App() {
             socket.off('key:pulled', onKeyPulled);
             socket.off('hardware:status', onHardwareStatus);
         };
-    }, [mode, page, transferStep, swapStep, moveStep]);
+    }, [handleScanProcess]); // Now depends on useCallback-wrapped handler
 
-    // ── Handle Scan ──
-    const handleScanProcess = async (data) => {
+    // ── Handle Scan (Robust Processing) ──
+    const handleScanProcess = useCallback(async (data) => {
+        if (!data || !data.userId) {
+            console.warn('⚠️ handleScanProcess: Invalid scan data received');
+            return;
+        }
+
         setScannedUser(data);
 
         if (mode === 'return') {
@@ -152,10 +165,11 @@ export default function App() {
                     setReturningKey(res.data.activeBooking);
                     setPage('confirmIdentity');
                 } else {
-                    setErrorPopup('ไม่พบรายการกุญแจที่ต้องคืน หรือไม่พบผู้ใช้ในระบบ');
+                    setErrorPopup(res?.message || 'ไม่พบรายการกุญแจที่ต้องคืน หรือไม่พบผู้ใช้ในระบบ');
                 }
-            } catch {
-                setErrorPopup('เกิดข้อผิดพลาดในการตรวจสอบข้อมูล');
+            } catch (err) {
+                console.error('❌ Return Scan Error:', err);
+                setErrorPopup('เกิดข้อผิดพลาดในการตรวจสอบข้อมูลกุญแจ');
             } finally {
                 setLoading(false);
             }
@@ -167,15 +181,17 @@ export default function App() {
         } else if (mode === 'move') {
             handleMoveScan(data);
         } else {
-            // borrow
+            // mode === 'borrow' 
+            // Borrow doesn't need immediate identification, just proceeds to confirm
             setPage('confirmIdentity');
         }
-    };
+    }, [mode, transferStep, swapStep, moveStep]); // Recreate when flow state changes
 
     // ── Transfer: รับผลสแกนแต่ละขั้น ──
-    const handleTransferScan = async (data) => {
+    const handleTransferScan = useCallback(async (data) => {
+        if (!data?.userId) return;
+
         if (transferStep === 'scan1') {
-            // ผู้โอน: ดึงสิทธิ์ห้องของเขา
             setLoading(true);
             try {
                 const res = await identifyUser(data.userId);
@@ -189,19 +205,18 @@ export default function App() {
                 } else {
                     setErrorPopup(res?.message || 'ไม่พบผู้ใช้ในระบบ');
                 }
-            } catch {
+            } catch (err) {
+                console.error('❌ Transfer Scan Error:', err);
                 setErrorPopup('เกิดข้อผิดพลาดในการตรวจสอบข้อมูล');
             } finally {
                 setLoading(false);
             }
-
         } else if (transferStep === 'scan2') {
-            // ผู้รับ: บันทึก data แล้วไปยืนยันสุดท้าย
             setTransferUser2(data);
             setTransferStep('confirm2');
             setPage('transferConfirm');
         }
-    };
+    }, [transferStep]);
 
     // ── Transfer: ยืนยันแต่ละขั้น ──
     const handleTransferConfirm = async () => {
@@ -289,7 +304,9 @@ export default function App() {
     };
 
     // ── Swap: รับผลสแกน ──
-    const handleSwapScan = async (data) => {
+    const handleSwapScan = useCallback(async (data) => {
+        if (!data?.userId) return;
+
         if (swapStep === 'scan1') {
             setLoading(true);
             try {
@@ -308,7 +325,8 @@ export default function App() {
                 } else {
                     setErrorPopup(res?.message || 'ไม่พบผู้ใช้ในระบบ');
                 }
-            } catch {
+            } catch (err) {
+                console.error('❌ Swap Scan Error:', err);
                 setErrorPopup('เกิดข้อผิดพลาดในการตรวจสอบข้อมูล');
             } finally {
                 setLoading(false);
@@ -335,13 +353,14 @@ export default function App() {
                 } else {
                     setErrorPopup(res?.message || 'ไม่พบผู้ใช้ในระบบ');
                 }
-            } catch {
+            } catch (err) {
+                console.error('❌ Swap Scan 2 Error:', err);
                 setErrorPopup('เกิดข้อผิดพลาดในการตรวจสอบข้อมูล');
             } finally {
                 setLoading(false);
             }
         }
-    };
+    }, [swapStep, swapRoom1]);
 
     // ── Swap: ยืนยัน ──
     const handleSwapConfirm = async () => {
@@ -371,7 +390,8 @@ export default function App() {
     };
 
     // ── Move: รับผลสแกน ──
-    const handleMoveScan = async (data) => {
+    const handleMoveScan = useCallback(async (data) => {
+        if (!data?.userId) return;
         if (moveStep === 'scan') {
             setLoading(true);
             try {
@@ -398,13 +418,14 @@ export default function App() {
                 } else {
                     setErrorPopup(res?.message || 'ไม่พบผู้ใช้ในระบบ');
                 }
-            } catch {
+            } catch (err) {
+                console.error('❌ Move Scan Error:', err);
                 setErrorPopup('เกิดข้อผิดพลาดในการตรวจสอบข้อมูล');
             } finally {
                 setLoading(false);
             }
         }
-    };
+    }, [moveStep]);
 
     // ── Move: Select Room ──
     const handleMoveRoomSelect = (roomCode) => {

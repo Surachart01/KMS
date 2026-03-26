@@ -67,17 +67,16 @@ export const handleCdata = (io) => (req, res) => {
     console.log(`📦 Body Preview: ${rawBody.substring(0, 500)}`);
 
     if (table === 'ATTLOG') {
-        // ZK usually sends text: ID\tTime\t...
-        // But if express.text() didn't catch it, it might be weird.
-        // Let's force parsing
         const records = parseAttlog(rawBody);
-        console.log(`🔍 Parsed ${records.length} records`);
+        const kioskRoom = io.sockets.adapter.rooms.get('kiosk');
+        const kioskCount = kioskRoom ? kioskRoom.size : 0;
+        
+        console.log(`🔍 Parsed ${records.length} records. Kiosk connections active: ${kioskCount}`);
 
         for (const record of records) {
-            console.log(`   -> Record: ${JSON.stringify(record)}`);
-            // Emit indiscriminately for testing
+            console.log(`   -> Record ID: ${record.userId}`);
             io.to('kiosk').emit('scan:received', { userId: record.userId });
-            console.log(`   -> Emitted scan:received for ${record.userId}`);
+            console.log(`   -> Emitted scan:received to ${kioskCount} clients`);
         }
     }
 

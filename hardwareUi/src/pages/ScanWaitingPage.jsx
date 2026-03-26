@@ -49,21 +49,6 @@ export default function ScanWaitingPage({ mode, transferStep, swapStep, moveStep
             <h2 className="scan-title">กรุณาสแกนใบหน้า</h2>
             <p className="scan-subtitle">{subtitle}</p>
 
-            {/* ── Test Scan (Debug Only - Hidden for Production) ── */}
-            {/* 
-            <div className="test-scan-container">
-                <span className="test-scan-label">🧪 จำลองการสแกนใบหน้า</span>
-                <div className="test-scan-row">
-                    <button className="btn btn-secondary btn-sm" onClick={() => onTestScan('6702041510164')}>
-                        STUDENT 1
-                    </button>
-                    <button className="btn btn-secondary btn-sm" onClick={() => onTestScan('6702041510181')}>
-                        STUDENT 2
-                    </button>
-                </div>
-            </div>
-            */}
-
             <button className="btn btn-secondary btn-lg" onClick={onCancel} style={{ marginTop: '20px' }}>
                 <ArrowLeft size={20} /> กลับไปหน้าหลัก
             </button>
