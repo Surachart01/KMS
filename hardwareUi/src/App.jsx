@@ -94,129 +94,72 @@ export default function App() {
         setMoveFromRoom(null);
     }, []);
 
-    // ── Ref container for the scan handler logic ──
-    const scanHandlerRef = useRef(null);
+    const [lastScanDebug, setLastScanDebug] = useState('none');
 
     // ── Global Socket events (Mount only) ──
     useEffect(() => {
-        // Catch global errors to show in the UI for debugging
-        const handleGlobalError = (event) => {
-            const msg = event.error ? event.error.message : event.message;
-            console.error('🔥 Global JS Error:', msg);
-            setErrorPopup(`Runtime Error: ${msg}`);
-        };
-        const handlePromiseRejection = (event) => {
-            console.error('🔥 Unhandled Promise Rejection:', event.reason);
-            setErrorPopup(`Promise Error: ${event.reason?.message || event.reason}`);
-        };
-
-        window.addEventListener('error', handleGlobalError);
-        window.addEventListener('unhandledrejection', handlePromiseRejection);
-
         const onConnect = () => setConnected(true);
         const onDisconnect = () => setConnected(false);
-        const onHardwareStatus = (data) => {
-            console.log('🔌 Hardware status:', data);
-            setHardwareStatus(data);
-        };
+        const onHardwareStatus = (data) => setHardwareStatus(data || { ready: false, message: '...' });
         const onBorrowCancelled = (data) => {
-            console.log('❌ borrow:cancelled:', data);
             setErrorPopup(`หมดเวลาดึงกุญแจช่อง ${data.slotNumber}! การเบิกถูกยกเลิก`);
             goHome();
-        };
-        const onScanReceived = (data) => {
-            console.log('😄 [Main Listener] scan:received:', data);
-            if (scanHandlerRef.current) {
-                scanHandlerRef.current(data);
-            } else {
-                console.warn('⚠️ scanHandlerRef is not initialized');
-            }
         };
 
         socket.on('connect', onConnect);
         socket.on('disconnect', onDisconnect);
         socket.on('hardware:status', onHardwareStatus);
         socket.on('borrow:cancelled', onBorrowCancelled);
-        socket.on('scan:received', onScanReceived);
 
         return () => {
-            window.removeEventListener('error', handleGlobalError);
-            window.removeEventListener('unhandledrejection', handlePromiseRejection);
-            
             socket.off('connect', onConnect);
             socket.off('disconnect', onDisconnect);
             socket.off('hardware:status', onHardwareStatus);
             socket.off('borrow:cancelled', onBorrowCancelled);
-            socket.off('scan:received', onScanReceived);
         };
     }, []);
 
-    // ── Core Scan Logic (Re-built on every state change, synced to Ref) ──
-    const handleScanProcess = useCallback(async (data) => {
-        console.log(`🎯 handleScanProcess [mode=${mode}] [page=${page}]`, data);
-        
-        // Safety: only process if on a scanning page
-        if (!document.querySelector('.scan-page')) {
-            console.log('⏭️ Skipping: Not on a scan page');
-            return;
-        }
-
-        if (!data || !data.userId) {
-            console.warn('⚠️ handleScanProcess: Missing data.userId');
-            return;
-        }
-
-        setScannedUser(data);
-
-        // -- Mode: RETURN --
-        if (mode === 'return') {
-            console.log('🔄 Return Flow: identifying...');
-            setLoading(true);
-            try {
-                const res = await identifyUser(data.userId);
-                if (res?.success && res.data?.activeBooking) {
-                    setReturningKey(res.data.activeBooking);
-                    setPage('confirmIdentity');
-                } else {
-                    setErrorPopup(res?.message || 'ไม่พบรายการกุญแจที่ต้องคืน หรือไม่พบผู้ใช้ในระบบ');
-                }
-            } catch (err) {
-                console.error('❌ Return ident error:', err);
-                setErrorPopup('เกิดข้อผิดพลาดในการตรวจสอบข้อมูลกุญแจ');
-            } finally {
-                setLoading(false);
-            }
-            return;
-        }
-
-        // -- Mode: TRANSFER --
-        if (mode === 'transfer') {
-            handleTransferScan(data);
-            return;
-        }
-
-        // -- Mode: SWAP --
-        if (mode === 'swap') {
-            handleSwapScan(data);
-            return;
-        }
-
-        // -- Mode: MOVE --
-        if (mode === 'move') {
-            handleMoveScan(data);
-            return;
-        }
-
-        // -- Mode: BORROW (Default) --
-        console.log('🔑 Borrow Flow: proceeding to confirm');
-        setPage('confirmIdentity');
-        
-    }, [mode, page, transferStep, swapStep, moveStep]);
-
-    // Keep the ref always in sync with the latest closure
+    // ── Direct Scan Listener (Fresh state every time) ──
     useEffect(() => {
-        scanHandlerRef.current = handleScanProcess;
-    }, [handleScanProcess]);
+        const onScanReceived = async (data) => {
+            console.log('😄 scan:received:', data, 'mode:', mode);
+            setLastScanDebug(data?.userId || 'invalid');
+            
+            if (!document.querySelector('.scan-page')) return;
+            if (!data?.userId) return;
+
+            setScannedUser(data);
+
+            if (mode === 'return') {
+                setLoading(true);
+                try {
+                    const res = await identifyUser(data.userId);
+                    if (res?.success && res.data?.activeBooking) {
+                        setReturningKey(res.data.activeBooking);
+                        setPage('confirmIdentity');
+                    } else {
+                        setErrorPopup(res?.message || 'ไม่พบกุญแจที่ต้องคืน');
+                    }
+                } catch (err) {
+                    setErrorPopup('Error identifying user: ' + err.message);
+                } finally {
+                    setLoading(false);
+                }
+            } else if (mode === 'transfer') {
+                handleTransferScan(data);
+            } else if (mode === 'swap') {
+                handleSwapScan(data);
+            } else if (mode === 'move') {
+                handleMoveScan(data);
+            } else {
+                // borrow
+                setPage('confirmIdentity');
+            }
+        };
+
+        socket.on('scan:received', onScanReceived);
+        return () => socket.off('scan:received', onScanReceived);
+    }, [mode, page, transferStep, swapStep, moveStep]); // Updated listener whenever state changes
 
     // ── Transfer: รับผลสแกนแต่ละขั้น ──
     const handleTransferScan = useCallback(async (data) => {
@@ -714,6 +657,14 @@ export default function App() {
                     </div>
                 </div>
             )}
+            {/* ── Debug Overlay (Small & Subtle) ── */}
+            <div style={{ 
+                position: 'fixed', bottom: 0, right: 0, padding: '4px 10px', 
+                background: 'rgba(0,0,0,0.5)', color: '#0f0', fontSize: '10px', 
+                zIndex: 10000, pointerEvents: 'none', fontFamily: 'monospace' 
+            }}>
+                P: {page} | M: {mode} | S: {lastScanDebug} | C: {connected ? 'ON' : 'OFF'}
+            </div>
         </div>
     );
 }
