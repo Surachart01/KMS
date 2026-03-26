@@ -89,13 +89,15 @@ static bool versionOK(uint8_t v) {
 
 static void initReader(uint8_t i) {
   readers[i]->PCD_Init();
-  delay(20);
+  delay(50); // Give it more time to stabilize after reset
   
   // Ensure antenna is on explicitly
   readers[i]->PCD_AntennaOn();
   
-  // Set to max gain for better reading distance
-  readers[i]->PCD_SetAntennaGain(MFRC522::RxGain_max);
+  // Set to absolute maximum gain (48dB) for best sensitivity
+  // MFRC522::RxGain_max is 0x07 << 4
+  readers[i]->PCD_SetAntennaGain(MFRC522::RxGain_max); 
+  delay(20);
 }
 // ── Cached UIDs ──────────────────────────────────────────────
 String cachedUid[10] = {"", "", "", "", "", "", "", "", "", ""};

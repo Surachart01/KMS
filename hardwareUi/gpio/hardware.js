@@ -22,7 +22,7 @@ dotenv.config();
 const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:4556';
 const HARDWARE_KEYS_URL = process.env.HARDWARE_KEYS_URL || `${BACKEND_URL}/api/hardware/keys`;
 const HARDWARE_TOKEN = process.env.HARDWARE_TOKEN || '';
-const NFC_POLLING_INTERVAL_MS = 200; // loop NFC ทุก 200ms
+const NFC_POLLING_INTERVAL_MS = 350; // loop NFC ทุก 350ms (เพิ่มจาก 200 เพื่อความเสถียร)
 const KEY_PULL_TIMEOUT_S = 10;       // รอดึงกุญแจ 10 วินาทีคงที่
 const KEY_PULL_POLL_INTERVAL_MS = 1000; // ตรวจเช็คการดึงกุญแจทุก 1 วินาที
 // กันอ่าน NFC หลุดเป็นจังหวะแล้วคิดว่าดึงกุญแจ: ต้องเห็นแท็กก่อน และต้องหายติดกันหลายครั้ง
