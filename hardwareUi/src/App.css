@@ -385,9 +385,9 @@ body {
 /* ── Scan Animation ── */
 .scan-animation {
     position: relative;
-    width: 180px;
-    height: 180px;
-    margin-bottom: 24px;
+    width: 140px;
+    height: 140px;
+    margin-bottom: 20px;
 }
 .scan-circle {
     position: absolute;
@@ -401,8 +401,8 @@ body {
     0% { transform: scale(0.5); opacity: 0.8; }
     100% { transform: scale(1.6); opacity: 0; }
 }
-.scan-title { font-size: 2.2rem; font-weight: 700; margin-bottom: 12px; }
-.scan-subtitle { font-size: 1.3rem; opacity: 0.6; margin-bottom: 32px; }
+.scan-title { font-size: 1.6rem; font-weight: 700; margin-bottom: 8px; }
+.scan-subtitle { font-size: 1.1rem; opacity: 0.6; margin-bottom: 24px; }
 
 /* ── Success Page ── */
 .success-icon-wrapper {
