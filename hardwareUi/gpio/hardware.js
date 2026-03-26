@@ -308,6 +308,10 @@ async function initEsp8266Board(path, SerialPort) {
  * Opens all serial devices, pings each, registers by boardId.
  * @returns {number} Number of boards successfully connected
  */
+/**
+ * Detect and initialize all ESP8266 boards in parallel.
+ * @returns {number} Number of boards successfully connected
+ */
 async function initAllEsp8266Boards() {
     const paths = detectAllSerialPaths();
     if (paths.length === 0) {
@@ -326,39 +330,60 @@ async function initAllEsp8266Boards() {
 
     console.log(`🔍 Found ${paths.length} serial devices: ${paths.join(', ')}`);
 
-    for (const path of paths) {
+    const initPromises = paths.map(async (path) => {
         try {
-            const ctx = await openEsp8266Port(path, SerialPort);
-            if (!ctx) continue;
+            // Add a timeout to the entire port opening process
+            const ctx = await new Promise((resolve) => {
+                const timeout = setTimeout(() => {
+                    console.log(`❌ ${path} -> Open timeout (5s)`);
+                    resolve(null);
+                }, 5000);
+                
+                openEsp8266Port(path, SerialPort).then(res => {
+                    clearTimeout(timeout);
+                    resolve(res);
+                }).catch(() => {
+                    clearTimeout(timeout);
+                    resolve(null);
+                });
+            });
+
+            if (!ctx) return;
 
             // Ping to get boardId
             const id = ++ctx.reqId; // Generate ID
             const pingPayload = JSON.stringify({ id, cmd: 'ping' }) + '\n';
             ctx.port.write(pingPayload);
 
-            const pong = await new Promise((resolve, reject) => {
-                const timer = setTimeout(() => reject(new Error('ping timeout')), 3000);
+            const pong = await new Promise((resolve) => {
+                const timer = setTimeout(() => {
+                    console.log(`❌ ${path} -> Ping timeout`);
+                    resolve(null);
+                }, 4000);
+                
                 ctx.pending.set(id, {
                     resolve: (msg) => { clearTimeout(timer); resolve(msg); },
-                    reject: (err) => { clearTimeout(timer); reject(err); },
+                    reject: () => { clearTimeout(timer); resolve(null); },
                     timer,
                 });
             });
 
             if (pong?.pong && pong?.boardId) {
                 esp8266Boards.set(pong.boardId, ctx);
-                console.log(`✅ ESP8266 Board ${pong.boardId} ready at ${path} — ${pong.active}/${pong.readers} NFC online (slots ${pong.slots?.join(',')})`);
+                console.log(`✅ ESP8266 Board ${pong.boardId} ready at ${path} — ${pong.active || 0}/${pong.readers || 0} NFC online`);
             } else {
                 console.log(`🟡 ${path} responded but no boardId — skipping`);
                 ctx.port.close();
             }
         } catch (e) {
-            console.log(`🟡 ${path}: ${e.message}`);
+            console.log(`🟡 ${path} Error: ${e.message}`);
         }
-    }
+    });
 
+    await Promise.all(initPromises);
     return esp8266Boards.size;
 }
+
 
 async function esp8266Request(boardId, payload) {
     const ctx = esp8266Boards.get(boardId);
