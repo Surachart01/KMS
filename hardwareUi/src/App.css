@@ -68,9 +68,11 @@ body::before {
     flex-direction: column;
     height: 100vh;
     width: 100vw;
-    max-width: 800px;
-    max-height: 480px;
+    max-width: 1024px;
+    max-height: 600px;
     margin: 0 auto;
+    position: relative;
+    overflow: hidden;
 }
 
 /* ── Glassmorphism & Utils ── */
@@ -101,7 +103,7 @@ body::before {
     color: white;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     flex-shrink: 0;
-    height: 64px;
+    height: 72px;
     z-index: 100;
 }
 
@@ -308,51 +310,54 @@ body::before {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 8px;
-    margin-bottom: 30px;
+    gap: 12px;
+    margin-bottom: 40px;
 }
 
 .logo-circle {
-    width: 64px;
-    height: 64px;
+    width: 72px;
+    height: 72px;
     display: flex;
     align-items: center;
     justify-content: center;
     background: rgba(255, 255, 255, 0.08);
     border: 1px solid rgba(255, 255, 255, 0.15);
-    border-radius: 20px;
+    border-radius: 22px;
     margin-bottom: 12px;
     color: var(--primary-light);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.25);
 }
 
 .home-logo h1 {
-    font-size: 1.8rem;
+    font-size: 2.2rem;
     font-weight: 600;
     color: white;
     letter-spacing: -0.01em;
+    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
 }
 
 .home-logo p {
-    font-size: 0.85rem;
-    color: rgba(255, 255, 255, 0.6);
+    font-size: 1rem;
+    color: rgba(255, 255, 255, 0.5);
     font-family: var(--font-eng);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
 }
 
 /* ── Primary Actions ── */
 .home-primary-actions {
     display: flex;
-    gap: 20px;
+    gap: 24px;
     width: 100%;
-    max-width: 680px;
-    margin-bottom: 24px;
+    max-width: 800px;
+    margin-bottom: 30px;
 }
 
 .btn-card {
     flex: 1;
     display: flex;
     align-items: center;
-    padding: 24px;
+    padding: 32px;
     border-radius: var(--radius-lg);
     border: 1px solid rgba(255, 255, 255, 0.1);
     cursor: pointer;
@@ -370,9 +375,10 @@ body::before {
 .btn-card-primary {
     background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
     color: white;
-    box-shadow: 0 12px 32px rgba(5, 150, 105, 0.3);
+    box-shadow: 0 16px 40px rgba(5, 150, 105, 0.35);
     border: none;
 }
+
 
 .btn-card-primary:hover {
     box-shadow: 0 8px 25px var(--primary-glow);
@@ -396,13 +402,13 @@ body::before {
 }
 
 .btn-card-icon {
-    width: 52px;
-    height: 52px;
+    width: 68px;
+    height: 68px;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 14px;
-    margin-right: 20px;
+    border-radius: 20px;
+    margin-right: 28px;
 }
 
 .btn-card-primary .btn-card-icon {
@@ -415,13 +421,13 @@ body::before {
 }
 
 .btn-card-content h2 {
-    font-size: 1.35rem;
+    font-size: 1.6rem;
     font-weight: 600;
-    margin-bottom: 2px;
+    margin-bottom: 4px;
 }
 
 .btn-card-desc {
-    font-size: 0.85rem;
+    font-size: 1rem;
     opacity: 0.7;
 }
 
@@ -429,19 +435,19 @@ body::before {
 .home-secondary-actions {
     display: flex;
     justify-content: center;
-    gap: 12px;
+    gap: 16px;
     width: 100%;
-    max-width: 680px;
+    max-width: 800px;
 }
 
 .btn-minimal {
     flex: 1;
     display: flex;
     align-items: center;
-    padding: 14px 20px;
+    padding: 18px 24px;
     background: rgba(255, 255, 255, 0.04);
     border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 18px;
+    border-radius: 20px;
     color: white;
     cursor: pointer;
     transition: var(--transition);
@@ -457,31 +463,27 @@ body::before {
 }
 
 .minimal-icon {
-    width: 36px;
-    height: 36px;
+    width: 48px;
+    height: 48px;
     display: flex;
     align-items: center;
     justify-content: center;
     background: rgba(255, 255, 255, 0.08);
-    border-radius: 12px;
-    margin-right: 14px;
+    border-radius: 14px;
+    margin-right: 18px;
     color: var(--primary-light);
 }
 
-.minimal-text {
-    display: flex;
-    flex-direction: column;
-}
-
 .minimal-text span {
-    font-size: 0.95rem;
+    font-size: 1.1rem;
     font-weight: 500;
 }
 
 .minimal-text small {
-    font-size: 0.75rem;
+    font-size: 0.8rem;
     opacity: 0.5;
 }
+
 
 .home-instruction {
     font-size: 0.85rem;
@@ -494,11 +496,12 @@ body::before {
 /* ── Scan Waiting Page ── */
 .scan-animation {
     position: relative;
-    width: 140px;
-    height: 140px;
+    width: 180px;
+    height: 180px;
     display: flex;
     align-items: center;
     justify-content: center;
+    margin-bottom: 24px;
 }
 
 .scan-circle {
@@ -506,7 +509,7 @@ body::before {
     width: 100%;
     height: 100%;
     border-radius: 50%;
-    border: 2px solid var(--primary-light);
+    border: 3px solid var(--primary-light);
     animation: ripple 2s infinite ease-out;
     opacity: 0;
 }
@@ -526,13 +529,14 @@ body::before {
 }
 
 .scan-title {
-    font-size: 1.6rem;
+    font-size: 2rem;
     font-weight: 600;
     color: white;
+    margin-bottom: 8px;
 }
 
 .scan-subtitle {
-    font-size: 1rem;
+    font-size: 1.2rem;
     color: rgba(255, 255, 255, 0.6);
 }
 
@@ -540,11 +544,11 @@ body::before {
 .confirm-card {
     background: rgba(255, 255, 255, 0.98);
     border-radius: var(--radius-lg);
-    padding: 32px;
+    padding: 40px;
     text-align: center;
-    box-shadow: var(--shadow-lg);
+    box-shadow: var(--shadow-xl);
     width: 100%;
-    max-width: 440px;
+    max-width: 520px;
     border: 1px solid white;
 }
 
@@ -560,31 +564,31 @@ body::before {
     display: flex;
     flex-direction: column;
     align-items: center;
-    margin-bottom: 24px;
+    margin-bottom: 32px;
 }
 
 .confirm-avatar-circle {
-    width: 80px;
-    height: 80px;
+    width: 100px;
+    height: 100px;
     background: #ecfdf5;
-    border: 3px solid var(--primary-light);
-    border-radius: 28px;
+    border: 4px solid var(--primary-light);
+    border-radius: 36px;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 16px;
+    margin-bottom: 20px;
     color: var(--primary);
-    box-shadow: 0 4px 20px var(--primary-glow);
+    box-shadow: 0 8px 30px var(--primary-glow);
 }
 
 .confirm-details-box {
     background: #f8fafc;
-    border-radius: var(--radius);
-    padding: 20px;
+    border-radius: var(--radius-lg);
+    padding: 24px;
     display: flex;
     flex-direction: column;
-    gap: 6px;
-    margin-bottom: 24px;
+    gap: 12px;
+    margin-bottom: 32px;
     text-align: left;
     border: 1px solid #e2e8f0;
 }
@@ -592,7 +596,7 @@ body::before {
 .detail-row {
     display: flex;
     align-items: center;
-    gap: 14px;
+    gap: 18px;
 }
 
 .detail-icon {
@@ -673,13 +677,19 @@ body::before {
 
 .confirm-actions {
     display: flex;
-    gap: 10px;
+    gap: 16px;
     width: 100%;
-    max-width: 400px;
 }
 
 .confirm-actions .btn {
     flex: 1;
+    font-size: 1.15rem;
+    padding: 18px;
+    border-radius: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
 }
 
 /* ── Key List Page ── */
@@ -1348,4 +1358,79 @@ body::before {
 
 .anim-fade-in {
     animation: fadeIn 0.4s ease-out;
+}
+/* ── Success Page ── */
+.success-page {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 40px;
+    gap: 24px;
+}
+
+.success-icon-wrapper {
+    width: 140px;
+    height: 140px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 2px dashed rgba(255, 255, 255, 0.1);
+}
+
+.success-icon-wrapper.success {
+    color: var(--primary-light);
+    border-color: var(--primary);
+    background: rgba(16, 185, 129, 0.05);
+}
+
+.success-icon-wrapper.error {
+    color: #ef4444;
+    border-color: #ef4444;
+}
+
+.success-title {
+    font-size: 2.4rem;
+    font-weight: 700;
+    color: white;
+}
+
+.success-message {
+    font-size: 1.25rem;
+    color: rgba(255, 255, 255, 0.7);
+    max-width: 600px;
+}
+
+.success-details {
+    margin-top: 10px;
+    padding: 24px 40px;
+    border-radius: 24px;
+    display: flex;
+    gap: 32px;
+}
+
+.success-detail {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.success-detail span {
+    font-size: 1rem;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.success-detail strong {
+    font-size: 1.6rem;
+    color: var(--primary-light);
+}
+
+.success-countdown {
+    font-size: 1rem;
+    color: rgba(255, 255, 255, 0.4);
+    font-family: var(--font-thai);
 }
