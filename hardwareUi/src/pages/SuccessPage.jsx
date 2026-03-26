@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { CheckCircle, XCircle, Home, Calendar, Hash } from 'lucide-react';
 
 /**
  * หน้าสำเร็จ — แสดงผลเบิก/คืน พร้อม countdown กลับหน้าหลัก
@@ -27,11 +28,15 @@ export default function SuccessPage({ result, onHome }) {
     return (
         <div className="page success-page">
             <div className={`success-icon-wrapper ${isSuccess ? 'success' : 'error'}`}>
-                <span className="success-icon">{isSuccess ? '✅' : '❌'}</span>
+                {isSuccess ? (
+                    <CheckCircle size={80} strokeWidth={1.5} className="success-icon" />
+                ) : (
+                    <XCircle size={80} strokeWidth={1.5} className="success-icon" />
+                )}
             </div>
 
             <h2 className="success-title">
-                {isSuccess ? 'สำเร็จ!' : 'ไม่สำเร็จ'}
+                {isSuccess ? 'ทำรายการสำเร็จ!' : 'ขออภัย ทำรายการไม่สำเร็จ'}
             </h2>
 
             <p className="success-message">
@@ -39,16 +44,18 @@ export default function SuccessPage({ result, onHome }) {
             </p>
 
             {result?.data && (
-                <div className="success-details">
+                <div className="success-details glass">
                     {result.data.roomCode && (
                         <div className="success-detail">
+                            <Calendar size={16} />
                             <span>ห้อง:</span>
                             <strong>{result.data.roomCode}</strong>
                         </div>
                     )}
                     {result.data.keySlotNumber && (
                         <div className="success-detail">
-                            <span>ช่อง:</span>
+                            <Hash size={16} />
+                            <span>ช่องที่:</span>
                             <strong>{result.data.keySlotNumber}</strong>
                         </div>
                     )}
@@ -56,12 +63,13 @@ export default function SuccessPage({ result, onHome }) {
             )}
 
             <div className="success-countdown">
-                กลับหน้าหลักใน {countdown} วินาที
+                ระบบจะกลับหน้าหลักอัตโนมัติใน {countdown} วินาที
             </div>
 
-            <button className="btn btn-primary" onClick={onHome}>
-                กลับหน้าหลัก
+            <button className="btn btn-primary btn-lg" onClick={onHome} style={{ minWidth: '200px' }}>
+                <Home size={20} /> กลับหน้าหลัก
             </button>
         </div>
     );
 }
+

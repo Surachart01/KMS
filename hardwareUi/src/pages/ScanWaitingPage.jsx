@@ -1,3 +1,5 @@
+import { Scan, User, ArrowLeft } from 'lucide-react';
+
 export default function ScanWaitingPage({ mode, transferStep, swapStep, moveStep, roomCode, onCancel, onTestScan }) {
     const isReturn = mode === 'return';
     const isTransfer = mode === 'transfer';
@@ -31,35 +33,38 @@ export default function ScanWaitingPage({ mode, transferStep, swapStep, moveStep
 
     return (
         <div className="page scan-page">
-            {badgeText && (
-                <div className={`scan-room-badge ${isReturn ? 'return-badge' : ''} ${isTransfer ? 'transfer-badge' : ''}`}>
-                    {badgeText}
-                </div>
-            )}
+            <div className="scan-room-badge header-badge">
+                {badgeText || 'ระบบระบุตัวตน'}
+            </div>
 
             <div className="scan-animation">
-                <div className="scan-circle"></div>
-                <div className="scan-circle delay-1"></div>
-                <div className="scan-circle delay-2"></div>
-                <span className="scan-icon">😄</span>
+                {[...Array(3)].map((_, i) => (
+                    <div key={i} className={`scan-circle delay-${i}`}></div>
+                ))}
+                <div className="scan-icon">
+                    <Scan size={64} strokeWidth={1.5} />
+                </div>
             </div>
 
             <h2 className="scan-title">กรุณาสแกนใบหน้า</h2>
             <p className="scan-subtitle">{subtitle}</p>
 
-            <div className="test-scan-buttons">
-                <p className="test-scan-label">🧪 ทดสอบ (จำลองสแกน)</p>
+            <div className="test-scan-container">
+                <span className="test-scan-label">🧪 จำลองการสแกนใบหน้า</span>
                 <div className="test-scan-row">
-                    <button className="btn btn-test" onClick={() => onTestScan('6702041510164')}>
-                        6702041510164
+                    <button className="btn btn-secondary btn-sm" onClick={() => onTestScan('6702041510164')}>
+                        STUDENT 1
                     </button>
-                    <button className="btn btn-test" onClick={() => onTestScan('6702041510181')}>
-                        6702041510181
+                    <button className="btn btn-secondary btn-sm" onClick={() => onTestScan('6702041510181')}>
+                        STUDENT 2
                     </button>
                 </div>
             </div>
 
-            <button className="btn btn-secondary" onClick={onCancel}>ยกเลิก</button>
+            <button className="btn btn-secondary btn-lg" onClick={onCancel} style={{ marginTop: '20px' }}>
+                <ArrowLeft size={20} /> กลับไปหน้าหลัก
+            </button>
         </div>
     );
 }
+

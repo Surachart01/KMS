@@ -1,3 +1,5 @@
+import { Key, Undo2, RefreshCw, MoveRight, UserPlus, Fingerprint } from 'lucide-react';
+
 export default function HomePage({ onBorrow, onReturn, onTransfer, onSwap, onMove, loading }) {
     if (loading) {
         return (
@@ -12,7 +14,7 @@ export default function HomePage({ onBorrow, onReturn, onTransfer, onSwap, onMov
         <div className="page home-page">
             <div className="home-logo">
                 <div className="logo-circle">
-                    <span className="logo-icon">🔑</span>
+                    <Fingerprint size={32} />
                 </div>
                 <h1>ระบบเบิก-คืนกุญแจ</h1>
                 <p>Key Management System</p>
@@ -20,8 +22,10 @@ export default function HomePage({ onBorrow, onReturn, onTransfer, onSwap, onMov
 
             {/* ── Primary Actions (The 90% Use Case) ── */}
             <div className="home-primary-actions">
-                <button className="btn-card btn-card-primary pulse" onClick={onBorrow}>
-                    <div className="btn-card-icon">🔑</div>
+                <button className="btn-card btn-card-primary" onClick={onBorrow}>
+                    <div className="btn-card-icon">
+                        <Key size={32} strokeWidth={2.5} />
+                    </div>
                     <div className="btn-card-content">
                         <h2>เบิกกุญแจ</h2>
                         <span className="btn-card-desc">สำหรับผู้มีตาราง / มีสิทธิ์</span>
@@ -29,7 +33,9 @@ export default function HomePage({ onBorrow, onReturn, onTransfer, onSwap, onMov
                 </button>
 
                 <button className="btn-card btn-card-secondary" onClick={onReturn}>
-                    <div className="btn-card-icon">↩️</div>
+                    <div className="btn-card-icon">
+                        <Undo2 size={32} strokeWidth={2.5} />
+                    </div>
                     <div className="btn-card-content">
                         <h2>คืนกุญแจ</h2>
                         <span className="btn-card-desc">เมื่อใช้งานห้องเสร็จสิ้น</span>
@@ -40,31 +46,38 @@ export default function HomePage({ onBorrow, onReturn, onTransfer, onSwap, onMov
             {/* ── Secondary Actions (The 10% Use Case) ── */}
             <div className="home-secondary-actions">
                 <button className="btn-minimal btn-swap" onClick={onSwap}>
-                    <span className="minimal-icon">🔄</span>
+                    <div className="minimal-icon">
+                        <RefreshCw size={20} />
+                    </div>
                     <div className="minimal-text">
                         <span>สลับห้อง</span>
-                        <small>กับเพื่อน</small>
+                        <small>Swap Room</small>
                     </div>
                 </button>
                 <button className="btn-minimal btn-move" onClick={onMove}>
-                    <span className="minimal-icon">➡️</span>
+                    <div className="minimal-icon">
+                        <MoveRight size={20} />
+                    </div>
                     <div className="minimal-text">
                         <span>ย้ายห้อง</span>
-                        <small>เปลี่ยนห้องใหม่</small>
+                        <small>Move Key</small>
                     </div>
                 </button>
                 <button className="btn-minimal btn-transfer" onClick={onTransfer}>
-                    <span className="minimal-icon">📋</span>
+                    <div className="minimal-icon">
+                        <UserPlus size={20} />
+                    </div>
                     <div className="minimal-text">
                         <span>โอนสิทธิ์</span>
-                        <small>มอบให้คนอื่น</small>
+                        <small>Transfer</small>
                     </div>
                 </button>
             </div>
 
-            <p className="home-instruction" style={{ marginTop: 'auto', marginBottom: '10px' }}>
-                กดปุ่มเพื่อเริ่มต้นใช้งาน
+            <p className="home-instruction">
+                กรุณาเลือกรายการที่ต้องการเพื่อเริ่มต้นใช้งาน
             </p>
         </div>
     );
 }
+

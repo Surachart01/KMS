@@ -330,26 +330,38 @@ void loop() {
   for (uint8_t i = 0; i < NFC_COUNT; i++) {
     if (!readerOK[i]) continue;
 
-    // ส่ง WakeupA เพื่อปลุกบัตรที่ถูก Halt ไปแล้วจากรอบก่อนหน้า
-    byte bufferATQA[2];
-    byte bufferSize = sizeof(bufferATQA);
+    // เพิ่มความพัดระวัง: ย้ำ Antenna Gain ทุกครั้งเพื่อกันร่วง
+    readers[i]->PCD_SetAntennaGain(MFRC522::RxGain_max);
     
-    // Try to see if there's a card
-    if (readers[i]->PICC_WakeupA(bufferATQA, &bufferSize) == MFRC522::STATUS_OK ||
-        readers[i]->PICC_RequestA(bufferATQA, &bufferSize) == MFRC522::STATUS_OK) 
-    {
-      if (readers[i]->PICC_ReadCardSerial()) {
-        cachedUid[i] = uidToHex(readers[i]->uid);
-        uidExpireMs[i] = millis() + 1000; // Keep valid for 1s
-        
-        readers[i]->PICC_HaltA();
-        readers[i]->PCD_StopCrypto1();
+    // ลองอ่าน 3 ครั้งถ้าพลาด (Internal Retry)
+    bool success = false;
+    for (int retry = 0; retry < 3; retry++) {
+      byte bufferATQA[2];
+      byte bufferSize = sizeof(bufferATQA);
+      
+      if (readers[i]->PICC_WakeupA(bufferATQA, &bufferSize) == MFRC522::STATUS_OK ||
+          readers[i]->PICC_RequestA(bufferATQA, &bufferSize) == MFRC522::STATUS_OK) 
+      {
+        if (readers[i]->PICC_ReadCardSerial()) {
+          cachedUid[i] = uidToHex(readers[i]->uid);
+          uidExpireMs[i] = millis() + 1000;
+          
+          readers[i]->PICC_HaltA();
+          readers[i]->PCD_StopCrypto1();
+          success = true;
+          break;
+        }
       }
-    } else {
-      // Card gone! Clear cache immediately for "Instant Lock"
+      delay(2); // พักนิดหน่อยระหว่างลองใหม่
+    }
+
+    if (!success) {
       cachedUid[i] = "";
       uidExpireMs[i] = 0;
     }
+    
+    yield(); // ให้ระบบ ESP8266 ทำงานเบื้องหลังได้ลื่น (Serial/Network)
+    delay(5); // ป้องกันกระแสตกจากการเปิดเสาอากาศพร้อมกันเกินไป
   }
 
   // Handle incoming Serial commands
