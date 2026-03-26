@@ -558,6 +558,20 @@ io.on('connection', (socket) => {
     HardwareEvents.emit('nfc:write-result', data);
   });
 
+  // ── led:blink-return — Kiosk สั่งให้ไฟกระพริบ เขียว-แดง ระหว่างรอคืนกุญแจ ──
+  socket.on('led:blink-return', (data) => {
+    const { slotNumber } = data;
+    console.log(`🚨 led:blink-return: slot=${slotNumber}`);
+    io.to('gpio').emit('led:blink-return', { slotNumber });
+  });
+
+  // ── led:stop-blink — หยุดกระพริบ (เมื่อคืนสำเร็จ หรือ timeout) ──
+  socket.on('led:stop-blink', (data) => {
+    const { slotNumber, keyReturned } = data;
+    console.log(`✋ led:stop-blink: slot=${slotNumber}, keyReturned=${keyReturned}`);
+    io.to('gpio').emit('led:stop-blink', { slotNumber, keyReturned });
+  });
+
   // ── nfc:register-mode — Staff สั่งให้ RPi อยู่ใน mode รับ UID ครั้งเดียว ──
   // Hardware จะ emit nfc:tag event กลับมา ซึ่ง backend จะ forward ให้ staff client นั้น
   socket.on('nfc:register-mode', (data) => {

@@ -1095,6 +1095,45 @@ socket.on('led:error', async (data) => {
     }
 });
 
+// ── LED Blink สำหรับ Return Flow ──
+// เก็บ interval ที่กำลัง blink อยู่ เพื่อหยุดได้ทีหลัง
+const returnBlinkIntervals = new Map();
+
+socket.on('led:blink-return', (data) => {
+    const { slotNumber } = data;
+    logDebug(`🚨 [Return Blink] เริ่มกระพริบ เขียว-แดง ที่ช่อง ${slotNumber}`);
+
+    // หยุด blink เดิมก่อน (ถ้ามี)
+    if (returnBlinkIntervals.has(slotNumber)) {
+        clearInterval(returnBlinkIntervals.get(slotNumber));
+    }
+
+    let isRed = false;
+    const interval = setInterval(() => {
+        isRed = !isRed;
+        setLedRelay(slotNumber, isRed);
+    }, 500);
+
+    returnBlinkIntervals.set(slotNumber, interval);
+});
+
+socket.on('led:stop-blink', (data) => {
+    const { slotNumber, keyReturned } = data;
+    logDebug(`✋ [Return Blink] หยุดกระพริบช่อง ${slotNumber} (keyReturned=${keyReturned})`);
+
+    if (returnBlinkIntervals.has(slotNumber)) {
+        clearInterval(returnBlinkIntervals.get(slotNumber));
+        returnBlinkIntervals.delete(slotNumber);
+    }
+
+    // ตั้งค่า LED ให้ถูกต้องตามสถานะ
+    if (keyReturned) {
+        setLedRelay(slotNumber, false); // 🟢 เขียว (กุญแจอยู่แล้ว)
+    } else {
+        setLedRelay(slotNumber, true);  // 🔴 แดง (กุญแจยังไม่อยู่)
+    }
+});
+
 // ─────────────────────────────────────────────
 // NFC Polling (RC522 ×10 SPI + CS GPIO)
 // ─────────────────────────────────────────────

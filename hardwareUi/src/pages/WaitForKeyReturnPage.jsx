@@ -5,12 +5,17 @@ export default function WaitForKeyReturnPage({ booking, onKeyDetected, onCancel 
     const [timeLeft, setTimeLeft] = useState(60); // 60 seconds timeout
 
     useEffect(() => {
+        // Start LED blinking on the target slot
+        socket.emit('led:blink-return', { slotNumber: booking.slotNumber });
+
         // Listen for NFC tag from Hardware
         const handleNfcTag = (data) => {
             console.log('📥 WaitForKeyReturnPage: nfc:tag received:', data);
             // Verify if it's the correct slot
             if (data.slotNumber === booking.slotNumber) {
                 console.log('✅ Correct slot detected. Finalizing return...');
+                // Stop blinking - key returned successfully
+                socket.emit('led:stop-blink', { slotNumber: booking.slotNumber, keyReturned: true });
                 onKeyDetected();
             }
         };
@@ -21,6 +26,8 @@ export default function WaitForKeyReturnPage({ booking, onKeyDetected, onCancel 
             setTimeLeft(prev => {
                 if (prev <= 1) {
                     clearInterval(timer);
+                    // Stop blinking - timeout
+                    socket.emit('led:stop-blink', { slotNumber: booking.slotNumber, keyReturned: false });
                     onCancel(); // Timeout -> Go home
                     return 0;
                 }
@@ -29,6 +36,8 @@ export default function WaitForKeyReturnPage({ booking, onKeyDetected, onCancel 
         }, 1000);
 
         return () => {
+            // Cleanup: stop blink if component unmounts (e.g. user cancels)
+            socket.emit('led:stop-blink', { slotNumber: booking.slotNumber, keyReturned: false });
             socket.off('nfc:tag', handleNfcTag);
             clearInterval(timer);
         };
