@@ -811,15 +811,6 @@ async function startKeyPullCheck(slotNumber, bookingId) {
     let blinkInterval = null;
 
     try {
-        // 0. รอให้ไฟนิ่งก่อนหลัง Solenoid ดึง (ป้องกัน NFC brownout)
-        logDebug(`⚡ รอ 2 วินาทีให้ไฟนิ่ง หลัง Solenoid ทำงาน...`);
-        await new Promise(r => setTimeout(r, 2000));
-
-        // 0.1 สั่ง reinit NFC ทุกบอร์ดเพื่อ recover จาก brownout
-        if (nfcMode === 'esp8266') {
-            await reinitAllNfc();
-        }
-
         // 1. กระพริบไฟเขียว-แดงสลับกัน 🚦
         let isLedRed = false;
         blinkInterval = setInterval(() => {
@@ -916,9 +907,23 @@ async function checkAllSlots() {
     }
     
     isPollingSlot = true; // Lock the serial polling
-    console.log('\n🔍 Checking NFC state of all slots...');
+
+    // สร้างรายการ slot จากบอร์ดที่เชื่อมต่อจริงเท่านั้น
+    let slotsToCheck = [];
+    if (nfcMode === 'esp8266') {
+        for (const [boardId] of esp8266Boards.entries()) {
+            if (boardId === 1) { for (let s = 1; s <= 4; s++) slotsToCheck.push(s); }
+            if (boardId === 2) { for (let s = 5; s <= 7; s++) slotsToCheck.push(s); }
+            if (boardId === 3) { for (let s = 8; s <= 10; s++) slotsToCheck.push(s); }
+        }
+        if (slotsToCheck.length === 0) slotsToCheck = [1, 2, 3, 4, 5, 6, 7]; // fallback
+    } else {
+        for (let s = 1; s <= 10; s++) slotsToCheck.push(s);
+    }
+
+    console.log(`\n🔍 Checking NFC state of slots: [${slotsToCheck.join(', ')}]...`);
     try {
-        for (let slot = 1; slot <= 10; slot++) {
+        for (const slot of slotsToCheck) {
             if (nfcMode === 'mock') {
                 setLedRelay(slot, false); // สมมติว่าเขียวหมด (มีกุญแจ)
                 continue;
@@ -1195,17 +1200,45 @@ function startNfcPolling() {
         }
     }
 
-    let currentSlot = 1;
-    const totalSlots = Object.keys(SLOT_CS_MAP).length;
+    // สร้างรายการ slot ที่มีบอร์ดจริงเชื่อมต่ออยู่ (ไม่ poll slot ที่บอร์ดไม่มี)
+    function getActiveSlots() {
+        if (nfcMode === 'esp8266') {
+            const slots = [];
+            for (const [boardId, ctx] of esp8266Boards.entries()) {
+                if (boardId === 1) { for (let s = 1; s <= 4; s++) slots.push(s); }
+                if (boardId === 2) { for (let s = 5; s <= 7; s++) slots.push(s); }
+                if (boardId === 3) { for (let s = 8; s <= 10; s++) slots.push(s); }
+            }
+            return slots.length > 0 ? slots : [1, 2, 3, 4, 5, 6, 7]; // fallback
+        }
+        return Object.keys(SLOT_CS_MAP).map(Number);
+    }
+
+    let activeSlots = getActiveSlots();
+    let slotIndex = 0;
+    console.log(`📋 Active NFC slots: [${activeSlots.join(', ')}]`);
+
+    // รีเฟรช active slots ทุก 30 วินาที (เผื่อบอร์ดหลุด/กลับมา)
+    setInterval(() => {
+        const newSlots = getActiveSlots();
+        if (JSON.stringify(newSlots) !== JSON.stringify(activeSlots)) {
+            activeSlots = newSlots;
+            slotIndex = 0;
+            console.log(`📋 Active NFC slots updated: [${activeSlots.join(', ')}]`);
+        }
+    }, 30000);
 
     setInterval(async () => {
         // Pause NFC polling if we are currently trying to unlock a slot
         if (isUnlocking) return;
         if (isPollingSlot) return;
+        if (activeSlots.length === 0) return;
+
+        const currentSlot = activeSlots[slotIndex % activeSlots.length];
 
         // ข้าม slot ที่กำลัง key-pull check อยู่
         if (pullCheckingSlots.has(currentSlot)) {
-            currentSlot = (currentSlot % totalSlots) + 1;
+            slotIndex = (slotIndex + 1) % activeSlots.length;
             return;
         }
 
@@ -1235,7 +1268,6 @@ function startNfcPolling() {
             if (slotHasKey[currentSlot] !== false) {
                 slotHasKey[currentSlot] = false;
                 slotHasKey[`last_uid_${currentSlot}`] = null;
-                // exec(`pinctrl set ${SLOT_PIN_MAP[currentSlot]} dl`); // <--- นำออก
             }
         } finally {
             // Node mode needs CS deassert here (python mode handles CS internally)
@@ -1250,7 +1282,7 @@ function startNfcPolling() {
             isPollingSlot = false;
         }
 
-        currentSlot = (currentSlot % totalSlots) + 1;
+        slotIndex = (slotIndex + 1) % activeSlots.length;
     }, NFC_POLLING_INTERVAL_MS);
 }
 
