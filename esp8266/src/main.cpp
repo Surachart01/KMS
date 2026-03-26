@@ -211,6 +211,39 @@ static void handleScan(JsonDocument& req) {
   Serial.println();
 }
 
+// Re-initialize all NFC readers (recover from brownout)
+static void handleReinit(JsonDocument& req) {
+  int id = req["id"] | 0;
+
+  // RST pulse to wake up all MFRC522
+  digitalWrite(PIN_RST, LOW);
+  delay(50);
+  digitalWrite(PIN_RST, HIGH);
+  delay(100);
+
+  uint8_t recovered = 0;
+  for (uint8_t i = 0; i < NFC_COUNT; i++) {
+    initReader(i);
+    delay(30);
+    uint8_t ver = readers[i]->PCD_ReadRegister(MFRC522::VersionReg);
+    readerOK[i] = versionOK(ver);
+    if (readerOK[i]) recovered++;
+    // Clear cached UIDs
+    cachedUid[i] = "";
+    uidExpireMs[i] = 0;
+  }
+
+  JsonDocument resp;
+  resp["id"] = id;
+  resp["ok"] = true;
+  resp["cmd"] = "reinit";
+  resp["boardId"] = BOARD_ID;
+  resp["recovered"] = recovered;
+  resp["total"] = NFC_COUNT;
+  serializeJson(resp, Serial);
+  Serial.println();
+}
+
 static void processSerialCommand(const String& line) {
   JsonDocument doc;
   DeserializationError err = deserializeJson(doc, line);
@@ -224,6 +257,8 @@ static void processSerialCommand(const String& line) {
     handleRead(doc);
   } else if (strcmp(cmd, "scan") == 0) {
     handleScan(doc);
+  } else if (strcmp(cmd, "reinit") == 0) {
+    handleReinit(doc);
   } else {
     JsonDocument resp;
     resp["id"] = doc["id"] | 0;

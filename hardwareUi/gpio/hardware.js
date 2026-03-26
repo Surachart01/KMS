@@ -403,6 +403,30 @@ function closeAllEsp8266() {
     esp8266Boards.clear();
 }
 
+/**
+ * สั่ง reinit NFC readers ทุกบอร์ด (ใช้หลัง Solenoid ทำงานเพื่อ recover จาก brownout)
+ * ส่ง command { cmd: "reinit" } ไปยังทุก ESP8266 board
+ */
+async function reinitAllNfc() {
+    const boards = [...esp8266Boards.keys()];
+    if (boards.length === 0) return;
+
+    logDebug(`🔄 [NFC Recovery] กำลัง reinit NFC readers ทุกบอร์ด (${boards.join(', ')})...`);
+
+    for (const boardId of boards) {
+        try {
+            const res = await esp8266Request(boardId, { cmd: 'reinit' });
+            logDebug(`✅ [NFC Recovery] Board ${boardId}: ${res.recovered}/${res.total} readers recovered`);
+        } catch (e) {
+            logDebug(`⚠️ [NFC Recovery] Board ${boardId} reinit failed: ${e.message}`);
+        }
+        // รอ 500ms ระหว่างบอร์ดเพื่อให้ไฟนิ่ง
+        await new Promise(r => setTimeout(r, 500));
+    }
+
+    logDebug(`🔄 [NFC Recovery] reinit เสร็จสิ้น`);
+}
+
 // ─────────────────────────────────────────────
 // Python NFC bridge
 // ─────────────────────────────────────────────
@@ -787,6 +811,15 @@ async function startKeyPullCheck(slotNumber, bookingId) {
     let blinkInterval = null;
 
     try {
+        // 0. รอให้ไฟนิ่งก่อนหลัง Solenoid ดึง (ป้องกัน NFC brownout)
+        logDebug(`⚡ รอ 2 วินาทีให้ไฟนิ่ง หลัง Solenoid ทำงาน...`);
+        await new Promise(r => setTimeout(r, 2000));
+
+        // 0.1 สั่ง reinit NFC ทุกบอร์ดเพื่อ recover จาก brownout
+        if (nfcMode === 'esp8266') {
+            await reinitAllNfc();
+        }
+
         // 1. กระพริบไฟเขียว-แดงสลับกัน 🚦
         let isLedRed = false;
         blinkInterval = setInterval(() => {
