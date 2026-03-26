@@ -122,10 +122,10 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: #f1f5f9;
+    border: 1px solid var(--border);
     border-radius: 14px;
-    color: white;
+    color: var(--text);
     cursor: pointer;
     transition: var(--transition);
 }
@@ -146,6 +146,7 @@ body {
     border-radius: 20px;
     color: var(--text);
     border: 1px solid var(--border);
+}
 
 .status-dot {
     width: 10px;
@@ -496,3 +497,4 @@ body {
 
 @keyframes spin {
     to { transform: rotate(360deg); }
+}
