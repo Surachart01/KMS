@@ -387,6 +387,9 @@ body {
     position: relative;
     width: 140px;
     height: 140px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     margin-bottom: 20px;
 }
 .scan-circle {
