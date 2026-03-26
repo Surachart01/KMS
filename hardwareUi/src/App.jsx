@@ -134,14 +134,22 @@ export default function App() {
                 setLoading(true);
                 try {
                     const res = await identifyUser(data.userId);
-                    if (res?.success && res.data?.activeBooking) {
-                        setReturningKey(res.data.activeBooking);
-                        setPage('confirmIdentity');
+                    console.log('📡 Return Identification Result:', res);
+                    
+                    if (res?.success) {
+                        if (res.data?.activeBooking) {
+                            setReturningKey(res.data.activeBooking);
+                            setPage('confirmIdentity');
+                        } else {
+                            // Identified User but NO Active Booking
+                            const userName = res.data.user ? `${res.data.user.firstName} ${res.data.user.lastName}` : 'ไม่ระบุชื่อ';
+                            setErrorPopup(`${userName}: ไม่พบรายการกุญแจที่คุณเบิกค้างไว้ในระบบ (ไม่สามารถคืนได้)`);
+                        }
                     } else {
-                        setErrorPopup(res?.message || 'ไม่พบกุญแจที่ต้องคืน');
+                        setErrorPopup(res?.message || 'ไม่พบข้อมูลผู้ใช้ในระบบ');
                     }
                 } catch (err) {
-                    setErrorPopup('Error identifying user: ' + err.message);
+                    setErrorPopup('เกิดข้อผิดพลาดในการเชื่อมต่อ: ' + err.message);
                 } finally {
                     setLoading(false);
                 }

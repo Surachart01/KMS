@@ -185,6 +185,16 @@ export const identifyUser = async (req, res) => {
             include: { key: true, subject: true },
         });
 
+        if (!activeBooking) {
+            const anyBookings = await prisma.booking.findMany({
+                where: { userId: user.id },
+                orderBy: { createdAt: 'desc' },
+                take: 5
+            });
+            console.log(`ℹ️ [Hardware] No active BORROWED booking for ${studentCode}. Last 5 bookings:`, 
+                anyBookings.map(b => `[ID:${b.id} Status:${b.status} Room:${b.roomCode}]`).join(', '));
+        }
+
         // ค้นหาสิทธิ์เบิกกุญแจประจำวัน (DailyAuthorization ของวันนี้)
         const { startOfDay, endOfDay } = getTodayRange();
         const now = new Date();
