@@ -294,6 +294,11 @@ app.get("/", async (req, res) => {
 });
 
 // ================================
+// Hardware Status Tracker
+// ================================
+let lastHardwareStatus = { ready: false, message: 'รอการเชื่อมต่อ Hardware...' };
+
+// ================================
 // Socket.IO — Kiosk Event Handlers
 // ================================
 io.on('connection', (socket) => {
@@ -303,6 +308,8 @@ io.on('connection', (socket) => {
   socket.on('join:kiosk', () => {
     socket.join('kiosk');
     console.log(`📱 Socket ${socket.id} joined kiosk room`);
+    // ส่งสถานะล่าสุดให้ทันทีที่เข้าห้อง
+    socket.emit('hardware:status', lastHardwareStatus);
   });
 
   // Client joins gpio room to receive unlock commands
@@ -522,6 +529,14 @@ io.on('connection', (socket) => {
       console.error('❌ Key pulled log error:', err.message);
     }
     io.to('kiosk').emit('key:pulled', { slotNumber, bookingId });
+  });
+
+  // ── hardware:status — รับสถานะความพร้อมของฮาร์ดแวร์ ──
+  socket.on('hardware:status', (data) => {
+    console.log(`🔌 Hardware status: ready=${data.ready}, attempt=${data.attempt}`);
+    lastHardwareStatus = data;
+    // กระจายให้ทุกคน (Kiosk UI)
+    io.emit('hardware:status', data);
   });
 
   // ── borrow:cancelled — ไม่ดึงกุญแจออกภายในเวลา → ยกเลิกการเบิก ──

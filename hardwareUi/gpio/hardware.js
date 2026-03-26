@@ -41,6 +41,11 @@ const ESP8266_READ_TIMEOUT_MS = Number(process.env.ESP8266_READ_TIMEOUT_MS || 50
 // slots ที่กำลังรอดึงกุญแจออก (ห้าม NFC polling loop ทั่วไปรบกวน)
 const pullCheckingSlots = new Set();
 
+// ── Shared Hardware Status (for Reconnection Sync) ──
+let currentHardwareReady = false;
+let currentHardwareAttempt = 0;
+let currentHardwareMessage = 'Initializing...';
+
 // ─────────────────────────────────────────────
 // GPIO Pin Maps
 // ─────────────────────────────────────────────
@@ -550,11 +555,15 @@ async function readNfcAtSlotPython(slotNumber) {
 
 /** Broadcast hardware readiness to all UI clients via Socket.io */
 function broadcastHardwareStatus(ready, attempt = 0, message = '') {
+    currentHardwareReady = ready;
+    currentHardwareAttempt = attempt || currentHardwareAttempt;
+    currentHardwareMessage = message || currentHardwareMessage;
+
     const payload = { 
-        ready, 
-        attempt, 
+        ready: currentHardwareReady, 
+        attempt: currentHardwareAttempt, 
         maxAttempts: 5,
-        message: message || (ready ? 'System Ready' : 'Initializing Hardware...')
+        message: currentHardwareMessage
     };
     if (socket?.connected) {
         socket.emit('hardware:status', payload);
@@ -752,8 +761,9 @@ const socket = io(BACKEND_URL, {
 
 socket.on('connect', () => {
     console.log(`✅ Connected to backend: ${socket.id}`);
-    // ต้องขอเข้าห้อง gpio เพื่อรับคำสั่งเปิดตู้จาก backend 
     socket.emit('join:gpio');
+    // Re-sync status on connect/reconnect
+    broadcastHardwareStatus(currentHardwareReady, currentHardwareAttempt, currentHardwareMessage);
 });
 
 socket.on('disconnect', () => {
