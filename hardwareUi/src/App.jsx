@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { socket, getKeys, borrowKey, returnKey, identifyUser, transferKey, swapKey, moveKey } from './socket.js';
 import Header from './components/Header.jsx';
 import HomePage from './pages/HomePage.jsx';
@@ -94,6 +94,9 @@ export default function App() {
         setMoveFromRoom(null);
     }, []);
 
+    // ── Keep a ref to the latest scan handler (avoids dependency ordering issues) ──
+    const scanHandlerRef = useRef(null);
+
     // ── Socket events ──
     useEffect(() => {
         function onConnect() { setConnected(true); }
@@ -107,8 +110,6 @@ export default function App() {
 
         function onKeyPulled(data) {
             console.log('✅ key:pulled received in UI:', data);
-            // ถ้าหน้า Success กำลังรออยู่ ให้มันจัดการตัวเองได้ 
-            // หรือจะ goHome() ทันทีก็ได้ 
         }
 
         function onHardwareStatus(data) {
@@ -116,13 +117,12 @@ export default function App() {
             setHardwareStatus(data);
         }
 
-        const onScanReceived = (data) => {
+        function onScanReceived(data) {
             console.log('😄 Scan received:', data);
-            // Safety check: ensure we are on a page that expects a scan
-            if (document.querySelector('.scan-page')) {
-                handleScanProcess(data);
+            if (document.querySelector('.scan-page') && scanHandlerRef.current) {
+                scanHandlerRef.current(data);
             }
-        };
+        }
 
         socket.on('connect', onConnect);
         socket.on('disconnect', onDisconnect);
@@ -139,7 +139,7 @@ export default function App() {
             socket.off('key:pulled', onKeyPulled);
             socket.off('hardware:status', onHardwareStatus);
         };
-    }, [handleScanProcess]); // Now depends on useCallback-wrapped handler
+    }, []);
 
     // ── Handle Scan (Robust Processing) ──
     const handleScanProcess = useCallback(async (data) => {
@@ -179,6 +179,11 @@ export default function App() {
             setPage('confirmIdentity');
         }
     }, [mode, transferStep, swapStep, moveStep]); // Recreate when flow state changes
+
+    // ── Keep ref in sync with the latest handleScanProcess ──
+    useEffect(() => {
+        scanHandlerRef.current = handleScanProcess;
+    }, [handleScanProcess]);
 
     // ── Transfer: รับผลสแกนแต่ละขั้น ──
     const handleTransferScan = useCallback(async (data) => {
