@@ -976,62 +976,70 @@ async function startKeyPullCheck(slotNumber, bookingId) {
         isUnlocking = false;
         logDebug(`🔄 คืนสิทธิ์ Background Polling แล้ว (slot=${slotNumber})`);
         
-        setTimeout(() => checkAllSlots(), 1500);
+        // 🔥 บังคับเช็คสถานะจริงทุกช่องอีกครั้งหลังจบ Borrow Flow (ลดดีเลย์เหลือ 0.5 วิ)
+        setTimeout(() => checkAllSlots(), 500);
     }
 }
 
 // เช็คสถานะ NFC ของช่องทุกช่องบน Hardware Service
-async function checkAllSlots() {
+async function checkAllSlots(targetSlot = null) {
     // ถ้ากำลังปลดล็อค หรือกำลังอ่านกุญแจอยู่ ให้ข้ามไปก่อนเพื่อป้องกันการชนกัน (serial collision)
     if (isUnlocking || isPollingSlot) {
-        console.log('⏳ checkAllSlots: System is busy, skipping this cycle.');
+        if (isUnlocking) console.log('⏳ checkAllSlots: System is unlocking, skipping.');
         return;
     }
     
     isPollingSlot = true; // Lock the serial polling
 
-    // สร้างรายการ slot จากบอร์ดที่เชื่อมต่อจริงเท่านั้น
     let slotsToCheck = [];
-    if (nfcMode === 'esp8266') {
+    if (targetSlot) {
+        slotsToCheck = [targetSlot];
+    } else if (nfcMode === 'esp8266') {
         for (const [boardId] of esp8266Boards.entries()) {
             if (boardId === 1) { for (let s = 1; s <= 4; s++) slotsToCheck.push(s); }
             if (boardId === 2) { for (let s = 5; s <= 7; s++) slotsToCheck.push(s); }
             if (boardId === 3) { for (let s = 8; s <= 10; s++) slotsToCheck.push(s); }
         }
-        if (slotsToCheck.length === 0) slotsToCheck = [1, 2, 3, 4, 5, 6, 7]; // fallback
+        if (slotsToCheck.length === 0) slotsToCheck = [1, 2, 3, 4, 5, 6, 7]; 
     } else {
         for (let s = 1; s <= 10; s++) slotsToCheck.push(s);
     }
 
-    console.log(`\n🔍 Checking NFC state of slots: [${slotsToCheck.join(', ')}]...`);
+    logDebug(`\n🔍 [Cabinet Sync] Checking slots: [${slotsToCheck.join(', ')}]...`);
+    
     try {
         for (const slot of slotsToCheck) {
             if (nfcMode === 'mock') {
-                setLedRelay(slot, false); // สมมติว่าเขียวหมด (มีกุญแจ)
+                setLedRelay(slot, false); 
                 continue;
             }
-            try {
-                const uid = await readNfcAtSlot(slot);
-                if (uid) {
-                    slotHasKey[slot] = true;
-                    slotHasKey[`last_uid_${slot}`] = uid;
-                    setLedRelay(slot, false); // กุญแจอยู่ -> เขียว
-                } else {
-                    slotHasKey[slot] = false;
-                    slotHasKey[`last_uid_${slot}`] = null;
-                    setLedRelay(slot, true); // ไม่มีกุญแจ -> แดง
-                }
-            } catch (e) {
-                slotHasKey[slot] = false;
-                setLedRelay(slot, true); // Error = ถือว่าหลุด -> แดง
+
+            let uid = null;
+            const RETRIES = 2; // ลอง 2 ครั้งต่อช่องเพื่อความชัวร์
+            for (let i = 0; i < RETRIES; i++) {
+                uid = await readNfcAtSlot(slot);
+                if (uid) break;
+                if (i < RETRIES - 1) await new Promise(r => setTimeout(r, 100));
             }
-            // เพิ่ม Delay ระหว่างช่องให้มากขึ้น (300ms) เพื่อความชัวร์ของ Serial Bus
-            await new Promise(r => setTimeout(r, 300));
+
+            if (uid) {
+                slotHasKey[slot] = true;
+                slotHasKey[`last_uid_${slot}`] = uid;
+                setLedRelay(slot, false); // กุญแจอยู่ -> เขียว
+                if (missCounts) missCounts.set(slot, 0); // Reset background miss counter
+            } else {
+                slotHasKey[slot] = false;
+                slotHasKey[`last_uid_${slot}`] = null;
+                setLedRelay(slot, true); // ไม่มีกุญแจ -> แดง
+            }
+            
+            // ใช้ Delay สั้นลงถ้าเช็คแค่ช่องเดียว
+            await new Promise(r => setTimeout(r, targetSlot ? 10 : 200));
         }
     } finally {
         isPollingSlot = false; // Unlock
     }
-    console.log('✅ LED states updated.\n');
+    logDebug('✅ [Cabinet Sync] LED states fully synchronized.\n');
 }
 
 // รับคำสั่ง unlock จาก Backend → เปิด solenoid → เริ่ม key-pull check
@@ -1203,6 +1211,8 @@ socket.on('led:success', async (data) => {
         await new Promise(r => setTimeout(r, 200));
     }
     activeFeedbackSlots.delete(slotNumber);
+    // หลังจบไฟ Success สั่งเช็คสถานะกุญแจช่องนั้นทันที
+    setTimeout(() => checkAllSlots(slotNumber), 200);
 });
 
 socket.on('led:error', async (data) => {
@@ -1217,6 +1227,8 @@ socket.on('led:error', async (data) => {
         await new Promise(r => setTimeout(r, 150));
     }
     activeFeedbackSlots.delete(slotNumber);
+    // หลังจบไฟ Error สั่งเช็คสถานะกุญแจช่องนั้นทันที
+    setTimeout(() => checkAllSlots(slotNumber), 200);
 });
 
 // ── LED Blink สำหรับ Return Flow ──
@@ -1258,6 +1270,9 @@ socket.on('led:stop-blink', (data) => {
     } else {
         setLedRelay(slotNumber, true);  // 🔴 แดง (กุญแจยังไม่อยู่)
     }
+
+    // 🔥 บังคับเช็คสถานะจริงทุกช่องอีกครั้งหลังจบ Return Flow
+    setTimeout(() => checkAllSlots(), 500);
 });
 
 // ─────────────────────────────────────────────
