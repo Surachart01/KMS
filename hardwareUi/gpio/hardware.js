@@ -114,6 +114,7 @@ let isUnlocking = false; // Flag to pause NFC polling during relay operation
 let isPollingSlot = false; // Flag to sync polling and checkAllSlots
 const slotHasKey = {}; // กุญแจอยู่ในช่องหรือไม่ (true = Green, false = Red)
 const activeFeedbackSlots = new Set(); // Slots ที่กำลังกระพริบไฟโชว์คน (ห้าม Polling มาทับ)
+const missCounts = new Map(); // เก็บจำนวนครั้งที่อ่านไม่เจอ (กันไฟวอก)
 const csPins = {}; // เก็บ object Gpio ของ CS แต่ละช่อง
 
 function logDebug(msg) {
@@ -922,6 +923,7 @@ async function startKeyPullCheck(slotNumber, bookingId) {
                     if (consecutiveMisses >= MISS_THRESHOLD) {
                         logDebug(`⚡ [Confirm] ดึงออกแล้ว! (Instant Lock)`);
                         earlyPulled = true;
+                        slotHasKey[slotNumber] = false; // Sync state immediately
                         break;
                     }
                 } else {
@@ -951,10 +953,12 @@ async function startKeyPullCheck(slotNumber, bookingId) {
             if (keyStillThere) {
                 logDebug(`❌ ยกเลิก: ยืนยันพบกุญแจยังติดอยู่ที่ช่อง ${slotNumber}`);
                 setLedRelay(slotNumber, false); // 🟢 เขียว
+                slotHasKey[slotNumber] = true;  // Sync state
                 socket.emit('borrow:cancelled', { slotNumber, bookingId });
             } else {
                 logDebug(`✅ สำเร็จ: ไม่พบกุญแจที่ช่อง ${slotNumber} หลังการตรวจสอบ ${FINAL_RETRIES} ครั้ง`);
                 setLedRelay(slotNumber, true); // 🔴 แดง
+                slotHasKey[slotNumber] = false; // Sync state
                 socket.emit('key:pulled', { slotNumber, bookingId });
             }
         }
@@ -1255,8 +1259,11 @@ socket.on('led:stop-blink', (data) => {
 
     // ตั้งค่า LED ให้ถูกต้องตามสถานะจริง ณ ตอนนั้น
     if (keyReturned) {
+        slotHasKey[slotNumber] = true;
+        missCounts.set(slotNumber, 0); // รีเซ็ตการนับพลาดทันทีที่คืน
         setLedRelay(slotNumber, false); // 🟢 เขียว (กุญแจอยู่แล้ว)
     } else {
+        slotHasKey[slotNumber] = false;
         setLedRelay(slotNumber, true);  // 🔴 แดง (กุญแจยังไม่อยู่)
     }
 });
@@ -1317,7 +1324,6 @@ function startNfcPolling() {
         }
     }, 30000);
 
-    const missCounts = new Map(); // Track misses for background polling
     const MISS_LIMIT = 5;          // Number of consecutive misses before turning red
 
     setInterval(async () => {
