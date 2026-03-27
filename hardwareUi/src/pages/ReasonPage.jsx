@@ -1,15 +1,19 @@
 import { useState, useEffect } from 'react';
-import { CheckCircle, XCircle, Clock, FileText } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, FileText, ChevronUp, ChevronDown, Plus } from 'lucide-react';
 
-const FALLBACK_REASONS = ['สอนชดเชย', 'กิจกรรมพิเศษ', 'ซ่อมบำรุง', 'ประชุม', 'อื่นๆ'];
+const FALLBACK_REASONS = ['สอนชดเชย', 'กิจกรรมพิเศษ', 'ซ่อมบำรุง', 'ประชุม', 'ทดสอบระบบ', 'อื่นๆ'];
+const OTHER_PRESETS = ['เข้าเวร', 'ชุมนุมนักศึกษา', 'เตรียมงานคณะ', 'กรณีพิเศษอื่นๆ'];
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4556';
 
 export default function ReasonPage({ roomCode, onSubmit, onCancel, loading }) {
     const [reasons, setReasons] = useState(FALLBACK_REASONS);
     const [loadingReasons, setLoadingReasons] = useState(true);
     const [selected, setSelected] = useState('');
-    const [customReason, setCustomReason] = useState('');
-    const [returnTime, setReturnTime] = useState('');
+    const [selectedOther, setSelectedOther] = useState('');
+    
+    // Time state (default to 2 hours from now)
+    const [hours, setHours] = useState(new Date().getHours() + 2);
+    const [minutes, setMinutes] = useState(0);
 
     useEffect(() => {
         const fetchReasons = async () => {
@@ -26,24 +30,46 @@ export default function ReasonPage({ roomCode, onSubmit, onCancel, loading }) {
             }
         };
         fetchReasons();
+        
+        // Normalize default hours
+        if (hours >= 24) setHours(hours - 24);
     }, []);
 
     const isOther = selected === 'อื่นๆ';
-    const reason = isOther ? customReason : selected;
-    const canSubmit = reason.trim() && returnTime;
+    const finalReason = isOther ? (selectedOther || 'เหตุผลอื่นๆ') : selected;
+
+    const adjustTime = (h, m) => {
+        let newH = hours + h;
+        let newM = minutes + m;
+        
+        if (newM >= 60) { newM = 0; newH += 1; }
+        if (newM < 0) { newM = 30; newH -= 1; }
+        if (newH >= 24) newH = 0;
+        if (newH < 0) newH = 23;
+        
+        setHours(newH);
+        setMinutes(newM);
+    };
+
+    const setPresetDuration = (durationH) => {
+        const now = new Date();
+        now.setHours(now.getHours() + durationH);
+        setHours(now.getHours());
+        setMinutes(now.getMinutes() > 30 ? 30 : 0);
+    };
 
     const getReturnByTime = () => {
-        if (!returnTime) return null;
-        const [hh, mm] = returnTime.split(':').map(Number);
         const d = new Date();
-        d.setHours(hh, mm, 0, 0);
+        d.setHours(hours, minutes, 0, 0);
         if (d <= new Date()) d.setDate(d.getDate() + 1);
         return d.toISOString();
     };
 
+    const timeString = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+
     const handleSubmit = () => {
-        if (canSubmit) {
-            onSubmit(reason, getReturnByTime());
+        if (selected) {
+            onSubmit(finalReason, getReturnByTime());
         }
     };
 
@@ -73,33 +99,54 @@ export default function ReasonPage({ roomCode, onSubmit, onCancel, loading }) {
                     </div>
 
                     {isOther && (
-                        <input
-                            className="reason-input anim-fade-in"
-                            type="text"
-                            placeholder="ระบุเหตุผลอื่นๆ..."
-                            value={customReason}
-                            onChange={(e) => setCustomReason(e.target.value)}
-                            autoFocus
-                        />
+                        <div className="reason-other-presets anim-fade-in">
+                            <p className="reason-step-label">เหตุผลอื่นๆ (กดเลือกได้เลย)</p>
+                            <div className="reason-options">
+                                {OTHER_PRESETS.map((p) => (
+                                    <button
+                                        key={p}
+                                        className={`reason-chip small ${selectedOther === p ? 'active' : ''}`}
+                                        onClick={() => setSelectedOther(p)}
+                                    >
+                                        {p}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
                     )}
 
                     {/* Step 2 */}
                     {selected && (
                         <div className="reason-time-section anim-fade-in">
                             <p className="reason-step-label">
-                                <Clock size={16} /> 2. กำหนดเวลาที่จะคืนกุญแจ
+                                <Clock size={16} /> 2. กำหนดเวลาที่จะคืนกุญแจ (ใช้นิ้วเลือกระเวลาได้เลย)
                             </p>
-                            <input
-                                className="reason-input"
-                                type="time"
-                                value={returnTime}
-                                onChange={(e) => setReturnTime(e.target.value)}
-                            />
-                            {returnTime && (
-                                <p className="reason-return-preview">
-                                    ⏰ คืนกุญแจไม่เกิน: <strong>{returnTime} น.</strong>
-                                </p>
-                            )}
+                            
+                            <div className="touch-time-picker">
+                                <div className="time-column">
+                                    <button className="time-btn" onClick={() => adjustTime(1, 0)}><ChevronUp /></button>
+                                    <div className="time-value">{hours.toString().padStart(2, '0')}</div>
+                                    <button className="time-btn" onClick={() => adjustTime(-1, 0)}><ChevronDown /></button>
+                                    <span className="time-label">ชั่วโมง</span>
+                                </div>
+                                <div className="time-separator">:</div>
+                                <div className="time-column">
+                                    <button className="time-btn" onClick={() => adjustTime(0, 30)}><ChevronUp /></button>
+                                    <div className="time-value">{minutes.toString().padStart(2, '0')}</div>
+                                    <button className="time-btn" onClick={() => adjustTime(0, -30)}><ChevronDown /></button>
+                                    <span className="time-label">นาที</span>
+                                </div>
+
+                                <div className="time-presets">
+                                    <button className="preset-btn" onClick={() => setPresetDuration(1)}>+1 ชม.</button>
+                                    <button className="preset-btn" onClick={() => setPresetDuration(2)}>+2 ชม.</button>
+                                    <button className="preset-btn" onClick={() => setPresetDuration(4)}>+4 ชม.</button>
+                                </div>
+                            </div>
+
+                            <p className="reason-return-preview">
+                                ⏰ ยืนยันเวลาคืนกุญแจ: <strong>{timeString} น.</strong>
+                            </p>
                         </div>
                     )}
                 </div>
@@ -108,7 +155,7 @@ export default function ReasonPage({ roomCode, onSubmit, onCancel, loading }) {
                     <button
                         className="btn btn-primary btn-lg"
                         onClick={handleSubmit}
-                        disabled={loading || !canSubmit}
+                        disabled={loading || !selected}
                     >
                         {loading ? 'กำลังส่งข้อมูล...' : <><CheckCircle size={20} /> ยืนยัน</>}
                     </button>
