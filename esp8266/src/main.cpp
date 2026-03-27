@@ -88,16 +88,49 @@ static bool versionOK(uint8_t v) {
 }
 
 static void initReader(uint8_t i) {
-  readers[i]->PCD_Init();
-  delay(50); // Give it more time to stabilize after reset
+  uint8_t ver = 0;
+  bool success = false;
   
-  // Ensure antenna is on explicitly
-  readers[i]->PCD_AntennaOn();
-  
+  // Retry loop for initialization
+  for (int retry = 0; retry < 5; retry++) {
+    readers[i]->PCD_Init();
+    delay(100); // Give it plenty of time to stabilize
+    
+    // Explicitly turn on antenna and check
+    readers[i]->PCD_AntennaOn();
+    delay(50);
+    
+    // Check if antenna is REALLY on (TxControlReg bits 0 and 1)
+    uint8_t txCtrl = readers[i]->PCD_ReadRegister(MFRC522::TxControlReg);
+    ver = readers[i]->PCD_ReadRegister(MFRC522::VersionReg);
+    
+    // Version 0x91 or 0x92 are genuine. 
+    // 0x12, 0x88, 0x89 are common clones.
+    // 0x00 and 0xFF are dead/disconnected.
+    if (versionOK(ver) && (txCtrl & 0x03) == 0x03) {
+      success = true;
+      break;
+    }
+    
+    // If we get here, it failed. Force a soft reset before next loop.
+    readers[i]->PCD_WriteRegister(MFRC522::CommandReg, MFRC522::PCD_SoftReset);
+    delay(100);
+  }
+
   // Set to absolute maximum gain (48dB) for best sensitivity
-  // MFRC522::RxGain_max is 0x07 << 4
   readers[i]->PCD_SetAntennaGain(MFRC522::RxGain_max); 
   delay(20);
+  
+  readerOK[i] = success;
+
+  // Diagnostic Log for boot failure
+  if (!success) {
+    Serial.print(F("ℹ️ Reader #"));
+    Serial.print(localToGlobalSlot(i));
+    Serial.print(F(" Failed to Init. Last Ver: 0x"));
+    if (ver < 0x10) Serial.print('0');
+    Serial.println(ver, HEX);
+  }
 }
 // ── Cached UIDs ──────────────────────────────────────────────
 String cachedUid[10] = {"", "", "", "", "", "", "", "", "", ""};
@@ -292,16 +325,18 @@ void setup() {
 
   // Init SPI (ESP8266 default: SCK=14, MISO=12, MOSI=13)
   SPI.begin();
+  
+  // Lower SPI speed significantly to improve consistency on messy wiring
+  // 500kHz is usually very stable even with 20cm jumper wires
+  SPI.setClockDivider(SPI_CLOCK_DIV128); 
+  SPI.setDataMode(SPI_MODE0);
 
   uint8_t found = 0;
   for (uint8_t i = 0; i < NFC_COUNT; i++) {
     readers[i] = new MFRC522(CS_PINS[i], MFRC522::UNUSED_PIN);
-    initReader(i);
-    delay(50);
-
-    uint8_t ver = readers[i]->PCD_ReadRegister(MFRC522::VersionReg);
-    readerOK[i] = versionOK(ver);
+    initReader(i); // Now handles readerOK internaly
     if (readerOK[i]) found++;
+    delay(100);
   }
 
   // Boot message
