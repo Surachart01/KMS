@@ -883,12 +883,11 @@ async function startKeyPullCheck(slotNumber, bookingId) {
     try {
         // 1. กระพริบไฟเขียว-แดงสลับกัน 🚦
         let isLedRed = false;
-        /* 
+        activeFeedbackSlots.add(slotNumber);
         blinkInterval = setInterval(() => {
             isLedRed = !isLedRed;
             setLedRelay(slotNumber, isLedRed);
         }, 500);
-        */
 
         // 2. ช่วงเวลาเปิด Solenoid (10 วินาที)
         logDebug(`▶️ เริ่มช่วงเวลาเบิก (${KEY_PULL_TIMEOUT_S} วิ)...`);
@@ -961,6 +960,7 @@ async function startKeyPullCheck(slotNumber, bookingId) {
         if (blinkInterval) clearInterval(blinkInterval);
         
         // สำคัญที่สุด: คืนสิทธิ์การ Scan Background เสมอ!
+        activeFeedbackSlots.delete(slotNumber);
         pullCheckingSlots.delete(slotNumber);
         isUnlocking = false;
         logDebug(`🔄 คืนสิทธิ์ Background Polling แล้ว (slot=${slotNumber})`);
