@@ -1315,6 +1315,9 @@ function startNfcPolling() {
         }
     }, 30000);
 
+    const missCounts = new Map(); // Track misses for background polling
+    const MISS_LIMIT = 5;          // Number of consecutive misses before turning red
+
     setInterval(async () => {
         // Pause NFC polling if we are currently trying to unlock a slot
         if (isUnlocking) return;
@@ -1323,8 +1326,8 @@ function startNfcPolling() {
 
         const currentSlot = activeSlots[slotIndex % activeSlots.length];
 
-        // ข้าม slot ที่กำลัง key-pull check อยู่
-        if (pullCheckingSlots.has(currentSlot)) {
+        // ข้าม slot ที่กำลัง key-pull check อยู่ หรือกำลังแสดงผลไฟกระพริบ
+        if (pullCheckingSlots.has(currentSlot) || activeFeedbackSlots.has(currentSlot)) {
             slotIndex = (slotIndex + 1) % activeSlots.length;
             return;
         }
@@ -1333,6 +1336,9 @@ function startNfcPolling() {
             isPollingSlot = true;
             const uid = await readNfcAtSlot(currentSlot);
             if (uid) {
+                // Reset miss count because we found the key
+                missCounts.set(currentSlot, 0);
+
                 if (slotHasKey[currentSlot] !== true) {
                     slotHasKey[currentSlot] = true;
                     logDebug(`📥 [Return] พบกุญแจคืนที่ช่อง ${currentSlot} (UID: ${uid})`);
@@ -1344,18 +1350,22 @@ function startNfcPolling() {
                 }
                 socket.emit('nfc:tag', { slotNumber: currentSlot, uid });
             } else {
-                if (slotHasKey[currentSlot] !== false) {
-                    slotHasKey[currentSlot] = false;
-                    slotHasKey[`last_uid_${currentSlot}`] = null;
-                    setLedRelay(currentSlot, true); // 🔴 กุญแจไม่อยู่
+                // Key not found, increment miss count
+                const misses = (missCounts.get(currentSlot) || 0) + 1;
+                missCounts.set(currentSlot, misses);
+
+                if (misses >= MISS_LIMIT) {
+                    if (slotHasKey[currentSlot] !== false) {
+                        slotHasKey[currentSlot] = false;
+                        slotHasKey[`last_uid_${currentSlot}`] = null;
+                        setLedRelay(currentSlot, true); // 🔴 กุญแจไม่อยู่
+                        logDebug(`📤 [Missing] กุญแจหายไปจาก่อง ${currentSlot} (Misses: ${misses})`);
+                    }
                 }
             }
         } catch (e) {
-            // เกิด Error หรืออ่านไม่ได้ ถือว่าไม่มีกุญแจ
-            if (slotHasKey[currentSlot] !== false) {
-                slotHasKey[currentSlot] = false;
-                slotHasKey[`last_uid_${currentSlot}`] = null;
-            }
+            // เกิด Error หรืออ่านไม่ได้
+            logDebug(`⚠️  Read error at slot ${currentSlot}: ${e.message}`);
         } finally {
             // Node mode needs CS deassert here (python mode handles CS internally)
             if (nfcMode === 'node') {
