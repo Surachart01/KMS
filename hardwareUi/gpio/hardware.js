@@ -882,10 +882,12 @@ async function startKeyPullCheck(slotNumber, bookingId) {
     try {
         // 1. กระพริบไฟเขียว-แดงสลับกัน 🚦
         let isLedRed = false;
+        /* 
         blinkInterval = setInterval(() => {
             isLedRed = !isLedRed;
             setLedRelay(slotNumber, isLedRed);
         }, 500);
+        */
 
         // 2. ช่วงเวลาเปิด Solenoid (10 วินาที)
         logDebug(`▶️ เริ่มช่วงเวลาเบิก (${KEY_PULL_TIMEOUT_S} วิ)...`);
@@ -928,7 +930,7 @@ async function startKeyPullCheck(slotNumber, bookingId) {
         
         if (earlyPulled) {
             logDebug(`✅ การเบิกสำเร็จ (ดึงออกเร็ว)`);
-            setLedRelay(slotNumber, true); // 🔴 แดง
+            // setLedRelay(slotNumber, true); // 🔴 แดง (Let NFC poll handle it)
             socket.emit('key:pulled', { slotNumber, bookingId });
         } else {
             logDebug(`🔒 ครบเวลา -> Final Verification...`);
@@ -944,11 +946,11 @@ async function startKeyPullCheck(slotNumber, bookingId) {
 
             if (keyStillThere) {
                 logDebug(`❌ ยกเลิก: กุญแจยังคาอยู่`);
-                setLedRelay(slotNumber, false); // 🟢 เขียว
+                // setLedRelay(slotNumber, false); // 🟢 เขียว
                 socket.emit('borrow:cancelled', { slotNumber, bookingId });
             } else {
                 logDebug(`✅ สำเร็จ: กุญแจไม่อยู่แล้ว`);
-                setLedRelay(slotNumber, true); // 🔴 แดง
+                // setLedRelay(slotNumber, true); // 🔴 แดง
                 socket.emit('key:pulled', { slotNumber, bookingId });
             }
         }
@@ -1179,27 +1181,13 @@ socket.on('nfc:write', async (data) => {
 
 // รับคำสั่งให้ไฟกระพริบ Success (เขียว) หรือ Error (แดง)
 socket.on('led:success', async (data) => {
-    const { slotNumber } = data;
-    logDebug(`✨ [Feedback] Slot ${slotNumber} -> SUCCESS (Green Blink)`);
-    // กระพริบเขียว 3 ครั้ง
-    for (let i = 0; i < 3; i++) {
-        setLedRelay(slotNumber, true); // แดง
-        await new Promise(r => setTimeout(r, 200));
-        setLedRelay(slotNumber, false); // เขียว
-        await new Promise(r => setTimeout(r, 200));
-    }
+    // const { slotNumber } = data;
+    // logDebug(`✨ [Feedback] Slot ${slotNumber} -> SUCCESS (No LED blink - NFC only)`);
 });
 
 socket.on('led:error', async (data) => {
-    const { slotNumber } = data;
-    logDebug(`🛑 [Feedback] Slot ${slotNumber} -> ERROR (Red Blink)`);
-    // กระพริบแดง 5 ครั้ง
-    for (let i = 0; i < 5; i++) {
-        setLedRelay(slotNumber, false); // เขียว
-        await new Promise(r => setTimeout(r, 150));
-        setLedRelay(slotNumber, true); // แดง
-        await new Promise(r => setTimeout(r, 150));
-    }
+    // const { slotNumber } = data;
+    // logDebug(`🛑 [Feedback] Slot ${slotNumber} -> ERROR (No LED blink - NFC only)`);
 });
 
 // ── LED Blink สำหรับ Return Flow ──
@@ -1207,38 +1195,13 @@ socket.on('led:error', async (data) => {
 const returnBlinkIntervals = new Map();
 
 socket.on('led:blink-return', (data) => {
-    const { slotNumber } = data;
-    logDebug(`🚨 [Return Blink] เริ่มกระพริบ เขียว-แดง ที่ช่อง ${slotNumber}`);
-
-    // หยุด blink เดิมก่อน (ถ้ามี)
-    if (returnBlinkIntervals.has(slotNumber)) {
-        clearInterval(returnBlinkIntervals.get(slotNumber));
-    }
-
-    let isRed = false;
-    const interval = setInterval(() => {
-        isRed = !isRed;
-        setLedRelay(slotNumber, isRed);
-    }, 500);
-
-    returnBlinkIntervals.set(slotNumber, interval);
+    // const { slotNumber } = data;
+    // logDebug(`🚨 [Return Blink] (No LED blink - NFC only)`);
 });
 
 socket.on('led:stop-blink', (data) => {
-    const { slotNumber, keyReturned } = data;
-    logDebug(`✋ [Return Blink] หยุดกระพริบช่อง ${slotNumber} (keyReturned=${keyReturned})`);
-
-    if (returnBlinkIntervals.has(slotNumber)) {
-        clearInterval(returnBlinkIntervals.get(slotNumber));
-        returnBlinkIntervals.delete(slotNumber);
-    }
-
-    // ตั้งค่า LED ให้ถูกต้องตามสถานะ
-    if (keyReturned) {
-        setLedRelay(slotNumber, false); // 🟢 เขียว (กุญแจอยู่แล้ว)
-    } else {
-        setLedRelay(slotNumber, true);  // 🔴 แดง (กุญแจยังไม่อยู่)
-    }
+    // const { slotNumber, keyReturned } = data;
+    // logDebug(`✋ [Return Blink] (No LED blink - NFC only)`);
 });
 
 // ─────────────────────────────────────────────
