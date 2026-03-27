@@ -379,26 +379,26 @@ body {
 }
 
 .confirm-avatar-circle {
-    width: 80px; height: 80px;
+    width: 60px; height: 60px;
     background: rgba(16, 185, 129, 0.1);
     border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
     color: var(--primary-light);
-    margin: 0 auto 20px;
+    margin: 0 auto 12px;
 }
 
 .confirm-details-box {
     background: rgba(255, 255, 255, 0.03);
     border-radius: 20px;
-    padding: 20px;
-    margin-bottom: 24px;
+    padding: 16px;
+    margin-bottom: 16px;
     text-align: left;
 }
 
-.detail-row { display: flex; align-items: center; gap: 16px; }
+.detail-row { display: flex; align-items: center; gap: 12px; }
 .detail-icon { color: var(--primary-light); }
-.detail-label { font-size: 0.8rem; color: rgba(255,255,255,0.4); text-transform: uppercase; font-weight: 600; }
-.detail-value { font-size: 1.5rem; font-weight: 700; color: white; }
+.detail-label { font-size: 0.75rem; color: rgba(255,255,255,0.4); text-transform: uppercase; font-weight: 600; }
+.detail-value { font-size: 1.3rem; font-weight: 700; color: white; }
 .detail-divider { height: 1px; background: rgba(255, 255, 255, 0.05); margin: 16px 0; }
 
 .confirm-actions { display: flex; gap: 16px; }
@@ -407,12 +407,12 @@ body {
 /* ── Scan Animation ── */
 .scan-animation {
     position: relative;
-    width: 140px;
-    height: 140px;
+    width: 100px;
+    height: 100px;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 20px;
+    margin-bottom: 15px;
 }
 .scan-circle {
     position: absolute;
@@ -431,24 +431,35 @@ body {
 
 /* ── Success Page ── */
 .success-icon-wrapper {
-    width: 120px; height: 120px;
+    width: 90px; height: 90px;
     border-radius: 50%;
-    background: rgba(16, 185, 129, 0.1);
     display: flex; align-items: center; justify-content: center;
-    color: var(--primary-light);
-    margin-bottom: 24px;
+    margin: 0 auto 16px;
+    position: relative;
+    animation: bounceIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
-.success-title { font-size: 2.5rem; font-weight: 700; margin-bottom: 12px; }
+.success-icon-wrapper.success {
+    background: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+    box-shadow: 0 0 40px rgba(16, 185, 129, 0.2);
+}
+.success-icon-wrapper.error {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+    box-shadow: 0 0 40px rgba(239, 68, 68, 0.2);
+}
+.success-title { font-size: 1.8rem; font-weight: 700; margin-bottom: 8px; }
 .success-details {
-    display: flex; gap: 32px;
+    display: flex; gap: 20px;
     background: rgba(255, 255, 255, 0.03);
-    padding: 20px 40px;
+    padding: 10px 24px;
     border-radius: 20px;
     border: 1px solid var(--border);
-    margin-bottom: 32px;
+    margin: 0 auto 20px;
+    width: fit-content;
 }
-.success-detail span { font-size: 1rem; opacity: 0.5; }
-.success-detail strong { font-size: 1.8rem; color: var(--primary-light); margin-left: 10px; }
+.success-detail span { font-size: 0.9rem; opacity: 0.5; }
+.success-detail strong { font-size: 1.4rem; color: var(--primary-light); margin-left: 8px; }
 
 /* ── Utility Buttons ── */
 .btn { border: none; cursor: pointer; transition: var(--transition); display: flex; align-items: center; justify-content: center; gap: 10px; }
@@ -755,9 +766,9 @@ body {
     background: rgba(15, 23, 42, 0.85);
     backdrop-filter: blur(25px);
     border-radius: 28px;
-    padding: 32px;
+    padding: 24px;
     width: 95%;
-    max-width: 550px;
+    max-width: 500px;
     text-align: center;
     box-shadow: var(--shadow-xl);
     border: 1px solid var(--border);
@@ -765,9 +776,9 @@ body {
 }
 .wait-key-icon-container {
     position: relative;
-    width: 100px;
-    height: 100px;
-    margin: 0 auto 20px;
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 12px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -784,26 +795,26 @@ body {
     0% { transform: scale(0.5); opacity: 0.8; }
     100% { transform: scale(1.5); opacity: 0; }
 }
-.wait-key-icon { font-size: 3rem; z-index: 2; }
-.wait-key-title { font-size: 1.8rem; font-weight: 700; margin-bottom: 8px; color: white; }
+.wait-key-icon { font-size: 2.5rem; z-index: 2; }
+.wait-key-title { font-size: 1.6rem; font-weight: 700; margin-bottom: 6px; color: white; }
 .wait-key-slot-badge {
     display: inline-block;
     background: rgba(16, 185, 129, 0.1);
     border: 1px solid rgba(16, 185, 129, 0.2);
-    padding: 8px 20px;
+    padding: 4px 16px;
     border-radius: 12px;
-    margin-bottom: 20px;
+    margin-bottom: 12px;
     color: var(--primary-light);
-    font-size: 1.2rem;
+    font-size: 1.1rem;
 }
-.wait-key-slot-badge .slot-number { font-weight: 800; font-size: 1.6rem; margin-left: 8px; }
-.wait-key-subtitle { font-size: 1.1rem; opacity: 0.6; margin-bottom: 24px; }
+.wait-key-slot-badge .slot-number { font-weight: 800; font-size: 1.4rem; margin-left: 6px; }
+.wait-key-subtitle { font-size: 1.0rem; opacity: 0.6; margin-bottom: 16px; }
 
 .wait-key-instruction {
     background: rgba(0,0,0,0.2);
-    padding: 20px;
+    padding: 12px;
     border-radius: 16px;
-    margin-bottom: 30px;
+    margin-bottom: 15px;
 }
 .progress-bar-container {
     width: 100%;
@@ -822,33 +833,7 @@ body {
 .timeout-text { font-size: 0.9rem; opacity: 0.4; }
 
 
-/* ── Success Page ── */
-.success-page {
-    justify-content: center;
-    padding: 20px;
-    text-align: center;
-}
-.success-icon-wrapper {
-    width: 120px;
-    height: 120px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto 30px;
-    position: relative;
-    animation: bounceIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-.success-icon-wrapper.success {
-    background: rgba(16, 185, 129, 0.1);
-    color: #10b981;
-    box-shadow: 0 0 40px rgba(16, 185, 129, 0.2);
-}
-.success-icon-wrapper.error {
-    background: rgba(239, 68, 68, 0.1);
-    color: #ef4444;
-    box-shadow: 0 0 40px rgba(239, 68, 68, 0.2);
-}
+.success-countdown { font-size: 1rem; color: var(--primary-light); margin-bottom: 20px; font-weight: 500; }
 @keyframes bounceIn {
     from { transform: scale(0); opacity: 0; }
     to { transform: scale(1); opacity: 1; }

@@ -933,24 +933,19 @@ async function startKeyPullCheck(slotNumber, bookingId) {
             // setLedRelay(slotNumber, true); // 🔴 แดง (Let NFC poll handle it)
             socket.emit('key:pulled', { slotNumber, bookingId });
         } else {
-            logDebug(`🔒 ครบเวลา -> Final Verification (Paranoid Check)...`);
-            // รอให้นิ่งขึ้น 2 วินาที
-            await new Promise(r => setTimeout(r, 2000));
+            logDebug(`🔒 ครบเวลา 10 วิ -> Final Verification (Fast Check)...`);
             
             let keyStillThere = false;
-            let seeCount = 0;
-            const TOTAL_CHECKS = 10; // เพิ่มจำนวนการเช็คให้ชัวร์
+            const FINAL_RETRIES = 5; 
             
-            for (let a = 1; a <= TOTAL_CHECKS; a++) {
+            for (let a = 1; a <= FINAL_RETRIES; a++) {
                 const uid = await readNfcAtSlot(slotNumber);
                 if (uid) {
-                    seeCount++;
                     keyStillThere = true;
-                    // ถ้าเจอแล้ว ไม่ต้องรอต่อ
                     break; 
                 }
-                // ถ้าไม่เจอ ให้รอสั้นๆ แล้วลองใหม่
-                await new Promise(r => setTimeout(r, 400));
+                // ถ้าไม่เจอ ให้รอสั้นลง (200ms) แล้วลองใหม่
+                await new Promise(r => setTimeout(r, 200));
             }
 
             if (keyStillThere) {
@@ -958,7 +953,7 @@ async function startKeyPullCheck(slotNumber, bookingId) {
                 setLedRelay(slotNumber, false); // 🟢 เขียว
                 socket.emit('borrow:cancelled', { slotNumber, bookingId });
             } else {
-                logDebug(`✅ สำเร็จ: ไม่พบกุญแจที่ช่อง ${slotNumber} หลังการตรวจสอบ ${TOTAL_CHECKS} ครั้ง`);
+                logDebug(`✅ สำเร็จ: ไม่พบกุญแจที่ช่อง ${slotNumber} หลังการตรวจสอบ ${FINAL_RETRIES} ครั้ง`);
                 setLedRelay(slotNumber, true); // 🔴 แดง
                 socket.emit('key:pulled', { slotNumber, bookingId });
             }
