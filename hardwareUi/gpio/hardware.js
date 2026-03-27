@@ -1327,8 +1327,9 @@ function startNfcPolling() {
 
         const currentSlot = activeSlots[slotIndex % activeSlots.length];
 
-        // ข้าม slot ที่กำลัง key-pull check อยู่ หรือกำลังแสดงผลไฟกระพริบ
-        if (pullCheckingSlots.has(currentSlot) || activeFeedbackSlots.has(currentSlot)) {
+        // ข้าม slot ที่กำลัง key-pull check อยู่ (เพราะมี loop ของมันเอง)
+        // แต่ถ้าเป็น activeFeedbackSlots (ไฟกระพริบเฉยๆ) เราต้องสแกนเพื่อรอรับกุญแจคืน
+        if (pullCheckingSlots.has(currentSlot)) {
             slotIndex = (slotIndex + 1) % activeSlots.length;
             return;
         }
@@ -1343,7 +1344,11 @@ function startNfcPolling() {
                 if (slotHasKey[currentSlot] !== true) {
                     slotHasKey[currentSlot] = true;
                     logDebug(`📥 [Return] พบกุญแจคืนที่ช่อง ${currentSlot} (UID: ${uid})`);
-                    setLedRelay(currentSlot, false); // 🟢 กุญแจอยู่
+                    
+                    // อัปเดตไฟเฉพาะถ้าไม่มี Feedback อื่นทำงานอยู่ (เช่น ไฟกระพริบ Success)
+                    if (!activeFeedbackSlots.has(currentSlot)) {
+                        setLedRelay(currentSlot, false); // 🟢 กุญแจอยู่
+                    }
                 }
                 if (!slotHasKey[`last_uid_${currentSlot}`] || slotHasKey[`last_uid_${currentSlot}`] !== uid) {
                     console.log(`🏷️  NFC tag: ${uid} at slot ${currentSlot}`);
@@ -1359,7 +1364,11 @@ function startNfcPolling() {
                     if (slotHasKey[currentSlot] !== false) {
                         slotHasKey[currentSlot] = false;
                         slotHasKey[`last_uid_${currentSlot}`] = null;
-                        setLedRelay(currentSlot, true); // 🔴 กุญแจไม่อยู่
+                        
+                        // อัปเดตไฟเฉพาะถ้าไม่มี Feedback อื่นทำงานอยู่
+                        if (!activeFeedbackSlots.has(currentSlot)) {
+                            setLedRelay(currentSlot, true); // 🔴 กุญแจไม่อยู่
+                        }
                         logDebug(`📤 [Missing] กุญแจหายไปจาก่อง ${currentSlot} (Misses: ${misses})`);
                     }
                 }
