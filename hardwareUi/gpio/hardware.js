@@ -113,6 +113,7 @@ let nfcMode = 'node'; // 'mock' | 'node' | 'python' | 'esp8266'
 let isUnlocking = false; // Flag to pause NFC polling during relay operation
 let isPollingSlot = false; // Flag to sync polling and checkAllSlots
 const slotHasKey = {}; // กุญแจอยู่ในช่องหรือไม่ (true = Green, false = Red)
+const activeFeedbackSlots = new Set(); // Slots ที่กำลังกระพริบไฟโชว์คน (ห้าม Polling มาทับ)
 const csPins = {}; // เก็บ object Gpio ของ CS แต่ละช่อง
 
 function logDebug(msg) {
@@ -946,11 +947,11 @@ async function startKeyPullCheck(slotNumber, bookingId) {
 
             if (keyStillThere) {
                 logDebug(`❌ ยกเลิก: กุญแจยังคาอยู่`);
-                // setLedRelay(slotNumber, false); // 🟢 เขียว
+                setLedRelay(slotNumber, false); // 🟢 เขียว
                 socket.emit('borrow:cancelled', { slotNumber, bookingId });
             } else {
                 logDebug(`✅ สำเร็จ: กุญแจไม่อยู่แล้ว`);
-                // setLedRelay(slotNumber, true); // 🔴 แดง
+                setLedRelay(slotNumber, true); // 🔴 แดง
                 socket.emit('key:pulled', { slotNumber, bookingId });
             }
         }
@@ -1181,13 +1182,31 @@ socket.on('nfc:write', async (data) => {
 
 // รับคำสั่งให้ไฟกระพริบ Success (เขียว) หรือ Error (แดง)
 socket.on('led:success', async (data) => {
-    // const { slotNumber } = data;
-    // logDebug(`✨ [Feedback] Slot ${slotNumber} -> SUCCESS (No LED blink - NFC only)`);
+    const { slotNumber } = data;
+    logDebug(`✨ [Feedback] Slot ${slotNumber} -> SUCCESS (Green Blink)`);
+    activeFeedbackSlots.add(slotNumber);
+    // กระพริบเขียว 3 ครั้ง
+    for (let i = 0; i < 3; i++) {
+        setLedRelay(slotNumber, true); // แดง
+        await new Promise(r => setTimeout(r, 200));
+        setLedRelay(slotNumber, false); // เขียว
+        await new Promise(r => setTimeout(r, 200));
+    }
+    activeFeedbackSlots.delete(slotNumber);
 });
 
 socket.on('led:error', async (data) => {
-    // const { slotNumber } = data;
-    // logDebug(`🛑 [Feedback] Slot ${slotNumber} -> ERROR (No LED blink - NFC only)`);
+    const { slotNumber } = data;
+    logDebug(`🛑 [Feedback] Slot ${slotNumber} -> ERROR (Red Blink)`);
+    activeFeedbackSlots.add(slotNumber);
+    // กระพริบแดง 5 ครั้ง
+    for (let i = 0; i < 5; i++) {
+        setLedRelay(slotNumber, false); // เขียว
+        await new Promise(r => setTimeout(r, 150));
+        setLedRelay(slotNumber, true); // แดง
+        await new Promise(r => setTimeout(r, 150));
+    }
+    activeFeedbackSlots.delete(slotNumber);
 });
 
 // ── LED Blink สำหรับ Return Flow ──
@@ -1195,13 +1214,40 @@ socket.on('led:error', async (data) => {
 const returnBlinkIntervals = new Map();
 
 socket.on('led:blink-return', (data) => {
-    // const { slotNumber } = data;
-    // logDebug(`🚨 [Return Blink] (No LED blink - NFC only)`);
+    const { slotNumber } = data;
+    logDebug(`🚨 [Return Blink] เริ่มกระพริบ เขียว-แดง ที่ช่อง ${slotNumber}`);
+    activeFeedbackSlots.add(slotNumber);
+
+    // หยุด blink เดิมก่อน (ถ้ามี)
+    if (returnBlinkIntervals.has(slotNumber)) {
+        clearInterval(returnBlinkIntervals.get(slotNumber));
+    }
+
+    let isRed = false;
+    const interval = setInterval(() => {
+        isRed = !isRed;
+        setLedRelay(slotNumber, isRed);
+    }, 500);
+
+    returnBlinkIntervals.set(slotNumber, interval);
 });
 
 socket.on('led:stop-blink', (data) => {
-    // const { slotNumber, keyReturned } = data;
-    // logDebug(`✋ [Return Blink] (No LED blink - NFC only)`);
+    const { slotNumber, keyReturned } = data;
+    logDebug(`✋ [Return Blink] หยุดกระพริบช่อง ${slotNumber} (keyReturned=${keyReturned})`);
+    activeFeedbackSlots.delete(slotNumber);
+
+    if (returnBlinkIntervals.has(slotNumber)) {
+        clearInterval(returnBlinkIntervals.get(slotNumber));
+        returnBlinkIntervals.delete(slotNumber);
+    }
+
+    // ตั้งค่า LED ให้ถูกต้องตามสถานะจริง ณ ตอนนั้น
+    if (keyReturned) {
+        setLedRelay(slotNumber, false); // 🟢 เขียว (กุญแจอยู่แล้ว)
+    } else {
+        setLedRelay(slotNumber, true);  // 🔴 แดง (กุญแจยังไม่อยู่)
+    }
 });
 
 // ─────────────────────────────────────────────
