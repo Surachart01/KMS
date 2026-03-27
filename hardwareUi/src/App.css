@@ -476,16 +476,17 @@ body {
 /* ── Reason Page ── */
 .reason-page { 
     justify-content: center;
-    padding: 20px;
+    padding: 10px;
+    height: 100%;
 }
 .reason-card {
-    background: rgba(15, 23, 42, 0.85);
+    background: rgba(15, 23, 42, 0.9);
     backdrop-filter: blur(25px);
-    border-radius: 28px;
-    padding: 20px 24px;
-    width: 95%;
-    max-width: 850px;
-    height: 90%;
+    border-radius: 20px;
+    padding: 16px 20px;
+    width: 98%;
+    max-width: 900px;
+    height: 100%;
     display: flex;
     flex-direction: column;
     box-shadow: var(--shadow-xl);
@@ -495,58 +496,59 @@ body {
 .reason-header {
     display: flex;
     align-items: center;
-    gap: 12px;
-    margin-bottom: 8px;
+    gap: 10px;
+    margin-bottom: 4px;
 }
+.reason-header svg { width: 24px; height: 24px; }
 .reason-title { 
-    font-size: 1.5rem; 
+    font-size: 1.3rem; 
     font-weight: 700; 
     color: white; 
 }
 .reason-subtitle { 
-    font-size: 0.9rem; 
+    font-size: 0.85rem; 
     color: var(--primary-light); 
-    margin-bottom: 12px; 
-    opacity: 0.9;
+    margin-bottom: 8px; 
+    opacity: 0.8;
 }
 .reason-content-scroll {
     flex: 1;
     overflow-y: auto;
-    padding-right: 8px;
-    margin-bottom: 12px;
+    padding-right: 5px;
+    margin-bottom: 8px;
 }
 .reason-step-label { 
-    font-size: 0.8rem; 
+    font-size: 0.75rem; 
     font-weight: 600; 
     color: rgba(255,255,255,0.4); 
     text-transform: uppercase; 
-    margin: 12px 0 8px; 
+    margin: 8px 0 6px; 
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
 }
 .reason-options { 
     display: flex; 
     flex-wrap: wrap; 
-    gap: 8px; 
-    margin-bottom: 8px; 
+    gap: 6px; 
+    margin-bottom: 4px; 
 }
 .reason-chip { 
-    padding: 8px 16px; 
-    border-radius: 12px; 
+    padding: 6px 12px; 
+    border-radius: 10px; 
     background: rgba(255,255,255,0.06); 
     border: 1px solid rgba(255,255,255,0.1); 
     color: white; 
-    font-size: 1rem; 
+    font-size: 0.95rem; 
     cursor: pointer; 
     transition: var(--transition); 
 }
-.reason-chip.small { padding: 5px 10px; font-size: 0.85rem; border-radius: 8px; }
+.reason-chip.small { padding: 4px 8px; font-size: 0.8rem; border-radius: 8px; }
 .reason-chip:active { transform: scale(0.95); }
 .reason-chip.active { 
     background: var(--primary); 
     border-color: var(--primary-light); 
-    box-shadow: 0 0 15px var(--primary-glow); 
+    box-shadow: 0 0 10px var(--primary-glow); 
 }
 .reason-input { 
     width: 100%; 
@@ -560,49 +562,49 @@ body {
     outline: none; 
 }
 .reason-return-preview { 
-    font-size: 1.05rem; 
+    font-size: 0.95rem; 
     color: var(--primary-light); 
-    margin: 10px 0; 
+    margin: 6px 0; 
     background: rgba(16, 185, 129, 0.08);
-    padding: 6px 14px;
-    border-radius: 10px;
+    padding: 4px 12px;
+    border-radius: 8px;
     border: 1px solid rgba(16, 185, 129, 0.15);
 }
 .reason-actions { 
     display: flex; 
-    gap: 16px; 
+    gap: 12px; 
     margin-top: auto;
-    padding-top: 10px;
+    padding-top: 8px;
     border-top: 1px solid rgba(255,255,255,0.05);
 }
-.reason-actions .btn { flex: 1; padding: 16px; border-radius: 14px; }
-.reason-other-presets { margin-top: 5px; animation: slideDown 0.3s ease-out; }
+.reason-actions .btn { flex: 1; padding: 12px; border-radius: 12px; font-size: 1.1rem; }
+.reason-other-presets { margin-top: 2px; animation: slideDown 0.3s ease-out; }
 
 /* ── Touch Time Picker ── */
 .touch-time-picker {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
     background: rgba(0,0,0,0.25);
-    padding: 12px 16px;
-    border-radius: 18px;
-    margin: 8px 0;
+    padding: 8px 12px;
+    border-radius: 14px;
+    margin: 4px 0;
     border: 1px solid rgba(255,255,255,0.05);
 }
 .time-column {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 4px;
-    width: 70px;
+    gap: 2px;
+    width: 60px;
 }
 .time-btn {
     background: rgba(255,255,255,0.08); 
     border: 1px solid rgba(255,255,255,0.1);
     color: white;
-    width: 60px;
-    height: 40px;
-    border-radius: 12px;
+    width: 48px;
+    height: 32px;
+    border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -611,21 +613,22 @@ body {
 }
 .time-btn:active { background: var(--primary); transform: scale(0.9); }
 .time-value {
-    font-size: 2.2rem;
+    font-size: 1.8rem;
     font-weight: 700;
     color: white;
     font-family: monospace;
 }
-.time-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; }
-.time-separator { font-size: 2rem; color: rgba(255,255,255,0.2); margin-top: -20px; }
+.time-label { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; }
+.time-separator { font-size: 1.5rem; color: rgba(255,255,255,0.2); margin-top: -15px; }
 
 .time-presets {
     display: flex;
-    flex-direction: column;
-    gap: 8px;
+    flex-wrap: wrap;
+    gap: 6px;
     margin-left: auto;
     border-left: 1px solid rgba(255,255,255,0.1);
-    padding-left: 20px;
+    padding-left: 12px;
+    max-width: 150px;
 }
 .preset-btn {
     background: rgba(16, 185, 129, 0.1);
