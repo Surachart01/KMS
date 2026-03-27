@@ -361,11 +361,20 @@ void setup() {
 void loop() {
   unsigned long now = millis();
 
-  // อ่าน UID ตลอดเวลาเพื่อรักษาคลื่นสัญญาณ
+    // อ่าน UID ตลอดเวลาเพื่อรักษาคลื่นสัญญาณ
   for (uint8_t i = 0; i < NFC_COUNT; i++) {
     if (!readerOK[i]) continue;
 
-    // เพิ่มความพัดระวัง: ย้ำ Antenna Gain ทุกครั้งเพื่อกันร่วง
+    // --- Antenna Watchdog ---
+    // สำหรับรุ่น Clone (0x82/0x18) บางทีเสาอากาศจะดับเอง
+    // ตรวจสอบ TxControlReg (0x14): Bit 0 & 1 ต้องเป็น HIGH
+    uint8_t txCtrl = readers[i]->PCD_ReadRegister(MFRC522::TxControlReg);
+    if ((txCtrl & 0x03) != 0x03) {
+      readers[i]->PCD_AntennaOn();
+      readers[i]->PCD_SetAntennaGain(MFRC522::RxGain_max);
+    }
+    
+    // ย้ำ Antenna Gain ทุกครั้งเพื่อกันร่วง
     readers[i]->PCD_SetAntennaGain(MFRC522::RxGain_max);
     
     // ลองอ่าน 3 ครั้งถ้าพลาด (Internal Retry)

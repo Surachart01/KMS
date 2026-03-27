@@ -886,3 +886,20 @@ body {
 .popup-message {
     font-size: 1.4rem; font-weight: 600; margin-bottom: 32px; color: white; line-height: 1.5;
 }
+.popup-card button {
+    width: 100%;
+    height: 54px;
+    border-radius: 16px;
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-top: 10px;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    border: none;
+    color: white;
+    cursor: pointer;
+    box-shadow: 0 4px 15px var(--primary-glow);
+    transition: var(--transition);
+}
+.popup-card button:active {
+    transform: scale(0.96);
+}
