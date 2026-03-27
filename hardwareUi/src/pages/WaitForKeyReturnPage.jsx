@@ -45,7 +45,7 @@ export default function WaitForKeyReturnPage({ booking, onKeyDetected, onCancel 
 
     return (
         <div className="page wait-key-page">
-            <div className="wait-key-card modern-card anim-fade-in">
+            <div className="wait-key-card glass anim-fade-in">
                 <div className="wait-key-icon-container">
                     <div className="nfc-pulse-ring"></div>
                     <span className="wait-key-icon">📥</span>
@@ -67,19 +67,20 @@ export default function WaitForKeyReturnPage({ booking, onKeyDetected, onCancel 
                     <p className="timeout-text">เหลือเวลา {timeLeft} วินาที</p>
                 </div>
 
-                <button className="btn btn-secondary btn-lg" onClick={onCancel}>
-                    ยกเลิก / กลับหน้าหลัก
-                </button>
+                <div className="flex gap-4">
+                    <button className="btn btn-secondary btn-lg w-full" onClick={onCancel}>
+                        ยกเลิก / กลับหน้าหลัก
+                    </button>
+                </div>
             </div>
 
             {/* Simulated hardware detection for testing */}
-            <div className="test-scan-buttons" style={{ marginTop: '20px', opacity: 0.5 }}>
-                <p>🧪 ทดสอบ (จำลองเซนเซอร์)</p>
+            <div className="test-scan-buttons" style={{ marginTop: '20px', opacity: 0.2 }}>
                 <button 
-                    className="btn btn-test" 
+                    className="btn btn-test small" 
                     onClick={() => socket.emit('nfc:tag', { slotNumber: booking.slotNumber, uid: 'TEST' })}
                 >
-                    จำลองการเสียบกุญแจช่อง {booking.slotNumber}
+                    🧪 จำลองการเสียบกุญแจ
                 </button>
             </div>
         </div>

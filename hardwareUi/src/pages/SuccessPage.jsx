@@ -26,12 +26,12 @@ export default function SuccessPage({ result, onHome }) {
     const isSuccess = result?.success;
 
     return (
-        <div className="page success-page">
+        <div className="page success-page anim-fade-in">
             <div className={`success-icon-wrapper ${isSuccess ? 'success' : 'error'}`}>
                 {isSuccess ? (
-                    <CheckCircle size={80} strokeWidth={1.5} className="success-icon" />
+                    <CheckCircle size={60} strokeWidth={2} className="success-icon" />
                 ) : (
-                    <XCircle size={80} strokeWidth={1.5} className="success-icon" />
+                    <XCircle size={60} strokeWidth={2} className="success-icon" />
                 )}
             </div>
 
@@ -47,14 +47,14 @@ export default function SuccessPage({ result, onHome }) {
                 <div className="success-details glass">
                     {result.data.roomCode && (
                         <div className="success-detail">
-                            <Calendar size={16} />
+                            <Calendar size={20} className="text-primary" />
                             <span>ห้อง:</span>
                             <strong>{result.data.roomCode}</strong>
                         </div>
                     )}
                     {result.data.keySlotNumber && (
                         <div className="success-detail">
-                            <Hash size={16} />
+                            <Hash size={20} className="text-primary" />
                             <span>ช่องที่:</span>
                             <strong>{result.data.keySlotNumber}</strong>
                         </div>
@@ -66,10 +66,9 @@ export default function SuccessPage({ result, onHome }) {
                 ระบบจะกลับหน้าหลักอัตโนมัติใน {countdown} วินาที
             </div>
 
-            <button className="btn btn-primary btn-lg" onClick={onHome} style={{ minWidth: '200px' }}>
-                <Home size={20} /> กลับหน้าหลัก
+            <button className="btn btn-primary btn-lg" onClick={onHome} style={{ minWidth: '240px' }}>
+                <Home size={22} /> กลับหน้าหลัก
             </button>
         </div>
     );
 }
-
