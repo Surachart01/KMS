@@ -890,26 +890,28 @@ async function startKeyPullCheck(slotNumber, bookingId) {
         }, 500);
 
         // 2. ช่วงเวลาเปิด Solenoid (10 วินาที)
-        logDebug(`▶️ เริ่มช่วงเวลาเบิก (${KEY_PULL_TIMEOUT_S} วิ)...`);
+        const MAX_TOTAL_MS = KEY_PULL_TIMEOUT_S * 1000;
+        const startMs = Date.now();
+        const MISS_THRESHOLD = 5; 
         
         let hasBeenSeen = false;
         let consecutiveMisses = 0;
-        const MISS_THRESHOLD = 5; // เพิ่มจาก 3 เพื่อกันสกัดสัญญาณหลุดชั่วคราว
         let earlyPulled = false;
 
-        for (let i = 0; i < KEY_PULL_TIMEOUT_S; i++) {
-            await new Promise(resolve => setTimeout(resolve, 1000));
+        while (Date.now() - startMs < MAX_TOTAL_MS) {
+            // อ่าน NFC ถี่ขึ้น (ทุก 200ms)
+            await new Promise(resolve => setTimeout(resolve, 200));
             
-            // อ่าน NFC
             const uid = await readNfcAtSlot(slotNumber);
-
+            const elapsed = Math.floor((Date.now() - startMs) / 1000);
+            
             if (uid) {
                 if (!hasBeenSeen) {
                     logDebug(`✨ [InstantCheck] เจอกุญแจครั้งแรก (${uid})`);
                     hasBeenSeen = true;
                 }
                 consecutiveMisses = 0;
-                logDebug(`⏱️ [${i+1}/${KEY_PULL_TIMEOUT_S}] ช่อง ${slotNumber} -> ยังอยู่ (${uid})`);
+                logDebug(`⏱️ [${elapsed}/${KEY_PULL_TIMEOUT_S}] ช่อง ${slotNumber} -> ยังอยู่ (${uid})`);
             } else {
                 if (hasBeenSeen) {
                     consecutiveMisses++;
