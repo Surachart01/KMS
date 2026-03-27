@@ -798,84 +798,55 @@ export const swapAuthorization = async (req, res) => {
             return res.status(404).json({ success: false, message: `ไม่พบผู้ใช้ ${studentCodeB} ในระบบ` });
         }
 
-        // === ขั้นตอนที่ 2: ตรวจว่ายังไม่ได้เบิกกุญแจ ===
-        const borrowedA = await prisma.booking.findFirst({
-            where: { userId: userA.id, status: "BORROWED" },
+        // === ขั้นตอนที่ 2: ดึงข้อมูลการเบิก/จองที่มีอยู่ ===
+        const activeBookingA = await prisma.booking.findFirst({
+            where: { userId: userA.id, status: { in: ["BORROWED", "RESERVED"] } },
+            include: { key: true }
         });
-        const borrowedB = await prisma.booking.findFirst({
-            where: { userId: userB.id, status: "BORROWED" },
+        const activeBookingB = await prisma.booking.findFirst({
+            where: { userId: userB.id, status: { in: ["BORROWED", "RESERVED"] } },
+            include: { key: true }
         });
-
-        if (borrowedA) {
-            return res.status(400).json({
-                success: false,
-                message: `${userA.firstName} ${userA.lastName} กำลังเบิกกุญแจอยู่ ต้องคืนก่อนจึงจะสลับได้`,
-            });
-        }
-        if (borrowedB) {
-            return res.status(400).json({
-                success: false,
-                message: `${userB.firstName} ${userB.lastName} กำลังเบิกกุญแจอยู่ ต้องคืนก่อนจึงจะสลับได้`,
-            });
-        }
 
         // === ขั้นตอนที่ 3: ค้นหา DailyAuthorization ที่จะสลับ ===
         const { startOfDay, endOfDay } = getTodayRange();
         const now = new Date();
 
-        // สิทธิ์ของ A ในห้อง A
         const authA = await prisma.dailyAuthorization.findFirst({
             where: {
                 userId: userA.id,
                 roomCode: roomCodeA,
-                date: {
-                    gte: startOfDay,
-                    lte: endOfDay
-                },
+                date: { gte: startOfDay, lte: endOfDay },
                 startTime: { lte: now },
                 endTime: { gt: now },
             },
         });
 
-        // สิทธิ์ของ B ในห้อง B
         const authB = await prisma.dailyAuthorization.findFirst({
             where: {
                 userId: userB.id,
                 roomCode: roomCodeB,
-                date: {
-                    gte: startOfDay,
-                    lte: endOfDay
-                },
+                date: { gte: startOfDay, lte: endOfDay },
                 startTime: { lte: now },
                 endTime: { gt: now },
             },
         });
 
         if (!authA) {
-            return res.status(404).json({
-                success: false,
-                message: `${userA.firstName} ไม่มีสิทธิ์ห้อง ${roomCodeA} ในขณะนี้`,
-            });
+            return res.status(404).json({ success: false, message: `${userA.firstName} ไม่มีสิทธิ์ห้อง ${roomCodeA} ในขณะนี้` });
         }
         if (!authB) {
-            return res.status(404).json({
-                success: false,
-                message: `${userB.firstName} ไม่มีสิทธิ์ห้อง ${roomCodeB} ในขณะนี้`,
-            });
+            return res.status(404).json({ success: false, message: `${userB.firstName} ไม่มีสิทธิ์ห้อง ${roomCodeB} ในขณะนี้` });
         }
 
         // === ขั้นตอนที่ 4-5: สลับทุกอย่างใน Transaction ===
         const ipAddress = req.ip || req.connection?.remoteAddress || null;
-        const keyA = await prisma.key.findUnique({ where: { roomCode: roomCodeA } });
-        const keyB = await prisma.key.findUnique({ where: { roomCode: roomCodeB } });
 
         await prisma.$transaction(async (tx) => {
-            // สลับ DailyAuthorization: A ไปห้อง B, B ไปห้อง A
-            // ลบ auth เดิมแล้วสร้างใหม่ (เพราะ unique constraint)
+            // 1. สลับ DailyAuthorization: A ไปห้อง B, B ไปห้อง A
             await tx.dailyAuthorization.delete({ where: { id: authA.id } });
             await tx.dailyAuthorization.delete({ where: { id: authB.id } });
 
-            // สร้าง auth ใหม่: A → ห้อง B
             await tx.dailyAuthorization.create({
                 data: {
                     userId: userA.id,
@@ -883,14 +854,13 @@ export const swapAuthorization = async (req, res) => {
                     date: authA.date,
                     startTime: authA.startTime,
                     endTime: authA.endTime,
-                    source: "MANUAL",
+                    source: "MANUAL_SWAP",
                     scheduleId: authA.scheduleId,
                     subjectId: authA.subjectId,
                     createdBy: "HARDWARE_SWAP",
                 },
             });
 
-            // สร้าง auth ใหม่: B → ห้อง A
             await tx.dailyAuthorization.create({
                 data: {
                     userId: userB.id,
@@ -898,44 +868,39 @@ export const swapAuthorization = async (req, res) => {
                     date: authB.date,
                     startTime: authB.startTime,
                     endTime: authB.endTime,
-                    source: "MANUAL",
+                    source: "MANUAL_SWAP",
                     scheduleId: authB.scheduleId,
                     subjectId: authB.subjectId,
                     createdBy: "HARDWARE_SWAP",
                 },
             });
 
-            // สลับ Booking RESERVED (ถ้ามี)
-            if (keyA && keyB) {
-                const reservedA = await tx.booking.findFirst({
-                    where: { userId: userA.id, keyId: keyA.id, status: "RESERVED" },
+            // 2. สลับ Booking (ถ้ามีและตรงห้อง)
+            // กรณี A ถือครองกุญแจห้อง A อยู่จริง
+            if (activeBookingA && activeBookingA.key.roomCode === roomCodeA) {
+                await tx.booking.update({
+                    where: { id: activeBookingA.id },
+                    data: { userId: userB.id } // โอนให้ B
                 });
-                const reservedB = await tx.booking.findFirst({
-                    where: { userId: userB.id, keyId: keyB.id, status: "RESERVED" },
-                });
-
-                // ถ้าทั้ง 2 มี booking → สลับ room (keyId)
-                if (reservedA && reservedB) {
-                    await tx.booking.update({
-                        where: { id: reservedA.id },
-                        data: { keyId: keyB.id },
-                    });
-                    await tx.booking.update({
-                        where: { id: reservedB.id },
-                        data: { keyId: keyA.id },
-                    });
-                }
             }
 
-            // บันทึก SystemLog
+            // กรณี B ถือครองกุญแจห้อง B อยู่จริง
+            if (activeBookingB && activeBookingB.key.roomCode === roomCodeB) {
+                await tx.booking.update({
+                    where: { id: activeBookingB.id },
+                    data: { userId: userA.id } // โอนให้ A
+                });
+            }
+
+            // 3. บันทึก SystemLog
             await tx.systemLog.create({
                 data: {
                     userId: userA.id,
                     action: "HARDWARE_SWAP_AUTHORIZATION",
                     details: JSON.stringify({
-                        swapType: "SWAP",
-                        userA: { id: userA.id, studentCode: studentCodeA, from: roomCodeA, to: roomCodeB },
-                        userB: { id: userB.id, studentCode: studentCodeB, from: roomCodeB, to: roomCodeA },
+                        swapType: "RESPONSIBILITY_SWAP",
+                        userA: { id: userA.id, studentCode: studentCodeA, from: roomCodeA, to: roomCodeB, hadActiveBooking: !!activeBookingA },
+                        userB: { id: userB.id, studentCode: studentCodeB, from: roomCodeB, to: roomCodeA, hadActiveBooking: !!activeBookingB },
                         source: "FACE_SCANNER",
                     }),
                     ipAddress,

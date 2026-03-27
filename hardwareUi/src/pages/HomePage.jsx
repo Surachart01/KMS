@@ -50,8 +50,8 @@ export default function HomePage({ onBorrow, onReturn, onTransfer, onSwap, onMov
                         <RefreshCw size={20} />
                     </div>
                     <div className="minimal-text">
-                        <span>สลับห้อง</span>
-                        <small>Swap Room</small>
+                        <span>สลับสิทธิ์</span>
+                        <small>Swap Rights</small>
                     </div>
                 </button>
                 <button className="btn-minimal btn-move" onClick={onMove}>

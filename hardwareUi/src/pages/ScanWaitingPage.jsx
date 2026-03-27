@@ -20,7 +20,7 @@ export default function ScanWaitingPage({ mode, transferStep, swapStep, moveStep
             : 'สแกนใบหน้าผู้โอนสิทธิ์กุญแจ';
     } else if (isSwap) {
         const isStep2 = swapStep === 'scan2';
-        badgeText = isStep2 ? 'สลับห้อง — คนที่ 2' : 'สลับห้อง — คนที่ 1';
+        badgeText = isStep2 ? 'สลับสิทธิ์ — คนที่ 2' : 'สลับสิทธิ์ — คนที่ 1';
         subtitle = isStep2
             ? 'สแกนใบหน้าคนที่ 2'
             : 'สแกนใบหน้าคนที่ 1';
