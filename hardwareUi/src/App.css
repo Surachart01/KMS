@@ -482,28 +482,94 @@ body {
 .init-progress-track { width: 100%; height: 8px; background: rgba(255, 255, 255, 0.05); border-radius: 4px; overflow: hidden; margin-bottom: 20px; }
 .init-progress-fill { height: 100%; background: var(--primary-light); box-shadow: 0 0 15px var(--primary-glow); transition: width 0.5s ease; }
 .init-subtext { font-size: 0.9rem; opacity: 0.4; }
+.confirm-page { 
+    justify-content: center;
+    padding: 10px;
+}
+.confirm-card {
+    background: rgba(15, 23, 42, 0.85);
+    backdrop-filter: blur(25px);
+    border-radius: 24px;
+    padding: 20px;
+    width: 95%;
+    max-width: 600px;
+    box-shadow: var(--shadow-xl);
+    border: 1px solid var(--border);
+    animation: popupIn 0.3s ease-out;
+    text-align: center;
+}
+.confirm-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+.confirm-avatar-circle {
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 20px var(--primary-glow);
+}
+.confirm-title { 
+    font-size: 1.4rem; 
+    font-weight: 700; 
+    color: white; 
+}
+.confirm-details-box {
+    background: rgba(0,0,0,0.2);
+    border-radius: 16px;
+    margin-bottom: 16px;
+    padding: 12px;
+    border: 1px solid rgba(255,255,255,0.05);
+}
+.detail-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 0;
+}
+.detail-icon {
+    width: 40px;
+    height: 40px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--primary-light);
+}
+.detail-label { display: block; font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 2px; text-align: left;}
+.detail-value { display: block; font-size: 1.1rem; font-weight: 700; color: white; text-align: left;}
+.detail-divider { height: 1px; background: rgba(255,255,255,0.05); margin: 4px 0; }
 
-@keyframes spin { to { transform: rotate(360deg); } }
+.confirm-actions {
+    display: flex;
+    gap: 12px;
+}
+.confirm-actions .btn { flex: 1; padding: 14px; border-radius: 14px; }
 
-/* ── Reason Page ── */
+/* ── Reason Page Balanced ── */
 .reason-page { 
-    justify-content: flex-start;
-    padding: 0 10px;
-    height: 100%;
+    justify-content: center;
+    padding: 15px;
 }
 .reason-card {
-    background: rgba(15, 23, 42, 0.95);
+    background: rgba(15, 23, 42, 0.9);
     backdrop-filter: blur(25px);
-    border-radius: 12px;
-    padding: 10px 16px;
+    border-radius: 20px;
+    padding: 20px;
     width: 100%;
-    max-width: 950px;
-    height: 100%;
+    max-width: 850px;
+    height: 95%;
     display: flex;
     flex-direction: column;
     box-shadow: var(--shadow-xl);
-    border: none;
-    animation: popupIn 0.3s ease-out;
+    border: 1px solid var(--border);
 }
 .reason-header {
     display: flex;
@@ -513,14 +579,14 @@ body {
 }
 .reason-header svg { width: 18px; height: 18px; }
 .reason-title { 
-    font-size: 1.15rem; 
+    font-size: 1.4rem; 
     font-weight: 700; 
     color: white; 
 }
 .reason-subtitle { 
-    font-size: 0.8rem; 
+    font-size: 0.9rem; 
     color: var(--primary-light); 
-    margin-bottom: 4px; 
+    margin-bottom: 10px; 
     opacity: 0.8;
 }
 .reason-content-scroll {
@@ -546,12 +612,12 @@ body {
     margin-bottom: 2px; 
 }
 .reason-chip { 
-    padding: 4px 10px; 
-    border-radius: 8px; 
+    padding: 8px 16px; 
+    border-radius: 10px; 
     background: rgba(255,255,255,0.06); 
     border: 1px solid rgba(255,255,255,0.1); 
     color: white; 
-    font-size: 0.85rem; 
+    font-size: 1.05rem; 
     cursor: pointer; 
     transition: var(--transition); 
 }
@@ -589,6 +655,7 @@ body {
     padding-top: 4px;
     border-top: 1px solid rgba(255,255,255,0.05);
 }
+.reason-actions .btn { padding: 14px; border-radius: 14px; }
 .reason-actions .btn { flex: 1; height: 42px; padding: 0; border-radius: 8px; font-size: 1rem; }
 .reason-other-presets { margin-top: 0px; animation: slideDown 0.3s ease-out; }
 
