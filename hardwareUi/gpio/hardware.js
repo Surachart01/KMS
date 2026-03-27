@@ -737,10 +737,10 @@ function setLedRelay(slotNumber, keyBorrowed) {
     const activeLevel = RELAY_ACTIVE_STATE === 'LOW' ? 'dl' : 'dh';
     const inactiveLevel = RELAY_ACTIVE_STATE === 'LOW' ? 'dh' : 'dl';
     
-    // สลับสีตามที่ต่อสายฮาร์ดแวร์ไว้:
-    // keyBorrowed = true (ไม่มีกุญแจ) -> inactive (Red)
-    // keyBorrowed = false (มีกุญแจ) -> active (Green)
-    const level = keyBorrowed ? inactiveLevel : activeLevel;
+    // สลับสีตามที่ต่อสายฮาร์ดแวร์ไว้ (Relay OFF = Green, Relay ON = Red):
+    // keyBorrowed = true (ไม่มี/เบิกออก) -> active (Red)
+    // keyBorrowed = false (มีกุญแจอยู่) -> inactive (Green)
+    const level = keyBorrowed ? activeLevel : inactiveLevel;
 
     exec(`pinctrl set ${pin} ${level}`, (err) => {
         if (err) {
