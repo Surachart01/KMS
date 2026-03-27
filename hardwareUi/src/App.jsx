@@ -642,9 +642,7 @@ export default function App() {
                         <div className="init-spinner">
                             <div className="spinner-ring"></div>
                             <div className="spinner-center">
-                                <span className="init-percentage">
-                                    {connected ? (hardwareStatus.attempt || 1) * 20 : '0'}%
-                                </span>
+                                {/* Percentage removed as requested */}
                             </div>
                         </div>
                         <h2 className="init-title">
@@ -665,14 +663,6 @@ export default function App() {
                     </div>
                 </div>
             )}
-            {/* ── Debug Overlay (Small & Subtle) ── */}
-            <div style={{ 
-                position: 'fixed', bottom: 0, right: 0, padding: '4px 10px', 
-                background: 'rgba(0,0,0,0.5)', color: '#0f0', fontSize: '10px', 
-                zIndex: 10000, pointerEvents: 'none', fontFamily: 'monospace' 
-            }}>
-                P: {page} | M: {mode} | S: {lastScanDebug} | C: {connected ? 'ON' : 'OFF'}
-            </div>
         </div>
     );
 }

@@ -1,18 +1,15 @@
 import { useState, useEffect } from 'react';
+import { CheckCircle, XCircle, Clock, FileText } from 'lucide-react';
 
 const FALLBACK_REASONS = ['สอนชดเชย', 'กิจกรรมพิเศษ', 'ซ่อมบำรุง', 'ประชุม', 'อื่นๆ'];
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4556';
 
-/**
- * หน้ากรอกเหตุผล + เลือกเวลาคืน — เมื่อไม่มีสิทธิ์ตาม DailyAuthorization
- * onSubmit(reason, returnByTime) — returnByTime เป็น ISO string
- */
 export default function ReasonPage({ roomCode, onSubmit, onCancel, loading }) {
     const [reasons, setReasons] = useState(FALLBACK_REASONS);
     const [loadingReasons, setLoadingReasons] = useState(true);
     const [selected, setSelected] = useState('');
     const [customReason, setCustomReason] = useState('');
-    const [returnTime, setReturnTime] = useState(''); // HH:MM format
+    const [returnTime, setReturnTime] = useState('');
 
     useEffect(() => {
         const fetchReasons = async () => {
@@ -23,7 +20,7 @@ export default function ReasonPage({ roomCode, onSubmit, onCancel, loading }) {
                     setReasons(json.data.map((r) => r.label));
                 }
             } catch {
-                // ใช้ fallback ถ้า fetch ไม่ได้
+                // fallback
             } finally {
                 setLoadingReasons(false);
             }
@@ -32,8 +29,9 @@ export default function ReasonPage({ roomCode, onSubmit, onCancel, loading }) {
     }, []);
 
     const isOther = selected === 'อื่นๆ';
+    const reason = isOther ? customReason : selected;
+    const canSubmit = reason.trim() && returnTime;
 
-    // แปลง HH:MM เป็น ISO string (วันนี้ หรือวันพรุ่งนี้ถ้าเวลาผ่านไปแล้ว)
     const getReturnByTime = () => {
         if (!returnTime) return null;
         const [hh, mm] = returnTime.split(':').map(Number);
@@ -43,9 +41,6 @@ export default function ReasonPage({ roomCode, onSubmit, onCancel, loading }) {
         return d.toISOString();
     };
 
-    const reason = isOther ? customReason : selected;
-    const canSubmit = reason.trim() && returnTime;
-
     const handleSubmit = () => {
         if (canSubmit) {
             onSubmit(reason, getReturnByTime());
@@ -54,72 +49,74 @@ export default function ReasonPage({ roomCode, onSubmit, onCancel, loading }) {
 
     return (
         <div className="page reason-page">
-            <h2 className="reason-title">กรุณาระบุเหตุผลการเบิกกุญแจ</h2>
-            <p className="reason-subtitle">ห้อง {roomCode} — ไม่มีสิทธิ์ตามตารางเรียน</p>
-
-            {/* ── ขั้นตอนที่ 1: เลือกเหตุผล ── */}
-            <p className="reason-step-label">1. เลือกเหตุผล</p>
-            {loadingReasons ? (
-                <div className="reason-options" style={{ justifyContent: 'center' }}>
-                    <p style={{ color: 'var(--text-muted)' }}>กำลังโหลด...</p>
+            <div className="reason-card glass">
+                <div className="reason-header">
+                    <FileText size={32} className="text-gradient" />
+                    <h2 className="reason-title">ระบุเหตุผลการเบิกกุญแจ</h2>
                 </div>
-            ) : (
-                <div className="reason-options">
-                    {reasons.map((r) => (
-                        <button
-                            key={r}
-                            className={`reason-chip ${selected === r ? 'active' : ''}`}
-                            onClick={() => setSelected(r)}
-                        >
-                            {r}
-                        </button>
-                    ))}
-                </div>
-            )}
+                
+                <p className="reason-subtitle">ห้อง {roomCode} — อยู่นอกตารางเรียนของคุณ</p>
 
-            {isOther && (
-                <input
-                    className="reason-input"
-                    type="text"
-                    placeholder="พิมพ์เหตุผล..."
-                    value={customReason}
-                    onChange={(e) => setCustomReason(e.target.value)}
-                    autoFocus
-                />
-            )}
+                <div className="reason-content-scroll">
+                    {/* Step 1 */}
+                    <p className="reason-step-label">1. เลือกเหตุผลการใช้งาน</p>
+                    <div className="reason-options">
+                        {reasons.map((r) => (
+                            <button
+                                key={r}
+                                className={`reason-chip ${selected === r ? 'active' : ''}`}
+                                onClick={() => setSelected(r)}
+                            >
+                                {r}
+                            </button>
+                        ))}
+                    </div>
 
-            {/* ── ขั้นตอนที่ 2: เลือกเวลาคืน ── */}
-            {selected && (
-                <>
-                    <p className="reason-step-label" style={{ marginTop: '1.2rem' }}>2. เวลาที่จะคืน</p>
-                    <input
-                        className="reason-input"
-                        type="time"
-                        value={returnTime}
-                        onChange={(e) => setReturnTime(e.target.value)}
-                    />
-                    {returnTime && (
-                        <p className="reason-return-preview">
-                            ⏰ ต้องคืนภายใน: <strong>{returnTime} น.</strong>
-                        </p>
+                    {isOther && (
+                        <input
+                            className="reason-input anim-fade-in"
+                            type="text"
+                            placeholder="ระบุเหตุผลอื่นๆ..."
+                            value={customReason}
+                            onChange={(e) => setCustomReason(e.target.value)}
+                            autoFocus
+                        />
                     )}
-                </>
-            )}
 
-            <div className="reason-actions">
-                <button
-                    className="btn btn-primary"
-                    onClick={handleSubmit}
-                    disabled={loading || !canSubmit}
-                >
-                    ยืนยัน
-                </button>
-                <button className="btn btn-secondary" onClick={onCancel} disabled={loading}>
-                    ยกเลิก
-                </button>
+                    {/* Step 2 */}
+                    {selected && (
+                        <div className="reason-time-section anim-fade-in">
+                            <p className="reason-step-label">
+                                <Clock size={16} /> 2. กำหนดเวลาที่จะคืนกุญแจ
+                            </p>
+                            <input
+                                className="reason-input"
+                                type="time"
+                                value={returnTime}
+                                onChange={(e) => setReturnTime(e.target.value)}
+                            />
+                            {returnTime && (
+                                <p className="reason-return-preview">
+                                    ⏰ คืนกุญแจไม่เกิน: <strong>{returnTime} น.</strong>
+                                </p>
+                            )}
+                        </div>
+                    )}
+                </div>
+
+                <div className="reason-actions">
+                    <button
+                        className="btn btn-primary btn-lg"
+                        onClick={handleSubmit}
+                        disabled={loading || !canSubmit}
+                    >
+                        {loading ? 'กำลังส่งข้อมูล...' : <><CheckCircle size={20} /> ยืนยัน</>}
+                    </button>
+                    <button className="btn btn-secondary btn-lg" onClick={onCancel} disabled={loading}>
+                        <XCircle size={20} /> ยกเลิก
+                    </button>
+                </div>
             </div>
-
-            {loading && <div className="loading-bar"></div>}
         </div>
     );
 }
