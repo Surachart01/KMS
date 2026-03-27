@@ -877,6 +877,9 @@ async function startKeyPullCheck(slotNumber, bookingId) {
     // ═══════════════════════════════════════════════
     isUnlocking = true;
     logDebug(`⏳ Solenoid UNLOCKED at slot=${slotNumber} (Mode: ${nfcMode}) — หยุด Background Polling แล้ว`);
+    
+    // 🔥 สั่งปลดล็อค Solenoid
+    await unlockSlot(slotNumber);
 
     let blinkInterval = null;
 
