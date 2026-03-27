@@ -894,7 +894,7 @@ async function startKeyPullCheck(slotNumber, bookingId) {
         
         let hasBeenSeen = false;
         let consecutiveMisses = 0;
-        const MISS_THRESHOLD = 3; 
+        const MISS_THRESHOLD = 5; // เพิ่มจาก 3 เพื่อกันสกัดสัญญาณหลุดชั่วคราว
         let earlyPulled = false;
 
         for (let i = 0; i < KEY_PULL_TIMEOUT_S; i++) {
@@ -933,23 +933,32 @@ async function startKeyPullCheck(slotNumber, bookingId) {
             // setLedRelay(slotNumber, true); // 🔴 แดง (Let NFC poll handle it)
             socket.emit('key:pulled', { slotNumber, bookingId });
         } else {
-            logDebug(`🔒 ครบเวลา -> Final Verification...`);
+            logDebug(`🔒 ครบเวลา -> Final Verification (Paranoid Check)...`);
+            // รอให้นิ่งขึ้น 2 วินาที
             await new Promise(r => setTimeout(r, 2000));
+            
             let keyStillThere = false;
-            for (let a = 1; a <= 3; a++) {
-                if (await readNfcAtSlot(slotNumber)) {
+            let seeCount = 0;
+            const TOTAL_CHECKS = 10; // เพิ่มจำนวนการเช็คให้ชัวร์
+            
+            for (let a = 1; a <= TOTAL_CHECKS; a++) {
+                const uid = await readNfcAtSlot(slotNumber);
+                if (uid) {
+                    seeCount++;
                     keyStillThere = true;
-                    break;
+                    // ถ้าเจอแล้ว ไม่ต้องรอต่อ
+                    break; 
                 }
-                await new Promise(r => setTimeout(r, 300));
+                // ถ้าไม่เจอ ให้รอสั้นๆ แล้วลองใหม่
+                await new Promise(r => setTimeout(r, 400));
             }
 
             if (keyStillThere) {
-                logDebug(`❌ ยกเลิก: กุญแจยังคาอยู่`);
+                logDebug(`❌ ยกเลิก: ยืนยันพบกุญแจยังติดอยู่ที่ช่อง ${slotNumber}`);
                 setLedRelay(slotNumber, false); // 🟢 เขียว
                 socket.emit('borrow:cancelled', { slotNumber, bookingId });
             } else {
-                logDebug(`✅ สำเร็จ: กุญแจไม่อยู่แล้ว`);
+                logDebug(`✅ สำเร็จ: ไม่พบกุญแจที่ช่อง ${slotNumber} หลังการตรวจสอบ ${TOTAL_CHECKS} ครั้ง`);
                 setLedRelay(slotNumber, true); // 🔴 แดง
                 socket.emit('key:pulled', { slotNumber, bookingId });
             }
