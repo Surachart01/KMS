@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { socket } from '../socket.js';
+import { ArrowDownToLine } from 'lucide-react';
 
 export default function WaitForKeyReturnPage({ booking, onKeyDetected, onCancel }) {
     const [timeLeft, setTimeLeft] = useState(60); // 60 seconds timeout
@@ -48,7 +49,7 @@ export default function WaitForKeyReturnPage({ booking, onKeyDetected, onCancel 
             <div className="wait-key-card glass anim-fade-in">
                 <div className="wait-key-icon-container">
                     <div className="nfc-pulse-ring"></div>
-                    <span className="wait-key-icon">📥</span>
+                    <ArrowDownToLine className="wait-key-icon" size={42} strokeWidth={1.5} />
                 </div>
                 
                 <h2 className="wait-key-title">กรุณาเสียบกุญแจคืน</h2>
