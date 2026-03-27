@@ -918,24 +918,20 @@ async function startKeyPullCheck(slotNumber, bookingId) {
             } else {
                 if (hasBeenSeen) {
                     consecutiveMisses++;
-                    logDebug(`⏱️ [${i+1}/${KEY_PULL_TIMEOUT_S}] ช่อง ${slotNumber} -> หายไป! (นับถอยหลัง: ${consecutiveMisses}/${MISS_THRESHOLD})`);
+                    logDebug(`⏱️ [${elapsed}/${KEY_PULL_TIMEOUT_S}] ช่อง ${slotNumber} -> หายไป! (นับถอยหลัง: ${consecutiveMisses}/${MISS_THRESHOLD})`);
                     if (consecutiveMisses >= MISS_THRESHOLD) {
                         logDebug(`⚡ [Confirm] ดึงออกแล้ว! (Instant Lock)`);
                         earlyPulled = true;
                         break;
                     }
                 } else {
-                    logDebug(`⏱️ [${i+1}/${KEY_PULL_TIMEOUT_S}] ไม่เจอการวาง หรืออ่านบกพร่อง`);
+                    logDebug(`⏱️ [${elapsed}/${KEY_PULL_TIMEOUT_S}] ไม่เจอการวาง หรืออ่านบกพร่อง`);
                 }
             }
         }
-
-        // 3. ท้ายช่วงเวลา: ล็อค Solenoid 
-        await lockSlot(slotNumber);
         
         if (earlyPulled) {
             logDebug(`✅ การเบิกสำเร็จ (ดึงออกเร็ว)`);
-            // setLedRelay(slotNumber, true); // 🔴 แดง (Let NFC poll handle it)
             socket.emit('key:pulled', { slotNumber, bookingId });
         } else {
             logDebug(`🔒 ครบเวลา 10 วิ -> Final Verification (Fast Check)...`);
@@ -949,7 +945,6 @@ async function startKeyPullCheck(slotNumber, bookingId) {
                     keyStillThere = true;
                     break; 
                 }
-                // ถ้าไม่เจอ ให้รอสั้นลง (200ms) แล้วลองใหม่
                 await new Promise(r => setTimeout(r, 200));
             }
 
@@ -966,15 +961,21 @@ async function startKeyPullCheck(slotNumber, bookingId) {
     } catch (err) {
         logDebug(`❌ Error ใน startKeyPullCheck: ${err.message}`);
     } finally {
+        // 🔥 สำคัญที่สุด: ท้ายช่วงเวลาหรื่อเมื่อเกิด Error ต้องล็อค Solenoid เสมอ!
+        try {
+            await lockSlot(slotNumber);
+        } catch (e) {
+            logDebug(`❌ lockSlot Error: ${e.message}`);
+        }
+
         if (blinkInterval) clearInterval(blinkInterval);
         
-        // สำคัญที่สุด: คืนสิทธิ์การ Scan Background เสมอ!
+        // คืนสิทธิ์การ Scan Background
         activeFeedbackSlots.delete(slotNumber);
         pullCheckingSlots.delete(slotNumber);
         isUnlocking = false;
         logDebug(`🔄 คืนสิทธิ์ Background Polling แล้ว (slot=${slotNumber})`);
         
-        // เช็คสถานะใหม่ทั้งหมดหลังจากนี้ 1.5 วินาที
         setTimeout(() => checkAllSlots(), 1500);
     }
 }
