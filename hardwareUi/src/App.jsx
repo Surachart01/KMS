@@ -635,31 +635,42 @@ export default function App() {
                 </div>
             )}
 
-            {/* ── Hardware Initialization Overlay ── */}
-            {(!hardwareStatus.ready || !connected) && (
-                <div className="hardware-init-overlay">
+            {/* ── System Connection & Hardware Status Overlays ── */}
+            {(!connected || !hardwareStatus.ready) && (
+                <div className={`hardware-init-overlay ${!connected ? 'disconnected-overlay' : ''}`}>
                     <div className="init-content">
-                        <div className="init-spinner">
-                            <div className="spinner-ring"></div>
-                            <div className="spinner-center">
-                                {/* Percentage removed as requested */}
-                            </div>
-                        </div>
-                        <h2 className="init-title">
-                            {!connected ? 'กำลังเชื่อมต่อ Server...' : 'กำลังเริ่มต้นระบบ...'}
-                        </h2>
-                        <p className="init-status">
-                            {hardwareStatus.message}
-                        </p>
-                        {hardwareStatus.attempt > 0 && (
-                            <div className="init-progress-track">
-                                <div 
-                                    className="init-progress-fill" 
-                                    style={{ width: `${(hardwareStatus.attempt / (hardwareStatus.maxAttempts || 5)) * 100}%` }}
-                                ></div>
-                            </div>
+                        {!connected ? (
+                            <>
+                                <div className="disconnected-icon" style={{ fontSize: '5rem', marginBottom: '30px' }}>⚠️</div>
+                                <h2 className="init-title">ขาดการเชื่อมต่อกับเซิร์ฟเวอร์</h2>
+                                <p className="init-status" style={{ color: '#ef4444' }}>
+                                    ระบบกำลังพยายามเชื่อมต่อใหม่...
+                                </p>
+                                <p className="init-subtext">
+                                    [ System Locked ]<br/>
+                                    กรุณารอจนกว่าการเชื่อมต่อจะกลับมาปกติ
+                                </p>
+                            </>
+                        ) : (
+                            <>
+                                <div className="init-spinner">
+                                    <div className="spinner-ring"></div>
+                                </div>
+                                <h2 className="init-title">กำลังเริ่มต้นระบบ...</h2>
+                                <p className="init-status">
+                                    {hardwareStatus.message}
+                                </p>
+                                {hardwareStatus.attempt > 0 && (
+                                    <div className="init-progress-track">
+                                        <div 
+                                            className="init-progress-fill" 
+                                            style={{ width: `${(hardwareStatus.attempt / (hardwareStatus.maxAttempts || 5)) * 100}%` }}
+                                        ></div>
+                                    </div>
+                                )}
+                                <p className="init-subtext">กรุณารอสักครู่ ระบบกำลังสื่อสารกับตู้กุญแจ</p>
+                            </>
                         )}
-                        <p className="init-subtext">กรุณารอสักครู่ ระบบกำลังสื่อสารกับตู้กุญแจ</p>
                     </div>
                 </div>
             )}

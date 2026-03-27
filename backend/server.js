@@ -545,15 +545,16 @@ io.on('connection', (socket) => {
     console.log(`❌ borrow:cancelled: slot=${slotNumber}, bookingId=${bookingId}`);
     try {
       if (bookingId) {
-        // ลบรายการเบิกทิ้งแบบเงียบๆ ไม่ต้องเก็บ log ว่ามีการเบิกเกิดขึ้น
+        // 1. ลบรายการเบิกทิ้ง
         await prisma.booking.delete({ where: { id: bookingId } });
         
-        // ลบ log การทำรายการเบิกตอนแรกทิ้งด้วย (เพื่อให้เนียนว่าไม่เคยเกิดการเบิกขึ้น)
+        // 2. ลบ log การทำรายการเบิกตอนแรกทิ้งด้วย (เพื่อให้เนียนว่าไม่เคยเกิดการเบิกขึ้น)
+        // แก้ไข: ใช้ contains แทน string_contains กรองลบ log ที่มี bookingId นี้
         await prisma.systemLog.deleteMany({
           where: {
             action: "HARDWARE_BORROW_KEY",
             details: {
-              string_contains: `"bookingId":"${bookingId}"`
+              contains: `"bookingId":"${bookingId}"`
             }
           }
         });
