@@ -89,7 +89,8 @@ body {
 }
 
 .success-page {
-    padding-top: 5px !important;
+    padding-top: 2px !important;
+    gap: 8px !important;
 }
 
 @keyframes pageIn {
@@ -435,39 +436,35 @@ body {
 
 /* ── Success Page ── */
 .success-icon-wrapper {
-    width: 80px; height: 80px;
+    width: 60px; height: 60px;
     border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
-    margin: 0 auto 16px;
+    margin: 0 auto 10px;
     position: relative;
-    animation: bounceIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 .success-icon-wrapper.success {
     background: rgba(16, 185, 129, 0.15);
     color: var(--primary-light);
-    box-shadow: 0 0 40px rgba(16, 185, 129, 0.15);
     border: 1px solid rgba(16, 185, 129, 0.2);
 }
 .success-icon-wrapper.error {
     background: rgba(239, 68, 68, 0.15);
     color: #ef4444;
-    box-shadow: 0 0 40px rgba(239, 68, 68, 0.15);
     border: 1px solid rgba(239, 68, 68, 0.2);
 }
-.success-title { font-size: 1.7rem; font-weight: 700; margin-bottom: 6px; }
-.success-message { font-size: 1rem; margin-bottom: 16px; opacity: 0.7; max-width: 400px; margin-left: auto; margin-right: auto; }
+.success-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 2px; }
+.success-message { font-size: 0.9rem; margin-bottom: 8px; opacity: 0.7; }
 .success-details {
-    display: flex; gap: 24px;
+    display: flex; gap: 16px;
     background: var(--surface-glass);
-    padding: 12px 32px;
-    border-radius: 20px;
+    padding: 6px 20px;
+    border-radius: 12px;
     border: 1px solid var(--border);
-    margin: 0 auto 20px;
+    margin: 0 auto 10px;
     width: fit-content;
-    box-shadow: var(--shadow-md);
 }
-.success-detail span { font-size: 0.85rem; opacity: 0.5; }
-.success-detail strong { font-size: 1.3rem; color: var(--primary-light); margin-left: 8px; }
+.success-detail span { font-size: 0.8rem; opacity: 0.5; }
+.success-detail strong { font-size: 1.1rem; color: var(--primary-light); margin-left: 6px; }
 
 /* ── Utility Buttons ── */
 .btn { border: none; cursor: pointer; transition: var(--transition); display: flex; align-items: center; justify-content: center; gap: 10px; }
@@ -846,7 +843,7 @@ body {
 .timeout-text { font-size: 0.9rem; opacity: 0.4; }
 
 
-.success-countdown { font-size: 0.9rem; color: var(--primary-light); margin-bottom: 12px; font-weight: 500; }
+.success-countdown { font-size: 0.85rem; color: var(--primary-light); margin-bottom: 8px; font-weight: 500; }
 @keyframes bounceIn {
     from { transform: scale(0); opacity: 0; }
     to { transform: scale(1); opacity: 1; }
