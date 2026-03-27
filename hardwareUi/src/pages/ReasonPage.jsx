@@ -14,6 +14,7 @@ export default function ReasonPage({ roomCode, onSubmit, onCancel, loading }) {
     // Time state (default to 2 hours from now)
     const [hours, setHours] = useState(new Date().getHours() + 2);
     const [minutes, setMinutes] = useState(0);
+    const [roomSchedule, setRoomSchedule] = useState([]);
 
     useEffect(() => {
         const fetchReasons = async () => {
@@ -23,17 +24,23 @@ export default function ReasonPage({ roomCode, onSubmit, onCancel, loading }) {
                 if (json.success && json.data?.length > 0) {
                     setReasons(json.data.map((r) => r.label));
                 }
-            } catch {
-                // fallback
-            } finally {
-                setLoadingReasons(false);
-            }
+            } catch (err) { console.error('Reasons fetch error:', err); }
         };
+
+        const fetchSchedule = async () => {
+            try {
+                const res = await fetch(`${API_URL}/api/kiosk/room-schedule/${roomCode}`);
+                const json = await res.json();
+                if (json.success) setRoomSchedule(json.data);
+            } catch (err) { console.error('Schedule fetch error:', err); }
+        };
+
         fetchReasons();
+        fetchSchedule();
         
         // Normalize default hours
         if (hours >= 24) setHours(hours - 24);
-    }, []);
+    }, [roomCode]);
 
     const isOther = selected === 'อื่นๆ';
     const finalReason = isOther ? (selectedOther || 'เหตุผลอื่นๆ') : selected;
@@ -81,9 +88,25 @@ export default function ReasonPage({ roomCode, onSubmit, onCancel, loading }) {
                     <h2 className="reason-title">ระบุเหตุผลการเบิกกุญแจ</h2>
                 </div>
                 
-                <p className="reason-subtitle">ห้อง {roomCode} — อยู่นอกตารางเรียนของคุณ</p>
-
                 <div className="reason-content-scroll">
+                    {/* Schedule Overview */}
+                    {roomSchedule.length > 0 && (
+                        <div className="room-schedule-overview anim-fade-in">
+                            <p className="reason-step-label"><Clock size={16} /> ตารางการใช้ห้องวันนี้</p>
+                            <div className="schedule-list">
+                                {roomSchedule.map(s => (
+                                    <div key={s.id} className="schedule-item">
+                                        <div className="schedule-time">{new Date(s.startTime).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })} - {new Date(s.endTime).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })}</div>
+                                        <div className="schedule-info">
+                                            <div className="schedule-subject">{s.subjectName}</div>
+                                            <div className="schedule-teacher">{s.teacherName}</div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
                     {/* Step 1 */}
                     <p className="reason-step-label">1. เลือกเหตุผลการใช้งาน</p>
                     <div className="reason-options">

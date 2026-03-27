@@ -380,53 +380,89 @@ export const borrowKey = async (req, res) => {
             });
         }
 
-        // === ขั้นตอนที่ 3.5: ตรวจว่าเวลาเบิกนอกตาราง ไม่ทับคาบเรียนถัดไป ===
+        // === ขั้นตอนที่ 3.5: ตรวจสอบตารางสอนและสิทธิ์เบิกนอกเวลา ===
+        
+        // คาบเรียนที่ "ครอบคลุม" เวลาปัจจุบัน (รวมล่วงหน้า 30 นาที)
+        const relevantSchedule = allAuthsToday.find(s => {
+            const bufferStart = new Date(s.startTime.getTime() - EARLY_BORROW_MINUTES * 60 * 1000);
+            return now >= bufferStart && now < s.endTime;
+        });
+
+        // ถ้าไม่มีสิทธิ์เบิกปกติ (authorization) และกำลังพยายามเบิกด้วยเหตุผล
+        if (!authorization && req.body.reason) {
+            if (relevantSchedule) {
+                // มีคนที่มีเรียนในห้องนี้ตอนนี้ (หรือกำลังจะเริ่ม)
+                const isScheduledUser = relevantSchedule.userId === user.id;
+                
+                if (!isScheduledUser) {
+                    // ผู้ใช้ปัจจุบันไม่มีเรียน แต่ "คนอื่น" มีเรียน
+                    const gracePeriodMs = 30 * 60 * 1000;
+                    const isGracePeriodActive = now < new Date(relevantSchedule.startTime.getTime() + gracePeriodMs);
+                    
+                    if (isGracePeriodActive) {
+                        const startStr = new Date(relevantSchedule.startTime).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+                        const subjectName = relevantSchedule.subject?.name || 'คาบเรียนตามตาราง';
+                        
+                        // เช็คว่าเจ้าของสิทธิ์มาเบิกไปหรือยัง?
+                        const existingBooking = await prisma.booking.findFirst({
+                            where: { 
+                                key: { roomCode: roomCode },
+                                status: "BORROWED"
+                            }
+                        });
+
+                        if (!existingBooking) {
+                            return res.status(409).json({
+                                success: false,
+                                message: `ห้องนี้มีเรียนวิชา "${subjectName}" (${startStr}) ระบบสงวนสิทธิ์ให้ผู้สอนจนถึงเวลา ${new Date(relevantSchedule.startTime.getTime() + gracePeriodMs).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })}`,
+                                error_code: "SCHEDULE_RESERVED",
+                                data: {
+                                    conflictingSchedule: {
+                                        subjectName,
+                                        startTime: relevantSchedule.startTime,
+                                        graceUntil: new Date(relevantSchedule.startTime.getTime() + gracePeriodMs)
+                                    }
+                                }
+                            });
+                        }
+                    }
+                }
+            }
+        }
+
+        // ตรวจสอบเวลาคืน (กรณีเบิกนอกตาราง) ไม่ให้ทับคาบเรียนถัดไป
         if (!authorization && req.body.returnByTime) {
             const returnBy = new Date(req.body.returnByTime);
 
-            // หาคาบเรียนในห้องนี้ที่ทับกับช่วงเวลา [now .. returnByTime]
-            // overlap: startTime < returnByTime AND endTime > now
             const conflicting = await prisma.dailyAuthorization.findFirst({
                 where: {
                     roomCode: roomCode,
-                    date: {
-                        gte: startOfDay,
-                        lte: endOfDay,
-                    },
+                    date: { gte: startOfDay, lte: endOfDay },
                     startTime: { lt: returnBy },
                     endTime: { gt: now },
+                    userId: { not: user.id } // ไม่นับคาบของตัวเองถ้ามี
                 },
                 include: {
                     subject: { select: { code: true, name: true } },
-                    user: { select: { firstName: true, lastName: true, studentCode: true } },
+                    user: { select: { firstName: true, lastName: true } },
                 },
                 orderBy: { startTime: 'asc' },
             });
 
             if (conflicting) {
-                const startStr = new Date(conflicting.startTime).toLocaleTimeString('th-TH', {
-                    hour: '2-digit', minute: '2-digit',
-                });
-                const endStr = new Date(conflicting.endTime).toLocaleTimeString('th-TH', {
-                    hour: '2-digit', minute: '2-digit',
-                });
+                const startStr = new Date(conflicting.startTime).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
                 const subjectName = conflicting.subject?.name || 'ไม่ระบุวิชา';
-
-                console.log(`⚠️ [Hardware] borrow: เวลาคืนทับกับคาบเรียน ${subjectName} (${startStr}-${endStr})`);
 
                 return res.status(409).json({
                     success: false,
-                    message: `ช่วงเวลาที่เลือกทับกับคาบเรียน "${subjectName}" เวลา ${startStr}-${endStr} กรุณาเปลี่ยนเวลาคืน`,
+                    message: `เวลาคืนทับกับคาบเรียน "${subjectName}" เริ่มเวลา ${startStr} กรุณาเลือกเวลาคืนที่เร็วกว่านี้`,
                     error_code: "SCHEDULE_OVERLAP",
                     data: {
                         conflictingSchedule: {
-                            roomCode: conflicting.roomCode,
+                            subjectName,
                             startTime: conflicting.startTime,
                             endTime: conflicting.endTime,
-                            subjectName,
-                            subjectCode: conflicting.subject?.code || null,
                         },
-                        // แนะนำเวลาคืนที่ปลอดภัย (ก่อนคาบเรียนเริ่ม)
                         suggestedReturnBy: conflicting.startTime,
                     },
                 });

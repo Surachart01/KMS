@@ -591,33 +591,75 @@ body {
 /* ── Reason Page Balanced ── */
 .reason-page { 
     justify-content: center;
-    padding: 15px;
+    padding: 10px;
 }
 .reason-card {
-    background: rgba(15, 23, 42, 0.9);
-    backdrop-filter: blur(25px);
-    border-radius: 20px;
-    padding: 20px;
-    width: 100%;
-    max-width: 850px;
-    height: 95%;
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.9) 100%);
+    backdrop-filter: blur(20px);
+    border-radius: 24px;
+    padding: 20px 24px;
+    width: 95%;
+    max-width: 600px;
+    height: 90%;
     display: flex;
     flex-direction: column;
-    box-shadow: var(--shadow-xl);
     border: 1px solid var(--border);
+    animation: popupIn 0.3s ease-out;
 }
 .reason-header {
     display: flex;
     align-items: center;
-    gap: 8px;
-    margin-bottom: 2px;
+    gap: 12px;
+    margin-bottom: 8px;
 }
-.reason-header svg { width: 18px; height: 18px; }
+.reason-header svg { width: 24px; height: 24px; }
 .reason-title { 
-    font-size: 1.4rem; 
+    font-size: 1.5rem; 
     font-weight: 700; 
     color: white; 
 }
+
+.reason-content-scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding-right: 8px;
+    margin: 8px 0;
+}
+.reason-content-scroll::-webkit-scrollbar { width: 4px; }
+.reason-content-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+
+/* ── Room Schedule Overview ── */
+.room-schedule-overview {
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 16px;
+    padding: 12px;
+    margin-bottom: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+.schedule-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 8px;
+}
+.schedule-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    border-left: 3px solid var(--primary);
+}
+.schedule-time {
+    font-family: 'Monaco', monospace;
+    font-size: 0.85rem;
+    color: var(--primary-light);
+    white-space: nowrap;
+}
+.schedule-info { flex: 1; }
+.schedule-subject { font-size: 0.9rem; font-weight: 600; text-align: left; }
+.schedule-teacher { font-size: 0.75rem; opacity: 0.5; text-align: left; }
 .reason-subtitle { 
     font-size: 0.9rem; 
     color: var(--primary-light); 

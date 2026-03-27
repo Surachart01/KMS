@@ -28,4 +28,7 @@ router.get('/rooms', kioskController.getAvailableRooms);
 // ดึงสถานะกุญแจทุกห้อง
 router.get('/rooms/status', kioskController.getRoomKeyStatus);
 
+// ดึงตารางสอนของห้อง (สำหรับแสดงผลที่ตู้)
+router.get('/room-schedule/:roomCode', kioskController.getRoomSchedule);
+
 export default router;

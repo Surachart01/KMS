@@ -443,3 +443,43 @@ export const getRoomKeyStatus = async (req, res) => {
         return res.status(500).json({ success: false, message: 'เกิดข้อผิดพลาดในการดึงข้อมูล' });
     }
 };
+
+/**
+ * GET /api/kiosk/room-schedule/:roomCode
+ */
+export const getRoomSchedule = async (req, res) => {
+    try {
+        const { roomCode } = req.params;
+        const now = new Date();
+        const startOfDay = new Date(new Date().setHours(0, 0, 0, 0));
+        const endOfDay = new Date(new Date().setHours(23, 59, 59, 999));
+
+        const schedules = await prisma.dailyAuthorization.findMany({
+            where: {
+                roomCode,
+                date: { gte: startOfDay, lte: endOfDay }
+            },
+            include: {
+                subject: { select: { code: true, name: true } },
+                user: { select: { firstName: true, lastName: true } }
+            },
+            orderBy: { startTime: 'asc' }
+        });
+
+        return res.status(200).json({
+            success: true,
+            message: `ดึงตารางสอนห้อง ${roomCode} สำเร็จ`,
+            data: schedules.map(s => ({
+                id: s.id,
+                startTime: s.startTime,
+                endTime: s.endTime,
+                subjectCode: s.subject?.code,
+                subjectName: s.subject?.name,
+                teacherName: `${s.user.firstName} ${s.user.lastName}`
+            }))
+        });
+    } catch (error) {
+        console.error('Error in getRoomSchedule:', error);
+        return res.status(500).json({ success: false, message: 'เกิดข้อผิดพลาดในการดึงตารางสอน' });
+    }
+};
