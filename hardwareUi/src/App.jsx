@@ -178,8 +178,10 @@ export default function App() {
             try {
                 const res = await identifyUser(data.userId);
                 if (res?.success) {
-                    const rooms = res.data?.authorizedRooms || [];
-                    const room = rooms.length > 0 ? rooms[0].roomCode : null;
+                    const activeBooking = res.data?.activeBooking;
+                    const authorizedRooms = res.data?.authorizedRooms || [];
+                    const room = activeBooking ? activeBooking.roomCode : (authorizedRooms.length > 0 ? authorizedRooms[0].roomCode : null);
+
                     setTransferUser1(data);
                     setTransferRoom1(room);
                     setTransferStep('confirm1');

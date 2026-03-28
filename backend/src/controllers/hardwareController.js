@@ -1169,7 +1169,14 @@ export const transferAuthorization = async (req, res) => {
         const now = new Date();
         const earlyBuffer = new Date(now.getTime() + EARLY_BORROW_MINUTES * 60 * 1000);
 
-        // === ขั้นตอนที่ 2: หาสิทธิ์ปัจจุบันของ A ===
+        // === ขั้นตอนที่ 2: หาสิทธิ์หรือรายการเบิกปัจจุบันของ A ===
+        // 2.1 เช็คว่า A กำลังเบิกกุญแจอยู่หรือไม่ (Active Booking)
+        const activeBookingA = await prisma.booking.findFirst({
+            where: { userId: userA.id, status: "BORROWED" },
+            include: { key: true }
+        });
+
+        // 2.2 หาสิทธิ์ (Authorization) ปัจจุบันของ A
         const authA = await prisma.dailyAuthorization.findFirst({
             where: {
                 userId: userA.id,
@@ -1179,14 +1186,19 @@ export const transferAuthorization = async (req, res) => {
             },
         });
 
-        if (!authA) {
+        // ตรวจสอบว่ามีอะไรให้โอนไหม (ต้องมี Active Booking หรือมี Authorization)
+        if (!activeBookingA && !authA) {
             return res.status(404).json({
                 success: false,
-                message: `${userA.firstName} ไม่มีสิทธิ์ห้องที่จะโอนในขณะนี้`,
+                message: `${userA.firstName} ไม่มีรายการเบิกกุญแจหรือสิทธิ์ห้องที่จะโอนในขณะนี้`,
             });
         }
 
-        // === ขั้นตอนที่ 3: ตรวจว่า B มีคาบเรียนภายใน 30 นาที ===
+        // กำหนดห้องที่จะทำการโอน (ลำดับความสำคัญ: Active Booking > Authorization)
+        const roomCode = activeBookingA ? activeBookingA.key.roomCode : authA.roomCode;
+
+        // === ขั้นตอนที่ 3: ตรวจว่า B มีคาบเรียนภายใน 30 นาที (เพื่อความปลอดภัย/นโยบาย) ===
+        // หรือถ้า B เป็น Staff/Admin อาจจะไม่ต้องตรวจ แต่ในที่นี้ทำตาม Flow เดิมคือตรวจสิทธิ์ B
         const authB = await prisma.dailyAuthorization.findFirst({
             where: {
                 userId: userB.id,
@@ -1196,52 +1208,53 @@ export const transferAuthorization = async (req, res) => {
             },
         });
 
-        if (!authB) {
+        if (!authB && userB.role === 'STUDENT') {
             return res.status(403).json({
                 success: false,
-                message: `${userB.firstName} ไม่มีคาบเรียนภายใน 30 นาทีนี้ ไม่สามารถรับสิทธิ์ได้`,
+                message: `${userB.firstName} ไม่มีคาบเรียนภายใน 30 นาทีนี้ ไม่สามารถรับโอนได้`,
             });
         }
 
-        // ตรวจว่า A ยังไม่ได้เบิกกุญแจ
-        const aBorrowed = await prisma.booking.findFirst({ where: { userId: userA.id, status: "BORROWED" } });
-        if (aBorrowed) {
-            return res.status(400).json({
-                success: false,
-                message: `${userA.firstName} กำลังเบิกกุญแจอยู่ ต้องคืนก่อนจึงจะโอนสิทธิ์ได้`,
-            });
-        }
-
-        const roomCode = authA.roomCode;
         const ipAddress = req.ip || req.connection?.remoteAddress || null;
 
-        // === ขั้นตอนที่ 4: โอน DailyAuthorization ===
+        // === ขั้นตอนที่ 4: ทำการโอนใน Transaction ===
         await prisma.$transaction(async (tx) => {
-            // ลบสิทธิ์ของ A สำหรับห้องนี้
-            await tx.dailyAuthorization.delete({ where: { id: authA.id } });
+            // 1. ถ้ามี Active Booking ให้โอนกรรมสิทธิ์
+            if (activeBookingA) {
+                await tx.booking.update({
+                    where: { id: activeBookingA.id },
+                    data: { userId: userB.id }
+                });
+            }
+
+            // 2. จัดการ DailyAuthorization
+            // ลบสิทธิ์ของ A สำหรับห้องนี้ (ถ้ามี)
+            if (authA) {
+                await tx.dailyAuthorization.delete({ where: { id: authA.id } });
+            }
 
             // ตรวจสอบว่า B มีสิทธิ์ในห้องนี้เวลานี้อยู่แล้วหรือไม่
             const existingAuthB = await tx.dailyAuthorization.findFirst({
                 where: {
                     userId: userB.id,
                     roomCode: roomCode,
-                    date: authA.date,
-                    startTime: authA.startTime
+                    date: authA?.date || startOfDay,
+                    startTime: authA?.startTime || now
                 }
             });
 
-            // ถ้ายังไม่มี ค่อยสร้างให้ B
+            // ถ้ายังไม่มี ค่อยสร้างให้ B (เลียนแบบสิทธิ์เดิมของ A)
             if (!existingAuthB) {
                 await tx.dailyAuthorization.create({
                     data: {
                         userId: userB.id,
                         roomCode: roomCode,
-                        date: authA.date,
-                        startTime: authA.startTime,
-                        endTime: authA.endTime,
+                        date: authA?.date || startOfDay,
+                        startTime: authA?.startTime || now,
+                        endTime: authA?.endTime || new Date(now.getTime() + 2 * 60 * 60 * 1000), // fallback 2 ชม.
                         source: "MANUAL",
-                        scheduleId: authA.scheduleId,
-                        subjectId: authA.subjectId,
+                        scheduleId: authA?.scheduleId || null,
+                        subjectId: authA?.subjectId || null,
                         createdBy: "HARDWARE_TRANSFER",
                     },
                 });
@@ -1251,12 +1264,13 @@ export const transferAuthorization = async (req, res) => {
             await tx.systemLog.create({
                 data: {
                     userId: userA.id,
-                    action: "HARDWARE_TRANSFER_AUTHORIZATION",
+                    action: activeBookingA ? "HARDWARE_TRANSFER_KEY_ACTIVE" : "HARDWARE_TRANSFER_AUTHORIZATION",
                     details: JSON.stringify({
-                        transferType: "TRANSFER",
-                        giverStudentCode: studentCodeA,
-                        receiverStudentCode: studentCodeB,
+                        transferType: activeBookingA ? "ACTIVE_BOOKING" : "AUTHORIZATION_ONLY",
+                        bookingId: activeBookingA?.id || null,
                         roomCode: roomCode,
+                        giver: studentCodeA,
+                        receiver: studentCodeB,
                         source: "FACE_SCANNER",
                     }),
                     ipAddress,
@@ -1264,13 +1278,14 @@ export const transferAuthorization = async (req, res) => {
             });
         });
 
-        console.log(`✅ [Hardware] transfer: สำเร็จ - ${userA.firstName} โอนห้อง ${roomCode} ให้ ${userB.firstName}`);
+        console.log(`✅ [Hardware] transfer: สำเร็จ - ${userA.firstName} โอนห้อง ${roomCode} (${activeBookingA ? 'Active' : 'Auth'}) ให้ ${userB.firstName}`);
 
         return res.status(200).json({
             success: true,
-            message: `ย้ายสิทธิ์สำเร็จ: ${userA.firstName} โอนห้อง ${roomCode} ให้ ${userB.firstName}`,
+            message: `โอนสิทธิ์สำเร็จ: ${userA.firstName} โอนห้อง ${roomCode} ให้ ${userB.firstName} ${activeBookingA ? '(โอนรายการเบิกกุญแจด้วย)' : ''}`,
             data: {
                 roomCode,
+                transferType: activeBookingA ? "ACTIVE_BOOKING" : "AUTHORIZATION_ONLY",
                 giver: { studentCode: studentCodeA, firstName: userA.firstName, lastName: userA.lastName },
                 receiver: { studentCode: studentCodeB, firstName: userB.firstName, lastName: userB.lastName },
             },
@@ -1279,7 +1294,7 @@ export const transferAuthorization = async (req, res) => {
         console.error("❌ [Hardware] transfer: Error:", error);
         return res.status(500).json({
             success: false,
-            message: "เกิดข้อผิดพลาดในการย้ายสิทธิ์กุญแจ",
+            message: "เกิดข้อผิดพลาดในการโอนสิทธิ์กุญแจ",
         });
     }
 };
