@@ -296,10 +296,12 @@ export default function App() {
             try {
                 const res = await identifyUser(data.userId);
                 if (res?.success) {
-                    const rooms = res.data?.authorizedRooms || [];
-                    const room = rooms.length > 0 ? rooms[0].roomCode : null;
+                    const activeBooking = res.data?.activeBooking;
+                    const authorizedRooms = res.data?.authorizedRooms || [];
+                    const room = activeBooking ? activeBooking.roomCode : (authorizedRooms.length > 0 ? authorizedRooms[0].roomCode : null);
+
                     if (!room) {
-                        setErrorPopup('ไม่พบสิทธิ์ห้องเรียนในขณะนี้');
+                        setErrorPopup('ไม่พบสิทธิ์หรือรายการเบิกกุญแจในขณะนี้');
                         return;
                     }
                     setSwapUser1(data);
@@ -320,14 +322,16 @@ export default function App() {
             try {
                 const res = await identifyUser(data.userId);
                 if (res?.success) {
-                    const rooms = res.data?.authorizedRooms || [];
-                    const room = rooms.length > 0 ? rooms[0].roomCode : null;
+                    const activeBooking = res.data?.activeBooking;
+                    const authorizedRooms = res.data?.authorizedRooms || [];
+                    const room = activeBooking ? activeBooking.roomCode : (authorizedRooms.length > 0 ? authorizedRooms[0].roomCode : null);
+
                     if (!room) {
-                        setErrorPopup('คนที่ 2 ไม่มีสิทธิ์ห้องเรียนในขณะนี้');
+                        setErrorPopup('คนที่ 2 ไม่มีสิทธิ์หรือรายการเบิกกุญแจในขณะนี้');
                         return;
                     }
-                    if (room === swapRoom1) {
-                        setErrorPopup('ไม่สามารถสลับกับห้องตัวเองได้ (ห้องเดียวกัน)');
+                    if (room === swapRoom1 && data.userId === swapUser1.userId) {
+                        setErrorPopup('ไม่สามารถสลับกับตัวเองได้');
                         return;
                     }
                     setSwapUser2(data);

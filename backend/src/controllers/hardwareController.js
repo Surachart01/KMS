@@ -798,26 +798,31 @@ export const swapAuthorization = async (req, res) => {
             return res.status(404).json({ success: false, message: `ไม่พบผู้ใช้ ${studentCodeB} ในระบบ` });
         }
 
-        // === ขั้นตอนที่ 2: ดึงข้อมูลการเบิก/จองที่มีอยู่ ===
+        // === ขั้นตอนที่ 2: ดึงข้อมูลการเบิกที่มีอยู่ (Active Booking) ===
         const activeBookingA = await prisma.booking.findFirst({
-            where: { userId: userA.id, status: { in: ["BORROWED", "RESERVED"] } },
+            where: { userId: userA.id, status: "BORROWED" },
             include: { key: true }
         });
         const activeBookingB = await prisma.booking.findFirst({
-            where: { userId: userB.id, status: { in: ["BORROWED", "RESERVED"] } },
+            where: { userId: userB.id, status: "BORROWED" },
             include: { key: true }
         });
 
-        // === ขั้นตอนที่ 3: ค้นหา DailyAuthorization ที่จะสลับ ===
+        // ใช้ห้องจาก Active Booking ถ้ามี ถ้าไม่มีให้ใช้จาก Request (ถ้ายืนยันมาจาก Frontend)
+        const finalRoomCodeA = activeBookingA ? activeBookingA.key.roomCode : roomCodeA;
+        const finalRoomCodeB = activeBookingB ? activeBookingB.key.roomCode : roomCodeB;
+
+        // === ขั้นตอนที่ 3: ค้นหา DailyAuthorization เพื่อสลับ (ถ้ามี) ===
         const { startOfDay, endOfDay } = getTodayRange();
         const now = new Date();
+        const earlyBuffer = new Date(now.getTime() + EARLY_BORROW_MINUTES * 60 * 1000);
 
         const authA = await prisma.dailyAuthorization.findFirst({
             where: {
                 userId: userA.id,
-                roomCode: roomCodeA,
+                roomCode: finalRoomCodeA,
                 date: { gte: startOfDay, lte: endOfDay },
-                startTime: { lte: now },
+                startTime: { lte: earlyBuffer },
                 endTime: { gt: now },
             },
         });
@@ -825,67 +830,70 @@ export const swapAuthorization = async (req, res) => {
         const authB = await prisma.dailyAuthorization.findFirst({
             where: {
                 userId: userB.id,
-                roomCode: roomCodeB,
+                roomCode: finalRoomCodeB,
                 date: { gte: startOfDay, lte: endOfDay },
-                startTime: { lte: now },
+                startTime: { lte: earlyBuffer },
                 endTime: { gt: now },
             },
         });
 
-        if (!authA) {
-            return res.status(404).json({ success: false, message: `${userA.firstName} ไม่มีสิทธิ์ห้อง ${roomCodeA} ในขณะนี้` });
+        // ตรวจสอบว่ามีอะไรให้สลับไหม (ต้องมี Active Booking หรือมี Authorization)
+        if (!activeBookingA && !authA) {
+            return res.status(404).json({ success: false, message: `${userA.firstName} ไม่มีรายการเบิกหรือสิทธิ์ในห้อง ${finalRoomCodeA} เพื่อสลับ` });
         }
-        if (!authB) {
-            return res.status(404).json({ success: false, message: `${userB.firstName} ไม่มีสิทธิ์ห้อง ${roomCodeB} ในขณะนี้` });
+        if (!activeBookingB && !authB) {
+            return res.status(404).json({ success: false, message: `${userB.firstName} ไม่มีรายการเบิกหรือสิทธิ์ในห้อง ${finalRoomCodeB} เพื่อสลับ` });
         }
 
         // === ขั้นตอนที่ 4-5: สลับทุกอย่างใน Transaction ===
         const ipAddress = req.ip || req.connection?.remoteAddress || null;
 
         await prisma.$transaction(async (tx) => {
-            // 1. สลับ DailyAuthorization: A ไปห้อง B, B ไปห้อง A
-            await tx.dailyAuthorization.delete({ where: { id: authA.id } });
-            await tx.dailyAuthorization.delete({ where: { id: authB.id } });
+            // 1. สลับ DailyAuthorization (ลบของเดิม สร้างของใหม่สลับกัน)
+            if (authA) await tx.dailyAuthorization.delete({ where: { id: authA.id } });
+            if (authB) await tx.dailyAuthorization.delete({ where: { id: authB.id } });
 
-            await tx.dailyAuthorization.create({
-                data: {
-                    userId: userA.id,
-                    roomCode: roomCodeB,
-                    date: authA.date,
-                    startTime: authA.startTime,
-                    endTime: authA.endTime,
-                    source: "MANUAL_SWAP",
-                    scheduleId: authA.scheduleId,
-                    subjectId: authA.subjectId,
-                    createdBy: "HARDWARE_SWAP",
-                },
-            });
+            if (authA) {
+                await tx.dailyAuthorization.create({
+                    data: {
+                        userId: userB.id, // สลับให้ B
+                        roomCode: authA.roomCode,
+                        date: authA.date,
+                        startTime: authA.startTime,
+                        endTime: authA.endTime,
+                        source: "MANUAL_SWAP",
+                        scheduleId: authA.scheduleId,
+                        subjectId: authA.subjectId,
+                        createdBy: "HARDWARE_SWAP",
+                    },
+                });
+            }
 
-            await tx.dailyAuthorization.create({
-                data: {
-                    userId: userB.id,
-                    roomCode: roomCodeA,
-                    date: authB.date,
-                    startTime: authB.startTime,
-                    endTime: authB.endTime,
-                    source: "MANUAL_SWAP",
-                    scheduleId: authB.scheduleId,
-                    subjectId: authB.subjectId,
-                    createdBy: "HARDWARE_SWAP",
-                },
-            });
+            if (authB) {
+                await tx.dailyAuthorization.create({
+                    data: {
+                        userId: userA.id, // สลับให้ A
+                        roomCode: authB.roomCode,
+                        date: authB.date,
+                        startTime: authB.startTime,
+                        endTime: authB.endTime,
+                        source: "MANUAL_SWAP",
+                        scheduleId: authB.scheduleId,
+                        subjectId: authB.subjectId,
+                        createdBy: "HARDWARE_SWAP",
+                    },
+                });
+            }
 
-            // 2. สลับ Booking (ถ้ามีและตรงห้อง)
-            // กรณี A ถือครองกุญแจห้อง A อยู่จริง
-            if (activeBookingA && activeBookingA.key.roomCode === roomCodeA) {
+            // 2. สลับ Active Booking (ถ้ามี)
+            if (activeBookingA) {
                 await tx.booking.update({
                     where: { id: activeBookingA.id },
                     data: { userId: userB.id } // โอนให้ B
                 });
             }
 
-            // กรณี B ถือครองกุญแจห้อง B อยู่จริง
-            if (activeBookingB && activeBookingB.key.roomCode === roomCodeB) {
+            if (activeBookingB) {
                 await tx.booking.update({
                     where: { id: activeBookingB.id },
                     data: { userId: userA.id } // โอนให้ A
@@ -896,11 +904,11 @@ export const swapAuthorization = async (req, res) => {
             await tx.systemLog.create({
                 data: {
                     userId: userA.id,
-                    action: "HARDWARE_SWAP_AUTHORIZATION",
+                    action: "HARDWARE_SWAP_KEY_ACTIVE",
                     details: JSON.stringify({
-                        swapType: "RESPONSIBILITY_SWAP",
-                        userA: { id: userA.id, studentCode: studentCodeA, from: roomCodeA, to: roomCodeB, hadActiveBooking: !!activeBookingA },
-                        userB: { id: userB.id, studentCode: studentCodeB, from: roomCodeB, to: roomCodeA, hadActiveBooking: !!activeBookingB },
+                        swapType: (activeBookingA && activeBookingB) ? "ACTIVE_BOOKINGS" : "MIXED",
+                        userA: { studentCode: studentCodeA, fromRoom: finalRoomCodeA, hadBooking: !!activeBookingA },
+                        userB: { studentCode: studentCodeB, fromRoom: finalRoomCodeB, hadBooking: !!activeBookingB },
                         source: "FACE_SCANNER",
                     }),
                     ipAddress,
@@ -908,26 +916,14 @@ export const swapAuthorization = async (req, res) => {
             });
         });
 
-        console.log(`✅ [Hardware] swap: สำเร็จ - ${studentCodeA}(${roomCodeA}→${roomCodeB}) ↔ ${studentCodeB}(${roomCodeB}→${roomCodeA})`);
+        console.log(`✅ [Hardware] swap: สำเร็จ - ${studentCodeA}(${finalRoomCodeA}→${finalRoomCodeB}) ↔ ${studentCodeB}(${finalRoomCodeB}→${finalRoomCodeA})`);
 
         return res.status(200).json({
             success: true,
-            message: `สลับสิทธิ์สำเร็จ: ${userA.firstName} → ห้อง ${roomCodeB}, ${userB.firstName} → ห้อง ${roomCodeA}`,
+            message: `สลับสิทธิ์สำเร็จ: ${userA.firstName} ↔ ${userB.firstName} (สลับกุญแจห้อง ${finalRoomCodeA} และ ${finalRoomCodeB})`,
             data: {
-                userA: {
-                    studentCode: studentCodeA,
-                    firstName: userA.firstName,
-                    lastName: userA.lastName,
-                    fromRoom: roomCodeA,
-                    toRoom: roomCodeB,
-                },
-                userB: {
-                    studentCode: studentCodeB,
-                    firstName: userB.firstName,
-                    lastName: userB.lastName,
-                    fromRoom: roomCodeB,
-                    toRoom: roomCodeA,
-                },
+                userA: { studentCode: studentCodeA, room: finalRoomCodeB },
+                userB: { studentCode: studentCodeB, room: finalRoomCodeA },
             },
         });
     } catch (error) {
