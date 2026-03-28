@@ -1,59 +1,46 @@
-# KMS — Entity Relationship Diagram
+# KMS Entity Relationship Diagram (ERD)
 
-> Database schema for the Key Management System (PostgreSQL + Prisma)
-
----
-
-## ER Diagram
+This diagram represents the database structure of the Key Management System (KMS), supporting key borrowing, schedule-aware authorizations, and penalty tracking.
 
 ```mermaid
 erDiagram
-    User {
+    USER ||--o{ BOOKING : borrows
+    USER ||--o{ SYSTEM_LOG : "has logs"
+    USER ||--o{ SUBJECT_TEACHER : teaches
+    USER }o--o{ SCHEDULE : enrolled_in
+    USER ||--o{ PENALTY_LOG : penalized
+    USER ||--o{ DAILY_AUTHORIZATION : authorized
+    USER }o--|| SECTION : belongs_to
+
+    MAJOR ||--o{ SECTION : contains
+
+    SUBJECT ||--o{ SUBJECT_TEACHER : is_taught_in
+    SUBJECT ||--o{ SCHEDULE : occurs_in
+    SUBJECT ||--o{ BOOKING : linked_to
+    SUBJECT ||--o{ DAILY_AUTHORIZATION : valid_for
+
+    KEY ||--o{ BOOKING : "is borrowed in"
+    KEY ||--o{ SCHEDULE : "used for"
+
+    SCHEDULE ||--o{ DAILY_AUTHORIZATION : "generates"
+
+    BOOKING ||--o{ PENALTY_LOG : "triggers"
+
+    USER {
         string id PK
         string studentCode UK
-        string email
+        string email UK
+        string password
         string firstName
         string lastName
-        string role
+        enum role
         int score
         boolean isBanned
         string sectionId FK
+        datetime createdAt
     }
 
-    Major {
-        string id PK
-        string code UK
-        string name
-    }
-
-    Section {
-        string id PK
-        string name
-        string majorId FK
-    }
-
-    Subject {
-        string id PK
-        string code UK
-        string name
-    }
-
-    SubjectTeacher {
-        string id PK
-        string subjectId FK
-        string teacherId FK
-    }
-
-    Schedule {
-        string id PK
-        string subjectId FK
-        string roomCode FK
-        int dayOfWeek
-        string startTime
-        string endTime
-    }
-
-    Key {
+    KEY {
         string id PK
         string roomCode UK
         int slotNumber
@@ -61,59 +48,57 @@ erDiagram
         boolean isActive
     }
 
-    Booking {
+    BOOKING {
         string id PK
         string userId FK
         string keyId FK
         string subjectId FK
-        string borrowAt
-        string dueAt
-        string returnAt
-        string status
+        datetime borrowAt
+        datetime dueAt
+        datetime returnAt
+        enum status
         string reason
         int lateMinutes
         int penaltyScore
     }
 
-    DailyAuthorization {
+    DAILY_AUTHORIZATION {
         string id PK
-        string roomCode
-        string date
-        string startTime
-        string endTime
         string userId FK
-        string source
+        string roomCode
+        date date
+        datetime startTime
+        datetime endTime
+        enum source
         string scheduleId FK
         string subjectId FK
     }
 
-    PenaltyConfig {
+    SCHEDULE {
         string id PK
-        int graceMinutes
-        int scorePerInterval
-        int intervalMinutes
-        int restoreDays
-        boolean isActive
+        string subjectId FK
+        string roomCode FK
+        int dayOfWeek
+        datetime startTime
+        datetime endTime
     }
 
-    PenaltyLog {
+    SUBJECT {
+        string id PK
+        string code UK
+        string name
+    }
+
+    PENALTY_LOG {
         string id PK
         string userId FK
         string bookingId FK
-        string type
+        enum type
         int scoreCut
         string reason
     }
 
-    BorrowReason {
-        string id PK
-        string label UK
-        int durationMinutes
-        boolean isActive
-        int sortOrder
-    }
-
-    SystemLog {
+    SYSTEM_LOG {
         string id PK
         string userId FK
         string action
@@ -121,51 +106,36 @@ erDiagram
         string ipAddress
     }
 
-    Major ||--o{ Section : has
-    Section ||--o{ User : contains
-    Subject ||--o{ SubjectTeacher : has
-    User ||--o{ SubjectTeacher : teaches
-    Subject ||--o{ Schedule : has
-    Key ||--o{ Schedule : usedIn
-    User ||--o{ Booking : makes
-    Key ||--o{ Booking : bookedAs
-    Subject ||--o{ Booking : relatedTo
-    User ||--o{ DailyAuthorization : authorized
-    Schedule ||--o{ DailyAuthorization : generates
-    Subject ||--o{ DailyAuthorization : forSubject
-    User ||--o{ PenaltyLog : receives
-    Booking ||--o{ PenaltyLog : causes
-    User ||--o{ SystemLog : logs
+    SECTION {
+        string id PK
+        string name
+        string majorId FK
+    }
+
+    MAJOR {
+        string id PK
+        string code UK
+        string name
+    }
+
+    BORROW_REASON {
+        string id PK
+        string label UK
+        int durationMinutes
+        boolean isActive
+    }
+
+    PENALTY_CONFIG {
+        string id PK
+        int graceMinutes
+        int scorePerInterval
+        int intervalMinutes
+        int restoreDays
+    }
 ```
 
----
-
-## Relationships
-
-| From | To | Type | Description |
-|---|---|---|---|
-| Major | Section | 1:N | Major has many sections |
-| Section | User | 1:N | Section contains many users |
-| Subject | SubjectTeacher | 1:N | Subject taught by teachers |
-| User | SubjectTeacher | 1:N | Teacher teaches subjects |
-| Subject | Schedule | 1:N | Subject has schedules |
-| Key | Schedule | 1:N | Key room used in schedules |
-| User | Booking | 1:N | User makes bookings |
-| Key | Booking | 1:N | Key booked in bookings |
-| Subject | Booking | 1:N | Booking related to subject |
-| User | DailyAuthorization | 1:N | User has daily authorizations |
-| Schedule | DailyAuthorization | 1:N | Schedule generates authorizations |
-| User | PenaltyLog | 1:N | User receives penalties |
-| Booking | PenaltyLog | 1:N | Booking causes penalties |
-| User | SystemLog | 1:N | User actions logged |
-
----
-
-## Enums
-
-| Enum | Values | Description |
-|---|---|---|
-| Role | STUDENT, TEACHER, STAFF, ADMIN | User roles |
-| BookingStatus | BORROWED, RETURNED, LATE, RESERVED | Booking lifecycle |
-| PenaltyType | LATE_RETURN, MANUAL | Penalty categories |
-| AuthSource | SCHEDULE, MANUAL | Authorization origin |
+## Key Relationships
+- **User & Booking**: A user can have multiple bookings (borrow logs), but each booking belongs to one user.
+- **Key & Schedule**: A physical key is associated with a roomCode, which is used in schedules to identify where classes occur.
+- **DailyAuthorization**: This table is the "Source of Truth" for who can borrow what key at what time. It is populated either automatically from `Schedule` or manually by staff.
+- **Penalty Logic**: When a `Booking` is returned late, a `PenaltyLog` is created, and the `User.score` is updated based on `PenaltyConfig`.
