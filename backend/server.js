@@ -378,7 +378,7 @@ io.on('connection', (socket) => {
 
       // ถ้ายืมสำเร็จ → ส่งคำสั่ง unlock ไป GPIO service พร้อม bookingId
       if (fakeRes.data?.success && fakeRes.data?.data?.keySlotNumber) {
-        const bookingId = fakeRes.data.data.id ?? fakeRes.data.data.bookingId ?? null;
+        const bookingId = fakeRes.data.data.booking?.id ?? null;
         io.to('gpio').emit('gpio:unlock', {
           slotNumber: fakeRes.data.data.keySlotNumber,
           bookingId,

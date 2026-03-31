@@ -1,0 +1,122 @@
+[31/3/2569 14:24:37] [v1.2.0 — Return Flow & LED Feedback] 📩 gpio:unlock → slot=3, bookingId=null (Mode: esp8266)
+[31/3/2569 14:24:37] [v1.2.0 — Return Flow & LED Feedback] 🔓 Unlocking slot 3 (GPIO 18)
+[31/3/2569 14:24:37] [v1.2.0 — Return Flow & LED Feedback] ✅ [MOCK] Slot 3 (Pin 18) → HIGH
+[31/3/2569 14:24:37] [v1.2.0 — Return Flow & LED Feedback] 📤 slot:unlocked emitted → success=true
+[31/3/2569 14:24:37] [v1.2.0 — Return Flow & LED Feedback] 🚀 เรียก startKeyPullCheck(slot=3, booking=null)
+[31/3/2569 14:24:37] [v1.2.0 — Return Flow & LED Feedback] ⏳ Solenoid UNLOCKED at slot=3 (Mode: esp8266) — หยุด Background Polling แล้ว
+[31/3/2569 14:24:37] [v1.2.0 — Return Flow & LED Feedback] 🔓 Unlocking slot 3 (GPIO 18)
+[31/3/2569 14:24:37] [v1.2.0 — Return Flow & LED Feedback] ✅ [MOCK] Slot 3 (Pin 18) → HIGH
+[31/3/2569 14:24:37] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [0/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:24:37] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [0/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:24:37] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [0/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:24:38] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [0/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:24:38] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [1/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:24:38] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [1/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:24:38] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [1/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:24:38] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [1/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:24:39] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [1/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:24:39] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [2/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:24:39] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [2/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:24:39] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [2/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:24:39] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [2/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:24:40] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [2/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:24:40] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [3/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:24:40] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [3/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:24:40] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [3/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:24:40] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [3/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:24:41] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [3/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:24:41] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [4/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:24:41] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [4/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:24:41] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [4/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:24:41] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [4/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:24:42] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [4/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:24:42] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [5/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:24:42] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [5/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:24:42] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [5/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:24:42] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [5/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:24:43] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [5/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:24:43] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [6/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:24:43] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [6/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:24:43] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [6/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:24:43] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [6/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:24:44] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [6/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:24:44] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [7/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:24:44] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [7/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:24:44] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [7/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:24:44] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [7/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:24:45] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [7/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:24:45] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [8/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:24:45] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [8/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:24:45] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [8/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:24:45] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [8/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:24:46] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [8/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:24:46] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [9/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:24:46] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [9/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:24:46] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [9/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:24:46] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [9/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:24:47] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [9/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:24:47] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [10/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:24:47] [v1.2.0 — Return Flow & LED Feedback] 🔒 ครบเวลา 10 วิ -> Final Verification (Fast Check)...
+[31/3/2569 14:24:48] [v1.2.0 — Return Flow & LED Feedback] ✅ สำเร็จ: ไม่พบกุญแจที่ช่อง 3 หลังการตรวจสอบ 5 ครั้ง
+[31/3/2569 14:24:48] [v1.2.0 — Return Flow & LED Feedback] 🔄 คืนสิทธิ์ Background Polling แล้ว (slot=3)
+[31/3/2569 14:25:11] [v1.2.0 — Return Flow & LED Feedback] 📩 gpio:unlock → slot=1, bookingId=null (Mode: esp8266)
+[31/3/2569 14:25:11] [v1.2.0 — Return Flow & LED Feedback] 🔓 Unlocking slot 1 (GPIO 14)
+[31/3/2569 14:25:11] [v1.2.0 — Return Flow & LED Feedback] ✅ [MOCK] Slot 1 (Pin 14) → HIGH
+[31/3/2569 14:25:11] [v1.2.0 — Return Flow & LED Feedback] 📤 slot:unlocked emitted → success=true
+[31/3/2569 14:25:11] [v1.2.0 — Return Flow & LED Feedback] 🚀 เรียก startKeyPullCheck(slot=1, booking=null)
+[31/3/2569 14:25:11] [v1.2.0 — Return Flow & LED Feedback] ⏳ Solenoid UNLOCKED at slot=1 (Mode: esp8266) — หยุด Background Polling แล้ว
+[31/3/2569 14:25:11] [v1.2.0 — Return Flow & LED Feedback] 🔓 Unlocking slot 1 (GPIO 14)
+[31/3/2569 14:25:11] [v1.2.0 — Return Flow & LED Feedback] ✅ [MOCK] Slot 1 (Pin 14) → HIGH
+[31/3/2569 14:25:11] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [0/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:25:11] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [0/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:25:11] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [0/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:25:12] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [0/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:25:12] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [1/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:25:12] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [1/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:25:12] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [1/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:25:12] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [1/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:25:13] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [1/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:25:13] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [2/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:25:13] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [2/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:25:13] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [2/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:25:13] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [2/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:25:14] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [2/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:25:14] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [3/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:25:14] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [3/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:25:14] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [3/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:25:14] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [3/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:25:15] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [3/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:25:15] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [4/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:25:15] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [4/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:25:15] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [4/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:25:15] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [4/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:25:16] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [4/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:25:16] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [5/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:25:16] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [5/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:25:16] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [5/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:25:16] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [5/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:25:17] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [5/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:25:17] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [6/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:25:17] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [6/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:25:17] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [6/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:25:17] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [6/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:25:18] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [6/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:25:18] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [7/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:25:18] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [7/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:25:18] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [7/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:25:18] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [7/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:25:19] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [7/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:25:19] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [8/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:25:19] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [8/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:25:19] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [8/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:25:19] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [8/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:25:20] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [8/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:25:20] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [9/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:25:20] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [9/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:25:20] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [9/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:25:20] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [9/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:25:21] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [9/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:25:21] [v1.2.0 — Return Flow & LED Feedback] ⏱️ [10/10] ไม่เจอการวาง หรืออ่านบกพร่อง
+[31/3/2569 14:25:21] [v1.2.0 — Return Flow & LED Feedback] 🔒 ครบเวลา 10 วิ -> Final Verification (Fast Check)...
+[31/3/2569 14:25:22] [v1.2.0 — Return Flow & LED Feedback] ✅ สำเร็จ: ไม่พบกุญแจที่ช่อง 1 หลังการตรวจสอบ 5 ครั้ง
+[31/3/2569 14:25:22] [v1.2.0 — Return Flow & LED Feedback] 🔄 คืนสิทธิ์ Background Polling แล้ว (slot=1)
