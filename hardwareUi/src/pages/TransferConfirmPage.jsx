@@ -56,13 +56,13 @@ function CustomTimePicker({ value, onChange }) {
                 <div className="time-column" style={{ width: '40px' }}>
                     <button className="time-btn" style={{ width: '36px', height: '24px' }} onClick={() => adjustTime(1, 0)}><ChevronUp size={16} /></button>
                     <div className="time-value" style={{ fontSize: '1.2rem' }}>{hours.toString().padStart(2, '0')}</div>
-                    <button className="time-btn" style={{ width: '36px', height: '24px' }} onClick={() => adjustTime(-1, 0)}><ChevronDown size={16} /></button>
+                    <button className="time-btn" style={{ width: '36px', height: '20px' }} onClick={() => adjustTime(-1, 0)}><ChevronDown size={14} /></button>
                 </div>
-                <div className="time-separator" style={{ fontSize: '1.2rem', marginTop: '-6px' }}>:</div>
-                <div className="time-column" style={{ width: '40px' }}>
-                    <button className="time-btn" style={{ width: '36px', height: '24px' }} onClick={() => adjustTime(0, 30)}><ChevronUp size={16} /></button>
+                <div className="time-separator" style={{ fontSize: '1.1rem', marginTop: '-4px' }}>:</div>
+                <div className="time-column" style={{ width: '36px' }}>
+                    <button className="time-btn" style={{ width: '36px', height: '20px' }} onClick={() => adjustTime(0, 30)}><ChevronUp size={14} /></button>
                     <div className="time-value" style={{ fontSize: '1.2rem' }}>{minutes.toString().padStart(2, '0')}</div>
-                    <button className="time-btn" style={{ width: '36px', height: '24px' }} onClick={() => adjustTime(0, -30)}><ChevronDown size={16} /></button>
+                    <button className="time-btn" style={{ width: '36px', height: '20px' }} onClick={() => adjustTime(0, -30)}><ChevronDown size={14} /></button>
                 </div>
             </div>
             <div className="time-presets" style={{ marginLeft: 0, paddingLeft: 0, borderLeft: 'none', justifyContent: 'center', marginTop: '4px' }}>
@@ -160,16 +160,13 @@ export default function TransferConfirmPage({
     return (
         <div className="page confirm-page">
             <div className="confirm-card transfer-final-card">
-                <div className="transfer-step-badge transfer-step-final">ยืนยันการโอนสิทธิ์</div>
-
-                <div className="swap-users-row transfer-summary" style={{ flexDirection: 'row', display: 'flex', gap: '20px', alignItems: 'center' }}>
+                <div className="swap-users-row transfer-summary" style={{ flexDirection: 'row', display: 'flex', gap: '10px', alignItems: 'center', marginTop: '5px' }}>
                     {/* ผู้โอน */}
                     <div className="transfer-user-box giver-box" style={{ flex: 1 }}>
-                        <div className="transfer-user-avatar" style={{ marginBottom: '6px' }}><User size={24} /></div>
-                        <p className="transfer-user-id" style={{ fontSize: '0.9rem' }}>{user1?.userId || '-'}</p>
-                        <p className="transfer-user-name" style={{ fontSize: '0.8rem', color: '#94a3b8', marginBottom: '6px' }}>{user1?.firstName} {user1?.lastName}</p>
-                        <p className="swap-room-label" style={{ fontSize: '0.75rem', color: '#94a3b8' }}>ส่งมอบ</p>
-                        <div className="transfer-room-badge">{roomCode1 || '?'}</div>
+                        <div className="transfer-user-avatar" style={{ marginBottom: '4px' }}><User size={20} /></div>
+                        <p className="transfer-user-id" style={{ fontSize: '0.85rem' }}>{user1?.userId || '-'}</p>
+                        <p className="transfer-user-name" style={{ fontSize: '0.75rem', color: '#94a3b8', marginBottom: '4px' }}>{user1?.firstName} {user1?.lastName}</p>
+                        <p className="swap-room-label" style={{ fontSize: '0.7rem', color: '#94a3b8' }}>ส่งมอบ ห้อง {roomCode1 || '?'}</p>
                     </div>
 
                     {/* ลูกศรโอน */}
@@ -179,11 +176,10 @@ export default function TransferConfirmPage({
 
                     {/* ผู้รับโอน */}
                     <div className="transfer-user-box receiver-box" style={{ flex: 1 }}>
-                        <div className="transfer-user-avatar" style={{ marginBottom: '6px' }}><User size={24} /></div>
-                        <p className="transfer-user-id" style={{ fontSize: '0.9rem' }}>{user2?.userId || '-'}</p>
-                        <p className="transfer-user-name" style={{ fontSize: '0.8rem', color: '#94a3b8', marginBottom: '6px' }}>{user2?.firstName} {user2?.lastName}</p>
-                        <p className="swap-room-label" style={{ fontSize: '0.75rem', color: '#94a3b8' }}>รับโอน</p>
-                        <div className="transfer-room-badge receive">{roomCode1 || '?'}</div>
+                        <div className="transfer-user-avatar" style={{ marginBottom: '4px' }}><User size={20} /></div>
+                        <p className="transfer-user-id" style={{ fontSize: '0.85rem' }}>{user2?.userId || '-'}</p>
+                        <p className="transfer-user-name" style={{ fontSize: '0.75rem', color: '#94a3b8', marginBottom: '4px' }}>{user2?.firstName} {user2?.lastName}</p>
+                        <p className="swap-room-label" style={{ fontSize: '0.7rem', color: '#94a3b8' }}>รับโอน ห้อง {roomCode1 || '?'}</p>
                     </div>
                 </div>
 
