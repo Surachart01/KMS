@@ -69,9 +69,17 @@ export function returnKey(studentCode) {
     });
 }
 
-export function swapKey(studentCodeA, roomCodeA, studentCodeB, roomCodeB) {
+export function checkSwapEligibility(studentCodeA, roomCodeA, studentCodeB, roomCodeB) {
     return new Promise((resolve) => {
-        socket.emit('key:swap', { studentCodeA, roomCodeA, studentCodeB, roomCodeB }, (response) => {
+        socket.emit('key:check-swap', { studentCodeA, roomCodeA, studentCodeB, roomCodeB }, (response) => {
+            resolve(response);
+        });
+    });
+}
+
+export function swapKey(studentCodeA, roomCodeA, returnByTimeA, studentCodeB, roomCodeB, returnByTimeB) {
+    return new Promise((resolve) => {
+        socket.emit('key:swap', { studentCodeA, roomCodeA, returnByTimeA, studentCodeB, roomCodeB, returnByTimeB }, (response) => {
             resolve(response);
         });
     });

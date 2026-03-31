@@ -768,7 +768,7 @@ export const returnKey = async (req, res) => {
  */
 export const swapAuthorization = async (req, res) => {
     try {
-        const { studentCodeA, roomCodeA, studentCodeB, roomCodeB } = req.body;
+        const { studentCodeA, roomCodeA, returnByTimeA, studentCodeB, roomCodeB, returnByTimeB } = req.body;
         console.log(`🔄 [Hardware] swap: ${studentCodeA}(${roomCodeA}) ↔ ${studentCodeB}(${roomCodeB})`);
 
         // ตรวจ input
@@ -837,6 +837,51 @@ export const swapAuthorization = async (req, res) => {
             },
         });
 
+        // === ขั้นตอนที่ 3.5: ตรวจสอบเวลาคืน (ถ้าส่งมา) ว่าทับกับคาบเรียนคนอื่นหรือไม่ ===
+        if (returnByTimeA) {
+            const returnByA = new Date(returnByTimeA);
+            const conflictingA = await prisma.dailyAuthorization.findFirst({
+                where: {
+                    roomCode: finalRoomCodeB,
+                    date: { gte: startOfDay, lte: endOfDay },
+                    startTime: { lt: returnByA },
+                    endTime: { gt: now },
+                    userId: { not: userA.id }
+                },
+                include: { subject: { select: { name: true } } },
+                orderBy: { startTime: 'asc' },
+            });
+            if (conflictingA) {
+                const startStr = new Date(conflictingA.startTime).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+                return res.status(409).json({
+                    success: false,
+                    message: `ข้อมูลของคนที่ 1 (ที่จะรับห้อง ${finalRoomCodeB}): เวลาคืนทับกับคาบเรียน "${conflictingA.subject?.name || 'ไม่ระบุ'}" สมัยเวลา ${startStr} กรุณาเลือกเวลาคืนที่เร็วกว่านี้`,
+                });
+            }
+        }
+
+        if (returnByTimeB) {
+            const returnByB = new Date(returnByTimeB);
+            const conflictingB = await prisma.dailyAuthorization.findFirst({
+                where: {
+                    roomCode: finalRoomCodeA,
+                    date: { gte: startOfDay, lte: endOfDay },
+                    startTime: { lt: returnByB },
+                    endTime: { gt: now },
+                    userId: { not: userB.id }
+                },
+                include: { subject: { select: { name: true } } },
+                orderBy: { startTime: 'asc' },
+            });
+            if (conflictingB) {
+                const startStr = new Date(conflictingB.startTime).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+                return res.status(409).json({
+                    success: false,
+                    message: `ข้อมูลของคนที่ 2 (ที่จะรับห้อง ${finalRoomCodeA}): เวลาคืนทับกับคาบเรียน "${conflictingB.subject?.name || 'ไม่ระบุ'}" สมัยเวลา ${startStr} กรุณาเลือกเวลาคืนที่เร็วกว่านี้`,
+                });
+            }
+        }
+
         // ตรวจสอบว่ามีอะไรให้สลับไหม (ต้องมี Active Booking หรือมี Authorization)
         if (!activeBookingA && !authA) {
             return res.status(404).json({ success: false, message: `${userA.firstName} ไม่มีรายการเบิกหรือสิทธิ์ในห้อง ${finalRoomCodeA} เพื่อสลับ` });
@@ -885,18 +930,20 @@ export const swapAuthorization = async (req, res) => {
                 });
             }
 
-            // 2. สลับ Active Booking (ถ้ามี)
+            // 2. สลับ Active Booking (ถ้ามี) + อัปเดตเวลาคืนถ้ามี
             if (activeBookingA) {
+                const dueAtA = returnByTimeB ? new Date(returnByTimeB) : activeBookingA.dueAt;
                 await tx.booking.update({
                     where: { id: activeBookingA.id },
-                    data: { userId: userB.id } // โอนให้ B
+                    data: { userId: userB.id, dueAt: dueAtA } // โอนให้ B
                 });
             }
 
             if (activeBookingB) {
+                const dueAtB = returnByTimeA ? new Date(returnByTimeA) : activeBookingB.dueAt;
                 await tx.booking.update({
                     where: { id: activeBookingB.id },
-                    data: { userId: userA.id } // โอนให้ A
+                    data: { userId: userA.id, dueAt: dueAtB } // โอนให้ A
                 });
             }
 
@@ -932,6 +979,71 @@ export const swapAuthorization = async (req, res) => {
             success: false,
             message: "เกิดข้อผิดพลาดในการสลับสิทธิ์กุญแจ",
         });
+    }
+};
+
+/**
+ * POST /api/hardware/check-swap-eligibility
+ * ตรวจสอบก่อนสลับสิทธิ์ว่า ทั้งสอนคนมีคาบเรียนในห้องใหม่หรือไม่
+ * Body: { studentCodeA, roomCodeA, studentCodeB, roomCodeB }
+ */
+export const checkSwapEligibility = async (req, res) => {
+    try {
+        const { studentCodeA, roomCodeA, studentCodeB, roomCodeB } = req.body;
+        
+        const userA = await prisma.user.findUnique({ where: { studentCode: studentCodeA } });
+        const userB = await prisma.user.findUnique({ where: { studentCode: studentCodeB } });
+
+        if (!userA || !userB) {
+            return res.status(404).json({ success: false, message: "ไม่พบผู้ใช้ในระบบ" });
+        }
+
+        const now = new Date();
+        const startOfDay = new Date(now);
+        startOfDay.setHours(0, 0, 0, 0);
+        const endOfDay = new Date(now);
+        endOfDay.setHours(23, 59, 59, 999);
+        const earlyBuffer = new Date(now.getTime() + EARLY_BORROW_MINUTES * 60 * 1000); // 30 mins
+
+        // Check active schedule for User A in Room B (The room they are moving INTO)
+        const authA = await prisma.dailyAuthorization.findFirst({
+            where: {
+                userId: userA.id,
+                roomCode: roomCodeB,
+                date: { gte: startOfDay, lte: endOfDay },
+                startTime: { lte: earlyBuffer },
+                endTime: { gt: now }
+            }
+        });
+
+        // Check active schedule for User B in Room A (The room they are moving INTO)
+        const authB = await prisma.dailyAuthorization.findFirst({
+            where: {
+                userId: userB.id,
+                roomCode: roomCodeA,
+                date: { gte: startOfDay, lte: endOfDay },
+                startTime: { lte: earlyBuffer },
+                endTime: { gt: now }
+            }
+        });
+
+        return res.status(200).json({
+            success: true,
+            data: {
+                userA: {
+                    hasSchedule: !!authA,
+                    room: roomCodeB
+                },
+                userB: {
+                    hasSchedule: !!authB,
+                    room: roomCodeA
+                }
+            }
+        });
+
+    } catch (error) {
+        console.error("❌ checkSwapEligibility Error:", error);
+        return res.status(500).json({ success: false, message: "เกิดข้อผิดพลาดในการตรวจสอบตารางสอน" });
     }
 };
 

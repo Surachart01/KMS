@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { socket, getKeys, borrowKey, returnKey, identifyUser, transferKey, swapKey, moveKey } from './socket.js';
+import { socket, getKeys, borrowKey, returnKey, identifyUser, transferKey, swapKey, moveKey, checkSwapEligibility } from './socket.js';
 import Header from './components/Header.jsx';
 import HomePage from './pages/HomePage.jsx';
 import KeyListPage from './pages/KeyListPage.jsx';
@@ -55,6 +55,7 @@ export default function App() {
     const [swapRoom1, setSwapRoom1] = useState(null);
     const [swapUser2, setSwapUser2] = useState(null);
     const [swapRoom2, setSwapRoom2] = useState(null);
+    const [swapEligibility, setSwapEligibility] = useState(null);
 
     // ── Move-specific state ──
     const [moveStep, setMoveStep] = useState('scan');
@@ -89,6 +90,7 @@ export default function App() {
         setSwapRoom1(null);
         setSwapUser2(null);
         setSwapRoom2(null);
+        setSwapEligibility(null);
         setMoveStep('scan');
         setMoveUser(null);
         setMoveFromRoom(null);
@@ -288,6 +290,7 @@ export default function App() {
         setSwapRoom1(null);
         setSwapUser2(null);
         setSwapRoom2(null);
+        setSwapEligibility(null);
         setPage('scanWaiting');
     };
 
@@ -349,6 +352,16 @@ export default function App() {
                     }
                     setSwapUser2({ userId: data.userId, ...res.data.user });
                     setSwapRoom2(room);
+                    
+                    // ── เช็คตารางเรียน ──
+                    const eligibilityData = await checkSwapEligibility(swapUser1.userId, swapRoom1, data.userId, room);
+                    if (eligibilityData?.success) {
+                        setSwapEligibility(eligibilityData.data);
+                    } else {
+                        setErrorPopup('เกิดข้อผิดพลาดในการตรวจสอบตารางเรียน: ' + eligibilityData?.message);
+                        return;
+                    }
+
                     setSwapStep('confirm2');
                     setPage('swapConfirm');
                 } else {
@@ -364,7 +377,7 @@ export default function App() {
     }, [swapStep, swapRoom1]);
 
     // ── Swap: ยืนยัน ──
-    const handleSwapConfirm = async () => {
+    const handleSwapConfirm = async (returnByTimeA = null, returnByTimeB = null) => {
         if (swapStep === 'confirm1') {
             setSwapStep('scan2');
             setPage('scanWaiting');
@@ -375,7 +388,7 @@ export default function App() {
             }
             setLoading(true);
             try {
-                const result = await swapKey(swapUser1.userId, swapRoom1, swapUser2.userId, swapRoom2);
+                const result = await swapKey(swapUser1.userId, swapRoom1, returnByTimeA, swapUser2.userId, swapRoom2, returnByTimeB);
                 setBorrowResult(result);
                 if (result?.success) {
                     setPage('success');
@@ -639,6 +652,7 @@ export default function App() {
                         roomCode1={swapRoom1}
                         user2={swapUser2}
                         roomCode2={swapRoom2}
+                        eligibility={swapEligibility}
                         onConfirm={handleSwapConfirm}
                         onCancel={goHome}
                         loading={loading}

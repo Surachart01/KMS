@@ -3,14 +3,45 @@
  * step='confirm1' → ยืนยันตัวตนคนที่ 1 พร้อมแสดงห้องที่ถือสิทธิ์
  * step='confirm2' → แสดงสรุปการสลับทั้ง 2 คน + ปุ่มยืนยันการสลับ
  */
+import { useState } from 'react';
+
 export default function SwapConfirmPage({
     step,
     user1, roomCode1,
     user2, roomCode2,
+    eligibility,
     onConfirm,
     onCancel,
     loading,
 }) {
+    const [returnTimeA, setReturnTimeA] = useState('');
+    const [returnTimeB, setReturnTimeB] = useState('');
+
+    const handleConfirmClick = () => {
+        let timeA = null;
+        let timeB = null;
+        
+        if (eligibility && !eligibility.userA.hasSchedule && returnTimeA) {
+            const now = new Date();
+            const [hh, mm] = returnTimeA.split(':');
+            now.setHours(parseInt(hh, 10), parseInt(mm, 10), 0, 0);
+            timeA = now.toISOString();
+        }
+        
+        if (eligibility && !eligibility.userB.hasSchedule && returnTimeB) {
+            const now = new Date();
+            const [hh, mm] = returnTimeB.split(':');
+            now.setHours(parseInt(hh, 10), parseInt(mm, 10), 0, 0);
+            timeB = now.toISOString();
+        }
+
+        onConfirm(timeA, timeB);
+    };
+
+    const isConfirmDisabled = loading || 
+        (eligibility && !eligibility.userA.hasSchedule && !returnTimeA) ||
+        (eligibility && !eligibility.userB.hasSchedule && !returnTimeB);
+
     // ── step confirm1: ยืนยันคนที่ 1 ──
     if (step === 'confirm1') {
         return (
@@ -73,6 +104,20 @@ export default function SwapConfirmPage({
                         <div className="swap-room-from">{roomCode1 || '?'}</div>
                         <p className="swap-room-label">→ สลับไปห้อง</p>
                         <div className="swap-room-to">{roomCode2 || '?'}</div>
+                        
+                        {eligibility && !eligibility.userA.hasSchedule && (
+                            <div className="swap-time-picker" style={{ marginTop: '15px' }}>
+                                <label style={{ color: '#fbbf24', fontSize: '0.85rem', display: 'block', marginBottom: '5px' }}>
+                                    ⚠️ ไม่มีคาบเรียน: ระบุเวลาคืน
+                                </label>
+                                <input 
+                                    type="time" 
+                                    value={returnTimeA} 
+                                    onChange={(e) => setReturnTimeA(e.target.value)}
+                                    style={{ background: '#1e293b', border: '1px solid #eab308', color: '#fff', padding: '8px 12px', borderRadius: '5px', width: '100%', fontSize: '1rem', textAlign: 'center' }}
+                                />
+                            </div>
+                        )}
                     </div>
 
                     {/* ลูกศรกลาง */}
@@ -86,14 +131,28 @@ export default function SwapConfirmPage({
                         <div className="swap-room-from">{roomCode2 || '?'}</div>
                         <p className="swap-room-label">→ สลับไปห้อง</p>
                         <div className="swap-room-to">{roomCode1 || '?'}</div>
+
+                        {eligibility && !eligibility.userB.hasSchedule && (
+                            <div className="swap-time-picker" style={{ marginTop: '15px' }}>
+                                <label style={{ color: '#fbbf24', fontSize: '0.85rem', display: 'block', marginBottom: '5px' }}>
+                                    ⚠️ ไม่มีคาบเรียน: ระบุเวลาคืน
+                                </label>
+                                <input 
+                                    type="time" 
+                                    value={returnTimeB} 
+                                    onChange={(e) => setReturnTimeB(e.target.value)}
+                                    style={{ background: '#1e293b', border: '1px solid #eab308', color: '#fff', padding: '8px 12px', borderRadius: '5px', width: '100%', fontSize: '1rem', textAlign: 'center' }}
+                                />
+                            </div>
+                        )}
                     </div>
                 </div>
 
                 <div className="confirm-actions">
                     <button
                         className="btn btn-swap btn-lg"
-                        onClick={onConfirm}
-                        disabled={loading}
+                        onClick={handleConfirmClick}
+                        disabled={isConfirmDisabled}
                     >
                         {loading ? 'กำลังสลับสิทธิ์...' : '🔄 ยืนยันการสลับ'}
                     </button>

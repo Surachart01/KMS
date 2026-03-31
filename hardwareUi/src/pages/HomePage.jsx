@@ -54,15 +54,6 @@ export default function HomePage({ onBorrow, onReturn, onTransfer, onSwap, onMov
                         <small>Swap Rights</small>
                     </div>
                 </button>
-                <button className="btn-minimal btn-move" onClick={onMove}>
-                    <div className="minimal-icon">
-                        <MoveRight size={20} />
-                    </div>
-                    <div className="minimal-text">
-                        <span>ย้ายห้อง</span>
-                        <small>Move Key</small>
-                    </div>
-                </button>
                 <button className="btn-minimal btn-transfer" onClick={onTransfer}>
                     <div className="minimal-icon">
                         <UserPlus size={20} />

@@ -413,8 +413,8 @@ io.on('connection', (socket) => {
     }
   });
 
-  // ── key:swap — สลับสิทธิ์กุญแจระหว่าง 2 คน ──
-  socket.on('key:swap', async (data, callback) => {
+  // ── key:check-swap — ตรวจสอบเวลาเรียนก่อนสลับสิทธิ์ ──
+  socket.on('key:check-swap', async (data, callback) => {
     try {
       const fakeReq = {
         headers: { authorization: `Bearer ${process.env.HARDWARE_TOKEN}` },
@@ -423,6 +423,36 @@ io.on('connection', (socket) => {
           roomCodeA: data.roomCodeA,
           studentCodeB: data.studentCodeB,
           roomCodeB: data.roomCodeB,
+        },
+        ip: null,
+        connection: { remoteAddress: null },
+      };
+      const fakeRes = {
+        statusCode: 200,
+        data: null,
+        status(code) { this.statusCode = code; return this; },
+        json(d) { this.data = d; return this; },
+      };
+      await hardwareController.checkSwapEligibility(fakeReq, fakeRes);
+      if (typeof callback === 'function') callback(fakeRes.data);
+    } catch (err) {
+      console.error('❌ key:check-swap error:', err);
+      if (typeof callback === 'function') callback({ success: false, message: err.message });
+    }
+  });
+
+  // ── key:swap — สลับสิทธิ์กุญแจระหว่าง 2 คน ──
+  socket.on('key:swap', async (data, callback) => {
+    try {
+      const fakeReq = {
+        headers: { authorization: `Bearer ${process.env.HARDWARE_TOKEN}` },
+        body: {
+          studentCodeA: data.studentCodeA,
+          roomCodeA: data.roomCodeA,
+          returnByTimeA: data.returnByTimeA,
+          studentCodeB: data.studentCodeB,
+          roomCodeB: data.roomCodeB,
+          returnByTimeB: data.returnByTimeB,
         },
         ip: null,
         connection: { remoteAddress: null },
