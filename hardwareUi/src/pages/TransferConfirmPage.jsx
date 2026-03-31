@@ -65,9 +65,9 @@ function CustomTimePicker({ value, onChange }) {
                     <button className="time-btn" style={{ width: '36px', height: '24px' }} onClick={() => adjustTime(0, -30)}><ChevronDown size={16} /></button>
                 </div>
             </div>
-            <div className="time-presets" style={{ marginLeft: 0, paddingLeft: 0, borderLeft: 'none', justifyContent: 'center' }}>
-                <button className="preset-btn" style={{ padding: '2px 6px', fontSize: '0.7rem' }} onClick={() => setPresetDuration(1)}>+1 ชม.</button>
-                <button className="preset-btn" style={{ padding: '2px 6px', fontSize: '0.7rem' }} onClick={() => setPresetDuration(2)}>+2 ชม.</button>
+            <div className="time-presets" style={{ marginLeft: 0, paddingLeft: 0, borderLeft: 'none', justifyContent: 'center', marginTop: '4px' }}>
+                <button className="preset-btn" style={{ padding: '2px 4px', fontSize: '0.65rem' }} onClick={() => setPresetDuration(1)}>+1 ชม.</button>
+                <button className="preset-btn" style={{ padding: '2px 4px', fontSize: '0.65rem' }} onClick={() => setPresetDuration(2)}>+2 ชม.</button>
             </div>
         </div>
     );
@@ -112,30 +112,30 @@ export default function TransferConfirmPage({
                 <div className="confirm-card">
                     <div className="transfer-step-badge">โอนสิทธิ์ — ผู้โอน</div>
 
-                    <div className="confirm-avatar"><User size={32} /></div>
+                    <div className="confirm-avatar" style={{ marginBottom: '8px' }}><User size={32} /></div>
 
-                    <h2 className="confirm-title">ยืนยันผู้โอนกุญแจ</h2>
+                    <h2 className="confirm-title" style={{ fontSize: '1.4rem', marginBottom: '15px' }}>ยืนยันผู้โอนกุญแจ</h2>
 
-                    <div className="confirm-info">
-                        <p className="confirm-label">รหัสนักศึกษา</p>
+                    <div className="confirm-info" style={{ marginBottom: '8px' }}>
+                        <p className="confirm-label" style={{ fontSize: '0.8rem' }}>รหัสนักศึกษา</p>
                         <p className="confirm-value">{user1?.userId || '-'}</p>
                     </div>
 
-                    <div className="confirm-info" style={{ marginTop: '10px' }}>
-                        <p className="confirm-label">ชื่อ-นามสกุล</p>
-                        <p className="confirm-value" style={{ fontSize: '1.2rem', color: '#e2e8f0' }}>
+                    <div className="confirm-info" style={{ marginBottom: '8px' }}>
+                        <p className="confirm-label" style={{ fontSize: '0.8rem' }}>ชื่อ-นามสกุล</p>
+                        <p className="confirm-value" style={{ fontSize: '1.1rem', color: '#e2e8f0' }}>
                             {user1?.firstName} {user1?.lastName}
                         </p>
                     </div>
 
                     {roomCode1 ? (
-                        <div className="confirm-info">
-                            <p className="confirm-label">สิทธิ์ห้องปัจจุบันที่จะโอน</p>
-                            <p className="confirm-room transfer-room">{roomCode1}</p>
+                        <div className="confirm-info" style={{ marginBottom: '15px' }}>
+                            <p className="confirm-label" style={{ fontSize: '0.8rem' }}>สิทธิ์ห้องปัจจุบันที่จะโอน</p>
+                            <div className="transfer-room-badge" style={{ marginTop: '5px' }}>{roomCode1}</div>
                         </div>
                     ) : (
-                        <div className="confirm-info warn-box">
-                            <p className="confirm-label">⚠️ ไม่พบสิทธิ์ห้องที่จะโอน</p>
+                        <div className="confirm-info warn-box" style={{ padding: '8px' }}>
+                            <p className="confirm-label" style={{ fontSize: '0.8rem' }}>⚠️ ไม่พบสิทธิ์ห้องที่จะโอน</p>
                         </div>
                     )}
 
@@ -165,53 +165,52 @@ export default function TransferConfirmPage({
                 <div className="swap-users-row transfer-summary" style={{ flexDirection: 'row', display: 'flex', gap: '20px', alignItems: 'center' }}>
                     {/* ผู้โอน */}
                     <div className="transfer-user-box giver-box" style={{ flex: 1 }}>
-                        <div className="transfer-user-avatar" style={{ marginBottom: '10px' }}><User size={32} /></div>
-                        <p className="transfer-user-id">{user1?.userId || '-'}</p>
-                        <p className="transfer-user-name" style={{ fontSize: '0.9rem', color: '#94a3b8', marginBottom: '10px' }}>{user1?.firstName} {user1?.lastName}</p>
-                        <p className="swap-room-label" style={{ fontSize: '0.8rem', color: '#94a3b8' }}>ส่งมอบกุญแจห้อง</p>
+                        <div className="transfer-user-avatar" style={{ marginBottom: '6px' }}><User size={24} /></div>
+                        <p className="transfer-user-id" style={{ fontSize: '0.9rem' }}>{user1?.userId || '-'}</p>
+                        <p className="transfer-user-name" style={{ fontSize: '0.8rem', color: '#94a3b8', marginBottom: '6px' }}>{user1?.firstName} {user1?.lastName}</p>
+                        <p className="swap-room-label" style={{ fontSize: '0.75rem', color: '#94a3b8' }}>ส่งมอบ</p>
                         <div className="transfer-room-badge">{roomCode1 || '?'}</div>
                     </div>
 
                     {/* ลูกศรโอน */}
-                    <div className="transfer-arrow" style={{ padding: '0 10px' }}>
-                        <ArrowRight size={36} color="#8b5cf6" />
+                    <div className="transfer-arrow" style={{ padding: '0 5px' }}>
+                        <ArrowRight size={28} color="#8b5cf6" />
                     </div>
 
                     {/* ผู้รับโอน */}
                     <div className="transfer-user-box receiver-box" style={{ flex: 1 }}>
-                        <div className="transfer-user-avatar" style={{ marginBottom: '10px' }}><User size={32} /></div>
-                        <p className="transfer-user-id">{user2?.userId || '-'}</p>
-                        <p className="transfer-user-name" style={{ fontSize: '0.9rem', color: '#94a3b8', marginBottom: '10px' }}>{user2?.firstName} {user2?.lastName}</p>
-                        <p className="swap-room-label" style={{ fontSize: '0.8rem', color: '#94a3b8' }}>รับกุญแจห้อง</p>
+                        <div className="transfer-user-avatar" style={{ marginBottom: '6px' }}><User size={24} /></div>
+                        <p className="transfer-user-id" style={{ fontSize: '0.9rem' }}>{user2?.userId || '-'}</p>
+                        <p className="transfer-user-name" style={{ fontSize: '0.8rem', color: '#94a3b8', marginBottom: '6px' }}>{user2?.firstName} {user2?.lastName}</p>
+                        <p className="swap-room-label" style={{ fontSize: '0.75rem', color: '#94a3b8' }}>รับโอน</p>
                         <div className="transfer-room-badge receive">{roomCode1 || '?'}</div>
                     </div>
                 </div>
 
                 {/* ส่วนของไม่มีคาบเรียน */}
                 {eligibility && !eligibility.hasSchedule && (
-                    <div style={{ marginTop: '20px', padding: '15px', background: 'rgba(15, 23, 42, 0.6)', borderRadius: '12px', border: '1px solid #1e293b' }}>
-                        <h4 style={{ margin: '0 0 10px 0', color: '#fbbf24', fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-                            <AlertTriangle size={18} /> ผู้รับโอนไม่มีคาบเรียน กรุณาระบุข้อมูล
+                    <div style={{ marginTop: '12px', padding: '10px', background: 'rgba(15, 23, 42, 0.6)', borderRadius: '10px', border: '1px solid #1e293b' }}>
+                        <h4 style={{ margin: '0 0 8px 0', color: '#fbbf24', fontSize: '0.9rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                            <AlertTriangle size={16} /> ผู้รับไม่มีคาบเรียน
                         </h4>
                         
-                        <div style={{ display: 'flex', gap: '15px', alignItems: 'flex-start' }}>
+                        <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
                             {/* เหตุผล */}
-                            <div style={{ flex: 1, textAlign: 'left' }}>
-                                <label style={{ display: 'block', marginBottom: '8px', color: '#94a3b8', fontSize: '0.85rem' }}>1. เหตุผลการรับโอน</label>
-                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                            <div style={{ flex: 1.4, textAlign: 'left' }}>
+                                <label style={{ display: 'block', marginBottom: '6px', color: '#94a3b8', fontSize: '0.8rem' }}>• เหตุผลการโอน</label>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
                                     {REASON_PRESETS.map((r) => (
                                         <button
                                             key={r}
                                             onClick={() => setReason(r)}
                                             style={{
-                                                padding: '6px 10px',
-                                                borderRadius: '6px',
+                                                padding: '4px 8px',
+                                                borderRadius: '5px',
                                                 border: `1px solid ${reason === r ? '#8b5cf6' : '#334155'}`,
                                                 background: reason === r ? 'rgba(139, 92, 246, 0.2)' : 'transparent',
                                                 color: reason === r ? '#fff' : '#cbd5e1',
-                                                fontSize: '0.8rem',
-                                                cursor: 'pointer',
-                                                transition: 'all 0.2s'
+                                                fontSize: '0.75rem',
+                                                cursor: 'pointer'
                                             }}
                                         >
                                             {r}
@@ -221,15 +220,15 @@ export default function TransferConfirmPage({
                             </div>
 
                             {/* เวลาคืน */}
-                            <div style={{ flex: 1, borderLeft: '1px solid #334155', paddingLeft: '15px' }}>
-                                <label style={{ display: 'block', marginBottom: '5px', color: '#94a3b8', fontSize: '0.85rem', textAlign: 'center' }}>2. เวลาคืนกุญแจ</label>
+                            <div style={{ flex: 1, borderLeft: '1px solid #334155', paddingLeft: '10px' }}>
+                                <label style={{ display: 'block', marginBottom: '4px', color: '#94a3b8', fontSize: '0.8rem', textAlign: 'center' }}>• เวลาคืน</label>
                                 <CustomTimePicker value={returnTime} onChange={setReturnTime} />
                             </div>
                         </div>
                     </div>
                 )}
 
-                <div className="confirm-actions" style={{ marginTop: '25px' }}>
+                <div className="confirm-actions" style={{ marginTop: '15px' }}>
                     <button
                         className="btn btn-transfer btn-lg"
                         style={{ background: isConfirmDisabled ? '#475569' : 'linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%)', boxShadow: isConfirmDisabled ? 'none' : '0 8px 20px rgba(139, 92, 246, 0.3)' }}
