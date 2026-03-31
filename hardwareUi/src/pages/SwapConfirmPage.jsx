@@ -4,7 +4,7 @@
  * step='confirm2' → แสดงสรุปการสลับทั้ง 2 คน + ปุ่มยืนยันการสลับ
  */
 import { useState, useEffect } from 'react';
-import { ChevronUp, ChevronDown } from 'lucide-react';
+import { ChevronUp, ChevronDown, User, RefreshCw, AlertTriangle, CheckCircle } from 'lucide-react';
 
 function CustomTimePicker({ value, onChange }) {
     const initH = value ? parseInt(value.split(':')[0]) : (new Date().getHours() + 2) % 24;
@@ -104,7 +104,7 @@ export default function SwapConfirmPage({
                 <div className="confirm-card">
                     <div className="swap-step-badge">สลับสิทธิ์ — คนที่ 1</div>
 
-                    <div className="confirm-avatar">👤</div>
+                    <div className="confirm-avatar"><User size={32} /></div>
 
                     <h2 className="confirm-title">ยืนยันตัวตนคนที่ 1</h2>
 
@@ -153,7 +153,7 @@ export default function SwapConfirmPage({
                 <div className="swap-users-row">
                     {/* คนที่ 1 */}
                     <div className="swap-user-box">
-                        <div className="swap-user-avatar">👤</div>
+                        <div className="swap-user-avatar" style={{ marginBottom: '10px' }}><User size={32} color="#10b981" /></div>
                         <p className="swap-user-id">{user1?.userId || '-'}</p>
                         <p className="swap-user-name" style={{ fontSize: '0.9rem', color: '#94a3b8', marginBottom: '10px' }}>{user1?.firstName} {user1?.lastName}</p>
                         <div className="swap-room-from">{roomCode1 || '?'}</div>
@@ -163,7 +163,7 @@ export default function SwapConfirmPage({
                         {eligibility && !eligibility.userA.hasSchedule && (
                             <div className="swap-time-picker" style={{ marginTop: '15px' }}>
                                 <label style={{ color: '#fbbf24', fontSize: '0.85rem', display: 'block', marginBottom: '5px' }}>
-                                    ⚠️ ไม่มีคาบเรียน: ระบุเวลาคืน
+                                    <AlertTriangle size={14} style={{ display: 'inline', marginRight: '4px', verticalAlign: '-2px' }}/> ไม่มีคาบเรียน: ระบุเวลาคืน
                                 </label>
                                 <CustomTimePicker 
                                     value={returnTimeA} 
@@ -174,11 +174,11 @@ export default function SwapConfirmPage({
                     </div>
 
                     {/* ลูกศรกลาง */}
-                    <div className="swap-arrow">🔄</div>
+                    <div className="swap-arrow"><RefreshCw size={36} /></div>
 
                     {/* คนที่ 2 */}
                     <div className="swap-user-box">
-                        <div className="swap-user-avatar">👤</div>
+                        <div className="swap-user-avatar" style={{ marginBottom: '10px' }}><User size={32} color="#10b981" /></div>
                         <p className="swap-user-id">{user2?.userId || '-'}</p>
                         <p className="swap-user-name" style={{ fontSize: '0.9rem', color: '#94a3b8', marginBottom: '10px' }}>{user2?.firstName} {user2?.lastName}</p>
                         <div className="swap-room-from">{roomCode2 || '?'}</div>
@@ -188,7 +188,7 @@ export default function SwapConfirmPage({
                         {eligibility && !eligibility.userB.hasSchedule && (
                             <div className="swap-time-picker" style={{ marginTop: '15px' }}>
                                 <label style={{ color: '#fbbf24', fontSize: '0.85rem', display: 'block', marginBottom: '5px' }}>
-                                    ⚠️ ไม่มีคาบเรียน: ระบุเวลาคืน
+                                    <AlertTriangle size={14} style={{ display: 'inline', marginRight: '4px', verticalAlign: '-2px' }}/> ไม่มีคาบเรียน: ระบุเวลาคืน
                                 </label>
                                 <CustomTimePicker 
                                     value={returnTimeB} 
@@ -205,7 +205,7 @@ export default function SwapConfirmPage({
                         onClick={handleConfirmClick}
                         disabled={isConfirmDisabled}
                     >
-                        {loading ? 'กำลังสลับสิทธิ์...' : '🔄 ยืนยันการสลับ'}
+                        {loading ? 'กำลังสลับสิทธิ์...' : <><RefreshCw size={20} style={{marginRight: '8px'}} /> ยืนยันการสลับ</>}
                     </button>
                     <button className="btn btn-secondary" onClick={onCancel} disabled={loading}>
                         ยกเลิก
