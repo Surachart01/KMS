@@ -3,7 +3,62 @@
  * step='confirm1' → ยืนยันตัวตนคนที่ 1 พร้อมแสดงห้องที่ถือสิทธิ์
  * step='confirm2' → แสดงสรุปการสลับทั้ง 2 คน + ปุ่มยืนยันการสลับ
  */
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { ChevronUp, ChevronDown } from 'lucide-react';
+
+function CustomTimePicker({ value, onChange }) {
+    const initH = value ? parseInt(value.split(':')[0]) : (new Date().getHours() + 2) % 24;
+    const initM = value ? parseInt(value.split(':')[1]) : 0;
+    
+    const [hours, setHours] = useState(initH);
+    const [minutes, setMinutes] = useState(initM);
+
+    useEffect(() => {
+        onChange(`${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`);
+    }, [hours, minutes]);
+
+    const adjustTime = (h, m) => {
+        let newH = hours + h;
+        let newM = minutes + m;
+        
+        if (newM >= 60) { newM -= 60; newH += 1; }
+        if (newM < 0) { newM += 60; newH -= 1; }
+        if (newH >= 24) newH -= 24;
+        if (newH < 0) newH += 24;
+        
+        setHours(newH);
+        setMinutes(newM);
+    };
+
+    const setPresetDuration = (durationH) => {
+        const now = new Date();
+        now.setHours(now.getHours() + durationH);
+        setHours(now.getHours() % 24);
+        setMinutes(now.getMinutes() > 30 ? 30 : 0);
+    };
+
+    return (
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '5px' }}>
+            <div className="touch-time-picker" style={{ margin: '0 0 5px 0', padding: '4px 8px' }}>
+                <div className="time-column" style={{ width: '40px' }}>
+                    <button className="time-btn" style={{ width: '36px', height: '24px' }} onClick={() => adjustTime(1, 0)}><ChevronUp size={16} /></button>
+                    <div className="time-value" style={{ fontSize: '1.2rem' }}>{hours.toString().padStart(2, '0')}</div>
+                    <button className="time-btn" style={{ width: '36px', height: '24px' }} onClick={() => adjustTime(-1, 0)}><ChevronDown size={16} /></button>
+                </div>
+                <div className="time-separator" style={{ fontSize: '1.2rem', marginTop: '-6px' }}>:</div>
+                <div className="time-column" style={{ width: '40px' }}>
+                    <button className="time-btn" style={{ width: '36px', height: '24px' }} onClick={() => adjustTime(0, 30)}><ChevronUp size={16} /></button>
+                    <div className="time-value" style={{ fontSize: '1.2rem' }}>{minutes.toString().padStart(2, '0')}</div>
+                    <button className="time-btn" style={{ width: '36px', height: '24px' }} onClick={() => adjustTime(0, -30)}><ChevronDown size={16} /></button>
+                </div>
+            </div>
+            <div className="time-presets" style={{ marginLeft: 0, paddingLeft: 0, borderLeft: 'none', justifyContent: 'center' }}>
+                <button className="preset-btn" style={{ padding: '2px 6px', fontSize: '0.7rem' }} onClick={() => setPresetDuration(1)}>+1 ชม.</button>
+                <button className="preset-btn" style={{ padding: '2px 6px', fontSize: '0.7rem' }} onClick={() => setPresetDuration(2)}>+2 ชม.</button>
+            </div>
+        </div>
+    );
+}
 
 export default function SwapConfirmPage({
     step,
@@ -110,11 +165,9 @@ export default function SwapConfirmPage({
                                 <label style={{ color: '#fbbf24', fontSize: '0.85rem', display: 'block', marginBottom: '5px' }}>
                                     ⚠️ ไม่มีคาบเรียน: ระบุเวลาคืน
                                 </label>
-                                <input 
-                                    type="time" 
+                                <CustomTimePicker 
                                     value={returnTimeA} 
-                                    onChange={(e) => setReturnTimeA(e.target.value)}
-                                    style={{ background: '#1e293b', border: '1px solid #eab308', color: '#fff', padding: '8px 12px', borderRadius: '5px', width: '100%', fontSize: '1rem', textAlign: 'center' }}
+                                    onChange={setReturnTimeA} 
                                 />
                             </div>
                         )}
@@ -137,11 +190,9 @@ export default function SwapConfirmPage({
                                 <label style={{ color: '#fbbf24', fontSize: '0.85rem', display: 'block', marginBottom: '5px' }}>
                                     ⚠️ ไม่มีคาบเรียน: ระบุเวลาคืน
                                 </label>
-                                <input 
-                                    type="time" 
+                                <CustomTimePicker 
                                     value={returnTimeB} 
-                                    onChange={(e) => setReturnTimeB(e.target.value)}
-                                    style={{ background: '#1e293b', border: '1px solid #eab308', color: '#fff', padding: '8px 12px', borderRadius: '5px', width: '100%', fontSize: '1rem', textAlign: 'center' }}
+                                    onChange={setReturnTimeB} 
                                 />
                             </div>
                         )}
