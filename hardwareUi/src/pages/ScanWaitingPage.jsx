@@ -55,11 +55,11 @@ export default function ScanWaitingPage({ mode, transferStep, swapStep, moveStep
                 </button>
                 {onTestScan && (
                     <>
-                        <button className="btn btn-primary" onClick={() => onTestScan('67-020415-1001-6')}>
-                            Test: สมชาย (67...1001)
+                        <button className="btn btn-primary" onClick={() => onTestScan('6702041510164')}>
+                            Test: 67...164
                         </button>
-                        <button className="btn btn-primary" style={{ background: '#ec4899', borderColor: '#ec4899' }} onClick={() => onTestScan('67-020415-1002-4')}>
-                            Test: สมหญิง (67...1002)
+                        <button className="btn btn-primary" style={{ background: '#ec4899', borderColor: '#ec4899' }} onClick={() => onTestScan('6702041510181')}>
+                            Test: 67...181
                         </button>
                     </>
                 )}
