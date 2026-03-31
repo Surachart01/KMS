@@ -985,6 +985,58 @@ async function startKeyPullCheck(slotNumber, bookingId) {
     }
 }
 
+/**
+ * Wrong Key Validation:
+ * ถ้าเสียบกุญแจผิดช่อง (UID ไม่ตรง) → ปลดล็อค Solenoid ทันไท + แจ้งเตือน
+ * และรอจนกว่าจะดึงกุญแจออก ค่อยล็อคกลับ
+ */
+async function startWrongKeyCheck(slotNumber, uid, expectedUid) {
+    if (pullCheckingSlots.has(slotNumber)) return; // ข้ามถ้ากำลังทำ pull check ปกติ
+    
+    pullCheckingSlots.add(slotNumber);
+    isUnlocking = true;
+    
+    logDebug(`⚠️ [WrongKey] ช่อง ${slotNumber}: พบ UID ${uid} (คาดหวัง ${expectedUid}) -> UNLOCKING`);
+    socket.emit('key:wrong-slot', { slotNumber, uid, expectedUid });
+
+    try {
+        // 1. ปลดล็อคเพื่อให้ดึงออก
+        await unlockSlot(slotNumber);
+        
+        // 2. กระพริบแดงเตือนถี่ยิบ 🚨
+        activeFeedbackSlots.add(slotNumber);
+        let blinkCount = 0;
+        const blinkInterval = setInterval(() => {
+            blinkCount++;
+            setLedRelay(slotNumber, blinkCount % 2 === 0);
+        }, 200);
+
+        // 3. รอจนกว่าจะดึงออก (สูงสุด 30 วิ)
+        const startMs = Date.now();
+        let stillThere = true;
+        while (Date.now() - startMs < 30000) {
+            await new Promise(r => setTimeout(r, 500));
+            const currentUid = await readNfcAtSlot(slotNumber);
+            if (!currentUid) {
+                stillThere = false;
+                break;
+            }
+        }
+        
+        clearInterval(blinkInterval);
+        logDebug(`🔒 [WrongKey] สิ้นสุดการเช็คช่อง ${slotNumber} (stillThere=${stillThere})`);
+
+    } finally {
+        await lockSlot(slotNumber);
+        activeFeedbackSlots.delete(slotNumber);
+        pullCheckingSlots.delete(slotNumber);
+        isUnlocking = false;
+        
+        // รีเฟรชสถานะไฟ
+        setTimeout(() => checkAllSlots(), 1000);
+    }
+}
+
 // เช็คสถานะ NFC ของช่องทุกช่องบน Hardware Service
 async function checkAllSlots() {
     // ถ้ากำลังปลดล็อค หรือกำลังอ่านกุญแจอยู่ ให้ข้ามไปก่อนเพื่อป้องกันการชนกัน (serial collision)
@@ -1362,6 +1414,13 @@ function startNfcPolling() {
                     slotHasKey[`last_uid_${currentSlot}`] = uid;
                 }
                 socket.emit('nfc:tag', { slotNumber: currentSlot, uid });
+
+                // ── [NEW] ตรวจสอบความถูกต้องของกุญแจ ──
+                const expectedUid = expectedKeyUidBySlot[currentSlot];
+                if (expectedUid && uid !== expectedUid) {
+                    // เสียบผิดกุญแจ/ผิดช่อง!
+                    startWrongKeyCheck(currentSlot, uid, expectedUid);
+                }
             } else {
                 // Key not found, increment miss count
                 const misses = (missCounts.get(currentSlot) || 0) + 1;

@@ -105,6 +105,9 @@ export default function App() {
         const onConnect = () => setConnected(true);
         const onDisconnect = () => setConnected(false);
         const onHardwareStatus = (data) => setHardwareStatus(data || { ready: false, message: '...' });
+        const onWrongSlot = (data) => {
+            setErrorPopup(`⚠️ คุณเสียบกุญแจผิดช่อง! (ช่องที่ ${data.slotNumber}) กรุณาดึงกุญแจออกและเสียบช่องที่ถูกต้อง`);
+        };
         const onBorrowCancelled = (data) => {
             setErrorPopup(`หมดเวลาดึงกุญแจช่อง ${data.slotNumber}! การเบิกถูกยกเลิก`);
             goHome();
@@ -113,12 +116,14 @@ export default function App() {
         socket.on('connect', onConnect);
         socket.on('disconnect', onDisconnect);
         socket.on('hardware:status', onHardwareStatus);
+        socket.on('key:wrong-slot', onWrongSlot);
         socket.on('borrow:cancelled', onBorrowCancelled);
 
         return () => {
             socket.off('connect', onConnect);
             socket.off('disconnect', onDisconnect);
             socket.off('hardware:status', onHardwareStatus);
+            socket.off('key:wrong-slot', onWrongSlot);
             socket.off('borrow:cancelled', onBorrowCancelled);
         };
     }, []);

@@ -669,6 +669,13 @@ io.on('connection', (socket) => {
     }
   });
 
+  // ── key:wrong-slot — RPi ตรวจพบการเสียบกุญแจผิดช่อง ──
+  socket.on('key:wrong-slot', (data) => {
+    const { slotNumber, uid, expectedUid } = data;
+    console.log(`⚠️  key:wrong-slot in slot ${slotNumber}: Found ${uid}, Expected ${expectedUid}`);
+    io.to('kiosk').emit('key:wrong-slot', data);
+  });
+
   // ── nfc:write-result — RPi ส่งผลเขียน NFC กลับ ──
   socket.on('nfc:write-result', (data) => {
     console.log(`🏷️  nfc:write-result: slot=${data.slotNumber}, success=${data.success}`);
