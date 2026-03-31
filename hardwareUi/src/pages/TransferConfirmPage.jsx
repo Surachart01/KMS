@@ -1,25 +1,120 @@
 /**
- * หน้ายืนยันการย้ายสิทธิ์กุญแจ
- * step='confirm1' → ยืนยันตัวตนคนที่ 1 (ผู้โอน) + แสดงห้องที่จะโอน
- * step='confirm2' → แสดงสรุป [ผู้โอน] ห้อง [X] → [ผู้รับ] ก่อนยืนยัน
+ * หน้ายืนยันการโอนสิทธิ์กุญแจ
+ * step='confirm1' → ยืนยันตัวตนคนที่ 1 (ผู้โอน) พร้อมแสดงห้องที่ถือสิทธิ์
+ * step='confirm2' → แสดงสรุปการโอนไปให้คนที่ 2 (ผู้รับ) + ระบุเหตุผล/เวลาคืน (ถ้าไม่มีเรียน)
  */
+import { useState, useEffect } from 'react';
+import { ChevronUp, ChevronDown, User, ArrowRight, AlertTriangle } from 'lucide-react';
+
+const REASON_PRESETS = [
+    'สอนชดเชย', 'เตรียมการสอน', 'ทำความสะอาด', 'ซ่อมแซมอุปกรณ์', 'จัดกิจกรรมพิเศษ'
+];
+
+function CustomTimePicker({ value, onChange }) {
+    const initH = value ? parseInt(value.split(':')[0]) : (new Date().getHours() + 2) % 24;
+    const initM = value ? parseInt(value.split(':')[1]) : 0;
+    
+    const [hours, setHours] = useState(initH);
+    const [minutes, setMinutes] = useState(initM);
+
+    useEffect(() => {
+        onChange(`${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`);
+    }, [hours, minutes]);
+
+    const adjustTime = (h, m) => {
+        let newH = hours + h;
+        let newM = minutes + m;
+        
+        if (newM >= 60) { newM -= 60; newH += 1; }
+        if (newM < 0) { newM += 60; newH -= 1; }
+        if (newH >= 24) newH -= 24;
+        if (newH < 0) newH += 24;
+        
+        const now = new Date();
+        const currentH = now.getHours();
+        const currentM = now.getMinutes();
+
+        // ป้องกันไม่ให้เลือกเวลาย้อนหลังกลับไปในอดีต (ของวันปัจจุบัน)
+        if (newH < currentH || (newH === currentH && newM < currentM)) {
+            return; 
+        }
+
+        setHours(newH);
+        setMinutes(newM);
+    };
+
+    const setPresetDuration = (durationH) => {
+        const now = new Date();
+        now.setHours(now.getHours() + durationH);
+        setHours(now.getHours() % 24);
+        setMinutes(now.getMinutes() > 30 ? 30 : 0);
+    };
+
+    return (
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '5px' }}>
+            <div className="touch-time-picker" style={{ margin: '0 0 5px 0', padding: '4px 8px' }}>
+                <div className="time-column" style={{ width: '40px' }}>
+                    <button className="time-btn" style={{ width: '36px', height: '24px' }} onClick={() => adjustTime(1, 0)}><ChevronUp size={16} /></button>
+                    <div className="time-value" style={{ fontSize: '1.2rem' }}>{hours.toString().padStart(2, '0')}</div>
+                    <button className="time-btn" style={{ width: '36px', height: '24px' }} onClick={() => adjustTime(-1, 0)}><ChevronDown size={16} /></button>
+                </div>
+                <div className="time-separator" style={{ fontSize: '1.2rem', marginTop: '-6px' }}>:</div>
+                <div className="time-column" style={{ width: '40px' }}>
+                    <button className="time-btn" style={{ width: '36px', height: '24px' }} onClick={() => adjustTime(0, 30)}><ChevronUp size={16} /></button>
+                    <div className="time-value" style={{ fontSize: '1.2rem' }}>{minutes.toString().padStart(2, '0')}</div>
+                    <button className="time-btn" style={{ width: '36px', height: '24px' }} onClick={() => adjustTime(0, -30)}><ChevronDown size={16} /></button>
+                </div>
+            </div>
+            <div className="time-presets" style={{ marginLeft: 0, paddingLeft: 0, borderLeft: 'none', justifyContent: 'center' }}>
+                <button className="preset-btn" style={{ padding: '2px 6px', fontSize: '0.7rem' }} onClick={() => setPresetDuration(1)}>+1 ชม.</button>
+                <button className="preset-btn" style={{ padding: '2px 6px', fontSize: '0.7rem' }} onClick={() => setPresetDuration(2)}>+2 ชม.</button>
+            </div>
+        </div>
+    );
+}
+
 export default function TransferConfirmPage({
     step,
     user1, roomCode1,
     user2,
+    eligibility,
     onConfirm,
     onCancel,
     loading,
 }) {
-    // ── step confirm1: ยืนยันคนที่ 1 (ผู้โอน) ──
+    const [reason, setReason] = useState('');
+    const [returnTime, setReturnTime] = useState('');
+
+    const handleConfirmClick = () => {
+        let finalTime = null;
+        
+        if (eligibility && !eligibility.hasSchedule && returnTime) {
+            const now = new Date();
+            const [hh, mm] = returnTime.split(':');
+            now.setHours(parseInt(hh, 10), parseInt(mm, 10), 0, 0);
+            
+            if (now <= new Date()) {
+                 now.setDate(now.getDate() + 1);
+            }
+            finalTime = now.toISOString();
+        }
+
+        onConfirm(reason, finalTime);
+    };
+
+    const isConfirmDisabled = loading || 
+        (eligibility && !eligibility.hasSchedule && (!reason || !returnTime));
+
+    // ── step confirm1: ยืนยันคนที่ 1 ──
     if (step === 'confirm1') {
         return (
             <div className="page confirm-page">
                 <div className="confirm-card">
-                    <div className="transfer-step-badge">ย้ายสิทธิ์ — ผู้โอน</div>
+                    <div className="transfer-step-badge">โอนสิทธิ์ — ผู้โอน</div>
 
-                    <div className="confirm-avatar">👤</div>
-                    <h2 className="confirm-title">ยืนยันตัวตนผู้โอน</h2>
+                    <div className="confirm-avatar"><User size={32} /></div>
+
+                    <h2 className="confirm-title">ยืนยันผู้โอนกุญแจ</h2>
 
                     <div className="confirm-info">
                         <p className="confirm-label">รหัสนักศึกษา</p>
@@ -35,23 +130,22 @@ export default function TransferConfirmPage({
 
                     {roomCode1 ? (
                         <div className="confirm-info">
-                            <p className="confirm-label">ห้องที่จะโอนสิทธิ์</p>
+                            <p className="confirm-label">สิทธิ์ห้องปัจจุบันที่จะโอน</p>
                             <p className="confirm-room transfer-room">{roomCode1}</p>
                         </div>
                     ) : (
                         <div className="confirm-info warn-box">
                             <p className="confirm-label">⚠️ ไม่พบสิทธิ์ห้องที่จะโอน</p>
-                            <p className="confirm-value" style={{ fontSize: '0.75rem' }}>ตรวจสอบว่ามีคาบเรียนภายใน 30 นาที</p>
                         </div>
                     )}
 
                     <div className="confirm-actions">
                         <button
                             className="btn btn-transfer btn-lg"
-                            onClick={onConfirm}
+                            onClick={() => onConfirm(null, null)}
                             disabled={loading || !roomCode1}
                         >
-                            {loading ? 'กำลังตรวจสอบ...' : '✓ ยืนยัน — ไปสแกนผู้รับ'}
+                            {loading ? 'กำลังตรวจสอบ...' : '✓ ยืนยัน — ไปสแกนผู้รับโอน'}
                         </button>
                         <button className="btn btn-secondary" onClick={onCancel} disabled={loading}>
                             ยกเลิก
@@ -62,49 +156,87 @@ export default function TransferConfirmPage({
         );
     }
 
-    // ── step confirm2: ยืนยันการย้ายสุดท้าย ──
+    // ── step confirm2: ยืนยันการโอนให้คนที่ 2 ──
     return (
         <div className="page confirm-page">
             <div className="confirm-card transfer-final-card">
-                <div className="transfer-step-badge transfer-step-final">ยืนยันการย้ายสิทธิ์</div>
+                <div className="transfer-step-badge transfer-step-final">ยืนยันการโอนสิทธิ์</div>
 
-                <div className="transfer-summary">
+                <div className="swap-users-row transfer-summary" style={{ flexDirection: 'row', display: 'flex', gap: '20px', alignItems: 'center' }}>
                     {/* ผู้โอน */}
-                    <div className="transfer-user-box giver-box">
-                        <p className="transfer-user-label">ผู้โอน</p>
-                        <div className="transfer-user-avatar">👤</div>
+                    <div className="transfer-user-box giver-box" style={{ flex: 1 }}>
+                        <div className="transfer-user-avatar" style={{ marginBottom: '10px' }}><User size={32} /></div>
                         <p className="transfer-user-id">{user1?.userId || '-'}</p>
                         <p className="transfer-user-name" style={{ fontSize: '0.9rem', color: '#94a3b8', marginBottom: '10px' }}>{user1?.firstName} {user1?.lastName}</p>
+                        <p className="swap-room-label" style={{ fontSize: '0.8rem', color: '#94a3b8' }}>ส่งมอบกุญแจห้อง</p>
                         <div className="transfer-room-badge">{roomCode1 || '?'}</div>
                     </div>
 
-                    {/* ลูกศรย้าย */}
-                    <div className="transfer-arrow">
-                        <span className="transfer-arrow-icon">→</span>
-                        <p className="transfer-arrow-label">โอนสิทธิ์</p>
+                    {/* ลูกศรโอน */}
+                    <div className="transfer-arrow" style={{ padding: '0 10px' }}>
+                        <ArrowRight size={36} color="#8b5cf6" />
                     </div>
 
-                    {/* ผู้รับ */}
-                    <div className="transfer-user-box receiver-box">
-                        <p className="transfer-user-label">ผู้รับ</p>
-                        <div className="transfer-user-avatar">👤</div>
+                    {/* ผู้รับโอน */}
+                    <div className="transfer-user-box receiver-box" style={{ flex: 1 }}>
+                        <div className="transfer-user-avatar" style={{ marginBottom: '10px' }}><User size={32} /></div>
                         <p className="transfer-user-id">{user2?.userId || '-'}</p>
                         <p className="transfer-user-name" style={{ fontSize: '0.9rem', color: '#94a3b8', marginBottom: '10px' }}>{user2?.firstName} {user2?.lastName}</p>
+                        <p className="swap-room-label" style={{ fontSize: '0.8rem', color: '#94a3b8' }}>รับกุญแจห้อง</p>
                         <div className="transfer-room-badge receive">{roomCode1 || '?'}</div>
                     </div>
                 </div>
 
-                <p className="transfer-note">
-                    ระบบจะตรวจสอบว่าผู้รับมีคาบเรียนภายใน 30 นาที
-                </p>
+                {/* ส่วนของไม่มีคาบเรียน */}
+                {eligibility && !eligibility.hasSchedule && (
+                    <div style={{ marginTop: '20px', padding: '15px', background: 'rgba(15, 23, 42, 0.6)', borderRadius: '12px', border: '1px solid #1e293b' }}>
+                        <h4 style={{ margin: '0 0 10px 0', color: '#fbbf24', fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                            <AlertTriangle size={18} /> ผู้รับโอนไม่มีคาบเรียน กรุณาระบุข้อมูล
+                        </h4>
+                        
+                        <div style={{ display: 'flex', gap: '15px', alignItems: 'flex-start' }}>
+                            {/* เหตุผล */}
+                            <div style={{ flex: 1, textAlign: 'left' }}>
+                                <label style={{ display: 'block', marginBottom: '8px', color: '#94a3b8', fontSize: '0.85rem' }}>1. เหตุผลการรับโอน</label>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                                    {REASON_PRESETS.map((r) => (
+                                        <button
+                                            key={r}
+                                            onClick={() => setReason(r)}
+                                            style={{
+                                                padding: '6px 10px',
+                                                borderRadius: '6px',
+                                                border: `1px solid ${reason === r ? '#8b5cf6' : '#334155'}`,
+                                                background: reason === r ? 'rgba(139, 92, 246, 0.2)' : 'transparent',
+                                                color: reason === r ? '#fff' : '#cbd5e1',
+                                                fontSize: '0.8rem',
+                                                cursor: 'pointer',
+                                                transition: 'all 0.2s'
+                                            }}
+                                        >
+                                            {r}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
 
-                <div className="confirm-actions">
+                            {/* เวลาคืน */}
+                            <div style={{ flex: 1, borderLeft: '1px solid #334155', paddingLeft: '15px' }}>
+                                <label style={{ display: 'block', marginBottom: '5px', color: '#94a3b8', fontSize: '0.85rem', textAlign: 'center' }}>2. เวลาคืนกุญแจ</label>
+                                <CustomTimePicker value={returnTime} onChange={setReturnTime} />
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                <div className="confirm-actions" style={{ marginTop: '25px' }}>
                     <button
                         className="btn btn-transfer btn-lg"
-                        onClick={onConfirm}
-                        disabled={loading}
+                        style={{ background: isConfirmDisabled ? '#475569' : 'linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%)', boxShadow: isConfirmDisabled ? 'none' : '0 8px 20px rgba(139, 92, 246, 0.3)' }}
+                        onClick={handleConfirmClick}
+                        disabled={isConfirmDisabled}
                     >
-                        {loading ? 'กำลังย้ายสิทธิ์...' : '📋 ยืนยันการย้ายสิทธิ์'}
+                        {loading ? 'กำลังโอนสิทธิ์...' : <><ArrowRight size={20} style={{marginRight: '8px'}} /> ยืนยันการโอนสิทธิ์</>}
                     </button>
                     <button className="btn btn-secondary" onClick={onCancel} disabled={loading}>
                         ยกเลิก

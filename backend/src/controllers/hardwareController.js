@@ -899,14 +899,23 @@ export const swapAuthorization = async (req, res) => {
             if (authB) await tx.dailyAuthorization.delete({ where: { id: authB.id } });
 
             if (authA) {
-                await tx.dailyAuthorization.create({
-                    data: {
+                await tx.dailyAuthorization.upsert({
+                    where: {
+                        userId_roomCode_date_startTime: {
+                            userId: userB.id,
+                            roomCode: authA.roomCode,
+                            date: authA.date,
+                            startTime: authA.startTime,
+                        }
+                    },
+                    update: {},
+                    create: {
                         userId: userB.id, // สลับให้ B
                         roomCode: authA.roomCode,
                         date: authA.date,
                         startTime: authA.startTime,
                         endTime: authA.endTime,
-                        source: "MANUAL_SWAP",
+                        source: "MANUAL",
                         scheduleId: authA.scheduleId,
                         subjectId: authA.subjectId,
                         createdBy: "HARDWARE_SWAP",
@@ -915,14 +924,23 @@ export const swapAuthorization = async (req, res) => {
             }
 
             if (authB) {
-                await tx.dailyAuthorization.create({
-                    data: {
+                await tx.dailyAuthorization.upsert({
+                    where: {
+                        userId_roomCode_date_startTime: {
+                            userId: userA.id,
+                            roomCode: authB.roomCode,
+                            date: authB.date,
+                            startTime: authB.startTime,
+                        }
+                    },
+                    update: {},
+                    create: {
                         userId: userA.id, // สลับให้ A
                         roomCode: authB.roomCode,
                         date: authB.date,
                         startTime: authB.startTime,
                         endTime: authB.endTime,
-                        source: "MANUAL_SWAP",
+                        source: "MANUAL",
                         scheduleId: authB.scheduleId,
                         subjectId: authB.subjectId,
                         createdBy: "HARDWARE_SWAP",
@@ -977,7 +995,7 @@ export const swapAuthorization = async (req, res) => {
         console.error("❌ [Hardware] swap: Error:", error);
         return res.status(500).json({
             success: false,
-            message: "เกิดข้อผิดพลาดในการสลับสิทธิ์กุญแจ",
+            message: "เกิดข้อผิดพลาดในการสลับสิทธิ์กุญแจ (" + (error.message || String(error)) + ")",
         });
     }
 };
@@ -1230,6 +1248,52 @@ export const moveAuthorization = async (req, res) => {
 };
 
 /**
+ * POST /api/hardware/check-transfer-eligibility
+ * ตรวจสอบก่อนโอนสิทธิ์ว่าผู้รับมีคาบเรียนในห้องที่จะโอนหรือไม่
+ * Body: { studentCodeReceiver: string, roomCode: string }
+ */
+export const checkTransferEligibility = async (req, res) => {
+    try {
+        const { studentCodeReceiver, roomCode } = req.body;
+        
+        const userReceiver = await prisma.user.findUnique({ where: { studentCode: studentCodeReceiver } });
+
+        if (!userReceiver) {
+            return res.status(404).json({ success: false, message: "ไม่พบผู้ใช้ที่รับโอนในระบบ" });
+        }
+
+        const now = new Date();
+        const startOfDay = new Date(now);
+        startOfDay.setHours(0, 0, 0, 0);
+        const endOfDay = new Date(now);
+        endOfDay.setHours(23, 59, 59, 999);
+        const earlyBuffer = new Date(now.getTime() + EARLY_BORROW_MINUTES * 60 * 1000); // 30 mins
+
+        // Check active schedule for Receiver in the specific room
+        const auth = await prisma.dailyAuthorization.findFirst({
+            where: {
+                userId: userReceiver.id,
+                roomCode: roomCode,
+                date: { gte: startOfDay, lte: endOfDay },
+                startTime: { lte: earlyBuffer },
+                endTime: { gt: now }
+            }
+        });
+
+        return res.status(200).json({
+            success: true,
+            data: {
+                hasSchedule: !!auth,
+            }
+        });
+
+    } catch (error) {
+        console.error("❌ checkTransferEligibility Error:", error);
+        return res.status(500).json({ success: false, message: "เกิดข้อผิดพลาดในการตรวจสอบตารางสอนผู้รับโอน" });
+    }
+};
+
+/**
  * POST /api/hardware/transfer
  * ย้ายสิทธิ์กุญแจจากคนที่ 1 (ผู้โอน) ให้คนที่ 2 (ผู้รับ)
  * 
@@ -1246,7 +1310,7 @@ export const moveAuthorization = async (req, res) => {
  */
 export const transferAuthorization = async (req, res) => {
     try {
-        const { studentCodeA, studentCodeB } = req.body;
+        const { studentCodeA, studentCodeB, reason, returnByTime } = req.body;
         console.log(`🔀 [Hardware] transfer: ${studentCodeA} → ${studentCodeB}`);
 
         if (!studentCodeA || !studentCodeB) {
@@ -1310,17 +1374,43 @@ export const transferAuthorization = async (req, res) => {
         const authB = await prisma.dailyAuthorization.findFirst({
             where: {
                 userId: userB.id,
+                roomCode: roomCode,
                 date: { gte: startOfDay, lte: endOfDay },
                 startTime: { lte: earlyBuffer },
                 endTime: { gt: now },
             },
         });
 
+        // === ขั้นตอนที่ 3.5: ตรวจสอบ Return Time หากไม่มี Schedules ===
         if (!authB && userB.role === 'STUDENT') {
-            return res.status(403).json({
-                success: false,
-                message: `${userB.firstName} ไม่มีคาบเรียนภายใน 30 นาทีนี้ ไม่สามารถรับโอนได้`,
+            if (!reason || !returnByTime) {
+                return res.status(400).json({
+                    success: false,
+                    message: "ผู้รับโอนไม่มีคาบเรียน กรุณาระบุเหตุผลและเวลาคืน",
+                });
+            }
+
+            const returnByB = new Date(returnByTime);
+            // ตรวจว่าเวลาคืน ทับกับคาบเรียนคนอื่นหรือไม่
+            const conflictingB = await prisma.dailyAuthorization.findFirst({
+                where: {
+                    roomCode: roomCode,
+                    date: { gte: startOfDay, lte: endOfDay },
+                    startTime: { lt: returnByB },
+                    endTime: { gt: now },
+                    userId: { not: userB.id }
+                },
+                include: { subject: { select: { name: true } } },
+                orderBy: { startTime: 'asc' },
             });
+
+            if (conflictingB) {
+                const startStr = new Date(conflictingB.startTime).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+                return res.status(409).json({
+                    success: false,
+                    message: `เวลาคืนทับกับคาบเรียน "${conflictingB.subject?.name || 'ไม่ระบุ'}" เวลา ${startStr} กรุณาเลือกเวลาคืนที่เร็วกว่านี้`,
+                });
+            }
         }
 
         const ipAddress = req.ip || req.connection?.remoteAddress || null;
@@ -1329,9 +1419,14 @@ export const transferAuthorization = async (req, res) => {
         await prisma.$transaction(async (tx) => {
             // 1. ถ้ามี Active Booking ให้โอนกรรมสิทธิ์
             if (activeBookingA) {
+                const dueAtData = returnByTime ? new Date(returnByTime) : (authA ? authA.endTime : activeBookingA.dueAt);
                 await tx.booking.update({
                     where: { id: activeBookingA.id },
-                    data: { userId: userB.id }
+                    data: { 
+                        userId: userB.id,
+                        reason: reason || activeBookingA.reason,
+                        dueAt: dueAtData
+                    }
                 });
             }
 
@@ -1351,7 +1446,10 @@ export const transferAuthorization = async (req, res) => {
                 }
             });
 
-            // ถ้ายังไม่มี ค่อยสร้างให้ B (เลียนแบบสิทธิ์เดิมของ A)
+            // ถ้ายังไม่มี ค่อยสร้างให้ B (เป็นสิทธิ์โอนแบบ MANUAL)
+            // หรือถ้าเดิมมี authA เอาเวลาเดิม, ถ้าไม่มีให้ใช้ returnByTime เป็นหลัก
+            const newEndTime = returnByTime ? new Date(returnByTime) : (authA?.endTime || new Date(now.getTime() + 2 * 60 * 60 * 1000));
+            
             if (!existingAuthB) {
                 await tx.dailyAuthorization.create({
                     data: {
@@ -1359,7 +1457,7 @@ export const transferAuthorization = async (req, res) => {
                         roomCode: roomCode,
                         date: authA?.date || startOfDay,
                         startTime: authA?.startTime || now,
-                        endTime: authA?.endTime || new Date(now.getTime() + 2 * 60 * 60 * 1000), // fallback 2 ชม.
+                        endTime: newEndTime, 
                         source: "MANUAL",
                         scheduleId: authA?.scheduleId || null,
                         subjectId: authA?.subjectId || null,

@@ -93,9 +93,17 @@ export function moveKey(studentCode, fromRoomCode, toRoomCode) {
     });
 }
 
-export function transferKey(studentCodeA, studentCodeB) {
+export function checkTransferEligibility(studentCodeReceiver, roomCode) {
     return new Promise((resolve) => {
-        socket.emit('key:transfer', { studentCodeA, studentCodeB }, (response) => {
+        socket.emit('key:check-transfer', { studentCodeReceiver, roomCode }, (response) => {
+            resolve(response);
+        });
+    });
+}
+
+export function transferKey(studentCodeA, studentCodeB, reason, returnByTime) {
+    return new Promise((resolve) => {
+        socket.emit('key:transfer', { studentCodeA, studentCodeB, reason, returnByTime }, (response) => {
             resolve(response);
         });
     });

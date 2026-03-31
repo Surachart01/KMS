@@ -26,6 +26,15 @@ function CustomTimePicker({ value, onChange }) {
         if (newH >= 24) newH -= 24;
         if (newH < 0) newH += 24;
         
+        const now = new Date();
+        const currentH = now.getHours();
+        const currentM = now.getMinutes();
+
+        // ป้องกันไม่ให้เลือกเวลาย้อนหลังกลับไปในอดีต (ของวันปัจจุบัน)
+        if (newH < currentH || (newH === currentH && newM < currentM)) {
+            return; 
+        }
+
         setHours(newH);
         setMinutes(newM);
     };

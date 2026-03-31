@@ -986,3 +986,150 @@ body {
 .popup-card button:active {
     transform: scale(0.96);
 }
+/* ── Transfer Specific ── */
+.transfer-step-badge {
+    background: linear-gradient(90deg, #ec4899, #8b5cf6);
+    color: white;
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin: -16px auto 16px;
+    width: fit-content;
+    box-shadow: 0 4px 12px rgba(236, 72, 153, 0.3);
+}
+
+.transfer-final-card {
+    border-color: rgba(139, 92, 246, 0.3) !important;
+}
+
+.transfer-summary {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.transfer-user-box {
+    flex: 1;
+    background: rgba(0,0,0,0.25);
+    border-radius: 20px;
+    padding: 20px;
+    border: 1px solid rgba(255,255,255,0.05);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    transition: var(--transition);
+}
+
+.giver-box { border-color: rgba(236, 72, 153, 0.2); }
+.receiver-box { border-color: rgba(139, 92, 246, 0.2); }
+
+.transfer-user-avatar {
+    width: 54px;
+    height: 54px;
+    background: rgba(255,255,255,0.03);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 12px;
+    color: var(--text-muted);
+}
+
+.giver-box .transfer-user-avatar { color: #f472b6; background: rgba(236, 72, 153, 0.1); }
+.receiver-box .transfer-user-avatar { color: #a78bfa; background: rgba(139, 92, 246, 0.1); }
+
+.transfer-user-id {
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    margin-bottom: 2px;
+}
+
+.transfer-user-name {
+    font-size: 0.85rem;
+    opacity: 0.6;
+    margin-bottom: 12px;
+}
+
+.transfer-room-badge {
+    padding: 10px 24px;
+    border-radius: 12px;
+    background: rgba(0,0,0,0.3);
+    border: 1px solid #ec4899;
+    color: #f472b6;
+    font-size: 1.4rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+}
+
+.transfer-room-badge.receive {
+    border-color: #8b5cf6;
+    color: #a78bfa;
+}
+
+.transfer-arrow {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: #8b5cf6;
+}
+
+.btn-transfer {
+    background: linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%);
+    color: white;
+    box-shadow: 0 8px 25px rgba(139, 92, 246, 0.3);
+}
+
+.btn-transfer:active:not(:disabled) {
+    transform: scale(0.96);
+}
+
+.btn-transfer:disabled {
+    background: #1e293b;
+    opacity: 0.5;
+    box-shadow: none;
+}
+
+/* Custom Time Picker refinements */
+.touch-time-picker {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(0,0,0,0.3);
+    padding: 12px 20px;
+    border-radius: 16px;
+    border: 1px solid rgba(255,255,255,0.05);
+}
+
+.time-btn {
+    background: rgba(255,255,255,0.05);
+    border: none;
+    color: white;
+    width: 44px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.time-value {
+    font-size: 1.8rem;
+    font-weight: 700;
+    font-family: var(--font-eng);
+    color: #fbbf24;
+}
+
+.preset-btn {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: var(--text-muted);
+    padding: 4px 10px;
+    border-radius: 8px;
+    font-size: 0.8rem;
+}
+
+.preset-btn:active { background: var(--primary-glow); color: white; }

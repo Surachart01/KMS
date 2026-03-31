@@ -498,6 +498,30 @@ io.on('connection', (socket) => {
     }
   });
 
+  // ── key:check-transfer ──
+  socket.on('key:check-transfer', async (data, callback) => {
+    try {
+      const fakeReq = {
+        headers: { authorization: `Bearer ${process.env.HARDWARE_TOKEN}` },
+        body: {
+          studentCodeReceiver: data.studentCodeReceiver,
+          roomCode: data.roomCode,
+        },
+      };
+      const fakeRes = {
+        statusCode: 200,
+        data: null,
+        status(code) { this.statusCode = code; return this; },
+        json(d) { this.data = d; return this; },
+      };
+      await hardwareController.checkTransferEligibility(fakeReq, fakeRes);
+      if (typeof callback === 'function') callback(fakeRes.data);
+    } catch (err) {
+      console.error('❌ key:check-transfer error:', err);
+      if (typeof callback === 'function') callback({ success: false, message: err.message });
+    }
+  });
+
   // ── key:transfer — ย้ายสิทธิ์กุญแจจากคนที่ 1 (ผู้โอน) ให้คนที่ 2 (ผู้รับ) ──
   socket.on('key:transfer', async (data, callback) => {
     try {
@@ -506,6 +530,8 @@ io.on('connection', (socket) => {
         body: {
           studentCodeA: data.studentCodeA,
           studentCodeB: data.studentCodeB,
+          reason: data.reason,
+          returnByTime: data.returnByTime,
         },
         ip: null,
         connection: { remoteAddress: null },

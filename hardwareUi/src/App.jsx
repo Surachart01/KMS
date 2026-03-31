@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { socket, getKeys, borrowKey, returnKey, identifyUser, transferKey, swapKey, moveKey, checkSwapEligibility } from './socket.js';
+import { socket, getKeys, borrowKey, returnKey, identifyUser, transferKey, swapKey, moveKey, checkSwapEligibility, checkTransferEligibility } from './socket.js';
 import Header from './components/Header.jsx';
 import HomePage from './pages/HomePage.jsx';
 import KeyListPage from './pages/KeyListPage.jsx';
@@ -48,6 +48,7 @@ export default function App() {
     const [transferUser1, setTransferUser1] = useState(null);  // ผู้โอน (giver)
     const [transferRoom1, setTransferRoom1] = useState(null);  // ห้องของผู้โอน
     const [transferUser2, setTransferUser2] = useState(null);  // ผู้รับ (receiver)
+    const [transferEligibility, setTransferEligibility] = useState(null);
 
     // ── Swap-specific state ──
     const [swapStep, setSwapStep] = useState('scan1');
@@ -85,6 +86,7 @@ export default function App() {
         setTransferUser1(null);
         setTransferRoom1(null);
         setTransferUser2(null);
+        setTransferEligibility(null);
         setSwapStep('scan1');
         setSwapUser1(null);
         setSwapRoom1(null);
@@ -202,9 +204,22 @@ export default function App() {
             try {
                 const res = await identifyUser(data.userId);
                 if (res?.success) {
+                    if (data.userId === transferUser1.userId) {
+                        setErrorPopup('ไม่สามารถโอนสิทธิ์ให้ตัวเองได้');
+                        return;
+                    }
+                    
                     setTransferUser2({ userId: data.userId, ...res.data.user });
-                    setTransferStep('confirm2');
-                    setPage('transferConfirm');
+                    
+                    // ── เช็คสิทธิ์ตารางเรียนของผู้รับ ──
+                    const elRes = await checkTransferEligibility(data.userId, transferRoom1);
+                    if (elRes?.success) {
+                        setTransferEligibility(elRes.data);
+                        setTransferStep('confirm2');
+                        setPage('transferConfirm');
+                    } else {
+                        setErrorPopup(elRes?.message || 'เกิดข้อผิดพลาดในการตรวจสอบตารางเรียน');
+                    }
                 } else {
                     setErrorPopup(res?.message || 'ไม่พบผู้ใช้ในระบบ');
                 }
@@ -218,7 +233,7 @@ export default function App() {
     }, [transferStep]);
 
     // ── Transfer: ยืนยันแต่ละขั้น ──
-    const handleTransferConfirm = async () => {
+    const handleTransferConfirm = async (reason = null, returnByTime = null) => {
         if (transferStep === 'confirm1') {
             // ยืนยันคนที่ 1 → ไปสแกนคนที่ 2
             setTransferStep('scan2');
@@ -232,12 +247,12 @@ export default function App() {
             }
             setLoading(true);
             try {
-                const result = await transferKey(transferUser1.userId, transferUser2.userId);
+                const result = await transferKey(transferUser1.userId, transferUser2.userId, reason, returnByTime);
                 setBorrowResult(result);
                 if (result?.success) {
                     setPage('success');
                 } else {
-                    setErrorPopup(result?.message || 'เกิดข้อผิดพลาดในการย้ายสิทธิ์');
+                    setErrorPopup(result?.message || 'เกิดข้อผิดพลาดในการโอนสิทธิ์');
                 }
             } catch {
                 setErrorPopup('เกิดข้อผิดพลาดในการเชื่อมต่อ');
@@ -279,6 +294,7 @@ export default function App() {
         setTransferUser1(null);
         setTransferRoom1(null);
         setTransferUser2(null);
+        setTransferEligibility(null);
         setPage('scanWaiting');
     };
 
@@ -639,6 +655,7 @@ export default function App() {
                         user1={transferUser1}
                         roomCode1={transferRoom1}
                         user2={transferUser2}
+                        eligibility={transferEligibility}
                         onConfirm={handleTransferConfirm}
                         onCancel={goHome}
                         loading={loading}

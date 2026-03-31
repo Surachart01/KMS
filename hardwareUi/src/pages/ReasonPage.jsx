@@ -54,6 +54,17 @@ export default function ReasonPage({ roomCode, onSubmit, onCancel, loading }) {
         if (newH >= 24) newH = 0;
         if (newH < 0) newH = 23;
         
+        const now = new Date();
+        const currentH = now.getHours();
+        const currentM = now.getMinutes();
+
+        // ป้องกันไม่ให้เลือกเวลาย้อนหลังกลับไปในอดีต (ของวันปัจจุบัน)
+        // ReasonPage อนุญาตให้ยืมข้ามวันได้ (เช็คใน getReturnByTime) 
+        // แต่เพื่อความ Make Sense เราจะขวางไม่ให้เลื่อนลงไปเวลาในอดีตถ้ายังเป็นวันนี้อยู่
+        if (newH < currentH || (newH === currentH && newM < currentM)) {
+            return;
+        }
+
         setHours(newH);
         setMinutes(newM);
     };

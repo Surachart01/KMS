@@ -20,9 +20,13 @@ router.get("/user/:studentCode/status", hardwareMiddleware, hardwareController.g
 router.post("/borrow", hardwareMiddleware, hardwareController.borrowKey);                  // ยืมกุญแจ (เบิก)
 router.post("/return", hardwareMiddleware, hardwareController.returnKey);                   // คืนกุญแจ
 
-// --- สลับ-ย้ายสิทธิ์ ---
+// --- สลับ-ย้าย-โอนสิทธิ์ ---
 router.post("/swap", hardwareMiddleware, hardwareController.swapAuthorization);             // สลับสิทธิ์กุญแจ 2 คน
-router.post("/transfer", hardwareMiddleware, hardwareController.transferAuthorization);     // ย้ายสิทธิ์กุญแจระหว่าง 2 คน
+router.post("/check-swap-eligibility", hardwareMiddleware, hardwareController.checkSwapEligibility);
+
+router.post("/transfer", hardwareMiddleware, hardwareController.transferAuthorization);     // โอนสิทธิ์กุญแจให้คนรับช่วงต่อ 
+router.post("/check-transfer-eligibility", hardwareMiddleware, hardwareController.checkTransferEligibility);
+
 router.post("/move", hardwareMiddleware, hardwareController.moveAuthorization);             // ย้ายสิทธิ์กุญแจ (คนเดียว)
 
 export default router;
