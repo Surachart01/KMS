@@ -382,6 +382,10 @@ export const readNfcTag = async (req, res) => {
 
         console.log(`✅ [NFC Read] อ่านสำเร็จที่ช่อง ${result.slotNumber}: UID=${result.uid}`);
 
+        if (!result.uid) {
+            return res.status(400).json({ message: "อ่านค่า NFC UID ไม่สำเร็จ (ค่าว่าง)" });
+        }
+
         // บันทึก UID ลง DB ทันที
         await prisma.key.update({
             where: { id },
@@ -398,7 +402,18 @@ export const readNfcTag = async (req, res) => {
         });
 
     } catch (error) {
-        console.error("Error reading NFC tag:", error);
-        return res.status(500).json({ message: "เกิดข้อผิดพลาดภายในเซิร์ฟเวอร์" });
+        console.error("❌ [readNfcTag] Error:", error);
+        
+        if (error.code === 'P2002') {
+            return res.status(409).json({ 
+                success: false,
+                message: "รหัส UID นี้ถูกใช้งานไปแล้วกับกุญแจดอกอื่น" 
+            });
+        }
+
+        return res.status(500).json({ 
+            success: false,
+            message: `[DEBUG_KMS_ERROR] เกิดข้อผิดพลาดภายในเซิร์ฟเวอร์: ${error.message}` 
+        });
     }
 };
