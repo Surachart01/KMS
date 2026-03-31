@@ -769,7 +769,7 @@ export const returnKey = async (req, res) => {
 export const swapAuthorization = async (req, res) => {
     try {
         const { studentCodeA, roomCodeA, returnByTimeA, studentCodeB, roomCodeB, returnByTimeB } = req.body;
-        console.log(`🔄 [Hardware] swap: ${studentCodeA}(${roomCodeA}) ↔ ${studentCodeB}(${roomCodeB})`);
+        console.log(`🔄 [Hardware] swap request: ${studentCodeA}(${roomCodeA}) ↔ ${studentCodeB}(${roomCodeB})`);
 
         // ตรวจ input
         if (!studentCodeA || !roomCodeA || !studentCodeB || !roomCodeB) {
@@ -883,10 +883,29 @@ export const swapAuthorization = async (req, res) => {
         }
 
         // ตรวจสอบว่ามีอะไรให้สลับไหม (ต้องมี Active Booking หรือมี Authorization)
+        console.log(`   [DEBUG] UserA: ActiveBooking=${!!activeBookingA}, Auth=${!!authA}`);
+        console.log(`   [DEBUG] UserB: ActiveBooking=${!!activeBookingB}, Auth=${!!authB}`);
+
         if (!activeBookingA && !authA) {
+            console.log(`   [DEBUG] Swap blocked: User A has nothing to swap`);
+            await prisma.systemLog.create({
+                data: {
+                    userId: userA.id,
+                    action: "DEBUG_SWAP_FAIL",
+                    details: JSON.stringify({ reason: "User A has no active booking or auth", studentCodeA, studentCodeB, roomCodeA, roomCodeB }),
+                }
+            });
             return res.status(404).json({ success: false, message: `${userA.firstName} ไม่มีรายการเบิกหรือสิทธิ์ในห้อง ${finalRoomCodeA} เพื่อสลับ` });
         }
         if (!activeBookingB && !authB) {
+            console.log(`   [DEBUG] Swap blocked: User B has nothing to swap`);
+            await prisma.systemLog.create({
+                data: {
+                    userId: userB.id,
+                    action: "DEBUG_SWAP_FAIL",
+                    details: JSON.stringify({ reason: "User B has no active booking or auth", studentCodeA, studentCodeB, roomCodeA, roomCodeB }),
+                }
+            });
             return res.status(404).json({ success: false, message: `${userB.firstName} ไม่มีรายการเบิกหรือสิทธิ์ในห้อง ${finalRoomCodeB} เพื่อสลับ` });
         }
 
@@ -992,7 +1011,16 @@ export const swapAuthorization = async (req, res) => {
             },
         });
     } catch (error) {
-        console.error("❌ [Hardware] swap: Error:", error);
+        console.error("❌ [Hardware] swap error details:", error);
+        try {
+            await prisma.systemLog.create({
+                data: {
+                    userId: userA?.id || "SYSTEM",
+                    action: "DEBUG_SWAP_ERROR",
+                    details: JSON.stringify({ error: error.message || String(error), studentCodeA, studentCodeB }),
+                }
+            });
+        } catch (_) {}
         return res.status(500).json({
             success: false,
             message: "เกิดข้อผิดพลาดในการสลับสิทธิ์กุญแจ (" + (error.message || String(error)) + ")",
@@ -1311,7 +1339,7 @@ export const checkTransferEligibility = async (req, res) => {
 export const transferAuthorization = async (req, res) => {
     try {
         const { studentCodeA, studentCodeB, reason, returnByTime } = req.body;
-        console.log(`🔀 [Hardware] transfer: ${studentCodeA} → ${studentCodeB}`);
+        console.log(`🔀 [Hardware] transfer request: ${studentCodeA} → ${studentCodeB} | reason=${reason} | returnByTime=${returnByTime}`);
 
         if (!studentCodeA || !studentCodeB) {
             return res.status(400).json({
@@ -1359,7 +1387,16 @@ export const transferAuthorization = async (req, res) => {
         });
 
         // ตรวจสอบว่ามีอะไรให้โอนไหม (ต้องมี Active Booking หรือมี Authorization)
+        console.log(`   [DEBUG] Giver: ActiveBooking=${!!activeBookingA}, Auth=${!!authA}`);
         if (!activeBookingA && !authA) {
+            console.log(`   [DEBUG] Transfer blocked: User A has nothing to transfer`);
+            await prisma.systemLog.create({
+                data: {
+                    userId: userA.id,
+                    action: "DEBUG_TRANSFER_FAIL",
+                    details: JSON.stringify({ reason: "Giver has no active booking or auth", studentCodeA, studentCodeB }),
+                }
+            });
             return res.status(404).json({
                 success: false,
                 message: `${userA.firstName} ไม่มีรายการเบิกกุญแจหรือสิทธิ์ห้องที่จะโอนในขณะนี้`,
@@ -1497,10 +1534,19 @@ export const transferAuthorization = async (req, res) => {
             },
         });
     } catch (error) {
-        console.error("❌ [Hardware] transfer: Error:", error);
+        console.error("❌ [Hardware] transfer error details:", error);
+        try {
+            await prisma.systemLog.create({
+                data: {
+                    userId: userA?.id || "SYSTEM",
+                    action: "DEBUG_TRANSFER_ERROR",
+                    details: JSON.stringify({ error: error.message || String(error), studentCodeA, studentCodeB }),
+                }
+            });
+        } catch (_) {}
         return res.status(500).json({
             success: false,
-            message: "เกิดข้อผิดพลาดในการโอนสิทธิ์กุญแจ",
+            message: "เกิดข้อผิดพลาดในการโอนสิทธิ์กุญแจ (" + (error.message || String(error)) + ")",
         });
     }
 };
