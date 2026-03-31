@@ -1400,6 +1400,17 @@ function startNfcPolling() {
                 // Reset miss count because we found the key
                 missCounts.set(currentSlot, 0);
 
+                // ── [NEW/FIXED] ตรวจสอบความถูกต้องของกุญแจ ก่อรประมวลผลการคืน ──
+                const expectedUid = expectedKeyUidBySlot[currentSlot];
+                if (expectedUid && uid !== expectedUid) {
+                    // เสียบผิดกุญแจ/ผิดช่อง!
+                    logDebug(`❌ [WrongKey] ช่อง ${currentSlot}: พบ UID ${uid} (คาดหวัง ${expectedUid}) -> UNLOCKING`);
+                    startWrongKeyCheck(currentSlot, uid, expectedUid);
+                    // หยุดการประมวลผลตรงนี้ (ไม่ emit nfc:tag ไปที่ server)
+                    isPollingSlot = false;
+                    return;
+                }
+
                 if (slotHasKey[currentSlot] !== true) {
                     slotHasKey[currentSlot] = true;
                     logDebug(`📥 [Return] พบกุญแจคืนที่ช่อง ${currentSlot} (UID: ${uid})`);
@@ -1414,13 +1425,6 @@ function startNfcPolling() {
                     slotHasKey[`last_uid_${currentSlot}`] = uid;
                 }
                 socket.emit('nfc:tag', { slotNumber: currentSlot, uid });
-
-                // ── [NEW] ตรวจสอบความถูกต้องของกุญแจ ──
-                const expectedUid = expectedKeyUidBySlot[currentSlot];
-                if (expectedUid && uid !== expectedUid) {
-                    // เสียบผิดกุญแจ/ผิดช่อง!
-                    startWrongKeyCheck(currentSlot, uid, expectedUid);
-                }
             } else {
                 // Key not found, increment miss count
                 const misses = (missCounts.get(currentSlot) || 0) + 1;
