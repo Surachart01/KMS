@@ -11,6 +11,13 @@ export default function MoveConfirmPage({ user, fromRoom, toRoom, onConfirm, onC
                     <p className="confirm-value">{user?.userId || '-'}</p>
                 </div>
 
+                <div className="confirm-info" style={{ marginTop: '10px' }}>
+                    <p className="confirm-label">ชื่อ-นามสกุล</p>
+                    <p className="confirm-value" style={{ fontSize: '1.2rem', color: '#e2e8f0' }}>
+                        {user?.firstName} {user?.lastName}
+                    </p>
+                </div>
+
                 <div className="swap-users-row" style={{ marginTop: '1rem', marginBottom: '1rem' }}>
                     <div className="swap-user-box" style={{ padding: '0.5rem' }}>
                         <p className="swap-room-label">จากห้อง</p>

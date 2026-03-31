@@ -26,6 +26,13 @@ export default function TransferConfirmPage({
                         <p className="confirm-value">{user1?.userId || '-'}</p>
                     </div>
 
+                    <div className="confirm-info" style={{ marginTop: '10px' }}>
+                        <p className="confirm-label">ชื่อ-นามสกุล</p>
+                        <p className="confirm-value" style={{ fontSize: '1.2rem', color: '#e2e8f0' }}>
+                            {user1?.firstName} {user1?.lastName}
+                        </p>
+                    </div>
+
                     {roomCode1 ? (
                         <div className="confirm-info">
                             <p className="confirm-label">ห้องที่จะโอนสิทธิ์</p>
@@ -67,6 +74,7 @@ export default function TransferConfirmPage({
                         <p className="transfer-user-label">ผู้โอน</p>
                         <div className="transfer-user-avatar">👤</div>
                         <p className="transfer-user-id">{user1?.userId || '-'}</p>
+                        <p className="transfer-user-name" style={{ fontSize: '0.9rem', color: '#94a3b8', marginBottom: '10px' }}>{user1?.firstName} {user1?.lastName}</p>
                         <div className="transfer-room-badge">{roomCode1 || '?'}</div>
                     </div>
 
@@ -81,6 +89,7 @@ export default function TransferConfirmPage({
                         <p className="transfer-user-label">ผู้รับ</p>
                         <div className="transfer-user-avatar">👤</div>
                         <p className="transfer-user-id">{user2?.userId || '-'}</p>
+                        <p className="transfer-user-name" style={{ fontSize: '0.9rem', color: '#94a3b8', marginBottom: '10px' }}>{user2?.firstName} {user2?.lastName}</p>
                         <div className="transfer-room-badge receive">{roomCode1 || '?'}</div>
                     </div>
                 </div>

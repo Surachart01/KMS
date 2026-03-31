@@ -49,9 +49,21 @@ export default function ScanWaitingPage({ mode, transferStep, swapStep, moveStep
             <h2 className="scan-title">กรุณาสแกนใบหน้า</h2>
             <p className="scan-subtitle">{subtitle}</p>
 
-            <button className="btn btn-secondary btn-lg" onClick={onCancel} style={{ marginTop: '20px' }}>
-                <ArrowLeft size={20} /> กลับไปหน้าหลัก
-            </button>
+            <div style={{ display: 'flex', gap: '10px', marginTop: '20px', flexWrap: 'wrap', justifyContent: 'center' }}>
+                <button className="btn btn-secondary btn-lg" onClick={onCancel}>
+                    <ArrowLeft size={20} /> กลับไปหน้าหลัก
+                </button>
+                {onTestScan && (
+                    <>
+                        <button className="btn btn-primary" onClick={() => onTestScan('67-020415-1001-6')}>
+                            Test: สมชาย (67...1001)
+                        </button>
+                        <button className="btn btn-primary" style={{ background: '#ec4899', borderColor: '#ec4899' }} onClick={() => onTestScan('67-020415-1002-4')}>
+                            Test: สมหญิง (67...1002)
+                        </button>
+                    </>
+                )}
+            </div>
         </div>
     );
 }

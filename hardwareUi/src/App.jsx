@@ -182,7 +182,7 @@ export default function App() {
                     const authorizedRooms = res.data?.authorizedRooms || [];
                     const room = activeBooking ? activeBooking.roomCode : (authorizedRooms.length > 0 ? authorizedRooms[0].roomCode : null);
 
-                    setTransferUser1(data);
+                    setTransferUser1({ userId: data.userId, ...res.data.user });
                     setTransferRoom1(room);
                     setTransferStep('confirm1');
                     setPage('transferConfirm');
@@ -196,9 +196,22 @@ export default function App() {
                 setLoading(false);
             }
         } else if (transferStep === 'scan2') {
-            setTransferUser2(data);
-            setTransferStep('confirm2');
-            setPage('transferConfirm');
+            setLoading(true);
+            try {
+                const res = await identifyUser(data.userId);
+                if (res?.success) {
+                    setTransferUser2({ userId: data.userId, ...res.data.user });
+                    setTransferStep('confirm2');
+                    setPage('transferConfirm');
+                } else {
+                    setErrorPopup(res?.message || 'ไม่พบผู้ใช้ในระบบ');
+                }
+            } catch (err) {
+                console.error('❌ Transfer Scan 2 Error:', err);
+                setErrorPopup('เกิดข้อผิดพลาดในการตรวจสอบข้อมูล');
+            } finally {
+                setLoading(false);
+            }
         }
     }, [transferStep]);
 
@@ -304,7 +317,7 @@ export default function App() {
                         setErrorPopup('ไม่พบสิทธิ์หรือรายการเบิกกุญแจในขณะนี้');
                         return;
                     }
-                    setSwapUser1(data);
+                    setSwapUser1({ userId: data.userId, ...res.data.user });
                     setSwapRoom1(room);
                     setSwapStep('confirm1');
                     setPage('swapConfirm');
@@ -334,7 +347,7 @@ export default function App() {
                         setErrorPopup('ไม่สามารถสลับกับตัวเองได้');
                         return;
                     }
-                    setSwapUser2(data);
+                    setSwapUser2({ userId: data.userId, ...res.data.user });
                     setSwapRoom2(room);
                     setSwapStep('confirm2');
                     setPage('swapConfirm');

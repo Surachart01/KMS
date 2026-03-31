@@ -27,6 +27,13 @@ export default function SwapConfirmPage({
                         <p className="confirm-value">{user1?.userId || '-'}</p>
                     </div>
 
+                    <div className="confirm-info" style={{ marginTop: '10px' }}>
+                        <p className="confirm-label">ชื่อ-นามสกุล</p>
+                        <p className="confirm-value" style={{ fontSize: '1.2rem', color: '#e2e8f0' }}>
+                            {user1?.firstName} {user1?.lastName}
+                        </p>
+                    </div>
+
                     {roomCode1 && (
                         <div className="confirm-info">
                             <p className="confirm-label">สิทธิ์ห้องปัจจุบัน</p>
@@ -62,6 +69,7 @@ export default function SwapConfirmPage({
                     <div className="swap-user-box">
                         <div className="swap-user-avatar">👤</div>
                         <p className="swap-user-id">{user1?.userId || '-'}</p>
+                        <p className="swap-user-name" style={{ fontSize: '0.9rem', color: '#94a3b8', marginBottom: '10px' }}>{user1?.firstName} {user1?.lastName}</p>
                         <div className="swap-room-from">{roomCode1 || '?'}</div>
                         <p className="swap-room-label">→ สลับไปห้อง</p>
                         <div className="swap-room-to">{roomCode2 || '?'}</div>
@@ -74,6 +82,7 @@ export default function SwapConfirmPage({
                     <div className="swap-user-box">
                         <div className="swap-user-avatar">👤</div>
                         <p className="swap-user-id">{user2?.userId || '-'}</p>
+                        <p className="swap-user-name" style={{ fontSize: '0.9rem', color: '#94a3b8', marginBottom: '10px' }}>{user2?.firstName} {user2?.lastName}</p>
                         <div className="swap-room-from">{roomCode2 || '?'}</div>
                         <p className="swap-room-label">→ สลับไปห้อง</p>
                         <div className="swap-room-to">{roomCode1 || '?'}</div>
