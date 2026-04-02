@@ -846,7 +846,7 @@ export const swapAuthorization = async (req, res) => {
                     date: { gte: startOfDay, lte: endOfDay },
                     startTime: { lt: returnByA },
                     endTime: { gt: now },
-                    userId: { not: userA.id }
+                    userId: { notIn: [userA.id, userB.id] }
                 },
                 include: { subject: { select: { name: true } } },
                 orderBy: { startTime: 'asc' },
@@ -868,7 +868,7 @@ export const swapAuthorization = async (req, res) => {
                     date: { gte: startOfDay, lte: endOfDay },
                     startTime: { lt: returnByB },
                     endTime: { gt: now },
-                    userId: { not: userB.id }
+                    userId: { notIn: [userA.id, userB.id] }
                 },
                 include: { subject: { select: { name: true } } },
                 orderBy: { startTime: 'asc' },
@@ -1051,10 +1051,10 @@ export const checkSwapEligibility = async (req, res) => {
         endOfDay.setHours(23, 59, 59, 999);
         const earlyBuffer = new Date(now.getTime() + EARLY_BORROW_MINUTES * 60 * 1000); // 30 mins
 
-        // Check active schedule for User A in Room B (The room they are moving INTO)
-        const authA = await prisma.dailyAuthorization.findFirst({
+        // Check active schedule for User B in Room B (The room A is moving INTO, inherited from B)
+        const authB = await prisma.dailyAuthorization.findFirst({
             where: {
-                userId: userA.id,
+                userId: userB.id,
                 roomCode: roomCodeB,
                 date: { gte: startOfDay, lte: endOfDay },
                 startTime: { lte: earlyBuffer },
@@ -1062,10 +1062,10 @@ export const checkSwapEligibility = async (req, res) => {
             }
         });
 
-        // Check active schedule for User B in Room A (The room they are moving INTO)
-        const authB = await prisma.dailyAuthorization.findFirst({
+        // Check active schedule for User A in Room A (The room B is moving INTO, inherited from A)
+        const authA = await prisma.dailyAuthorization.findFirst({
             where: {
-                userId: userB.id,
+                userId: userA.id,
                 roomCode: roomCodeA,
                 date: { gte: startOfDay, lte: endOfDay },
                 startTime: { lte: earlyBuffer },
@@ -1077,11 +1077,11 @@ export const checkSwapEligibility = async (req, res) => {
             success: true,
             data: {
                 userA: {
-                    hasSchedule: !!authA,
+                    hasSchedule: !!authB,
                     room: roomCodeB
                 },
                 userB: {
-                    hasSchedule: !!authB,
+                    hasSchedule: !!authA,
                     room: roomCodeA
                 }
             }
