@@ -20,9 +20,9 @@ export default function HomePage({ onBorrow, onReturn, onTransfer, onSwap, onMov
                 <p>Key Management System</p>
             </div>
 
-            {/* ── Primary Actions (The 90% Use Case) ── */}
+            {/* ── All Actions ── */}
             <div className="home-primary-actions">
-                <button className="btn-card btn-card-primary" onClick={onBorrow}>
+                <button className="btn-card btn-color-borrow" onClick={onBorrow}>
                     <div className="btn-card-icon">
                         <Key size={32} strokeWidth={2.5} />
                     </div>
@@ -32,7 +32,7 @@ export default function HomePage({ onBorrow, onReturn, onTransfer, onSwap, onMov
                     </div>
                 </button>
 
-                <button className="btn-card btn-card-secondary" onClick={onReturn}>
+                <button className="btn-card btn-color-return" onClick={onReturn}>
                     <div className="btn-card-icon">
                         <Undo2 size={32} strokeWidth={2.5} />
                     </div>
@@ -43,24 +43,24 @@ export default function HomePage({ onBorrow, onReturn, onTransfer, onSwap, onMov
                 </button>
             </div>
 
-            {/* ── Secondary Actions (The 10% Use Case) ── */}
-            <div className="home-secondary-actions">
-                <button className="btn-minimal btn-swap" onClick={onSwap}>
-                    <div className="minimal-icon">
-                        <RefreshCw size={20} />
+            <div className="home-secondary-actions" style={{ marginTop: '20px' }}>
+                <button className="btn-card btn-color-swap" onClick={onSwap}>
+                    <div className="btn-card-icon">
+                        <RefreshCw size={32} strokeWidth={2.5} />
                     </div>
-                    <div className="minimal-text">
-                        <span>สลับสิทธิ์</span>
-                        <small>Swap Rights</small>
+                    <div className="btn-card-content">
+                        <h2>สลับสิทธิ์</h2>
+                        <span className="btn-card-desc">สลับผู้ดูแลกุญแจ</span>
                     </div>
                 </button>
-                <button className="btn-minimal btn-transfer" onClick={onTransfer}>
-                    <div className="minimal-icon">
-                        <UserPlus size={20} />
+
+                <button className="btn-card btn-color-transfer" onClick={onTransfer}>
+                    <div className="btn-card-icon">
+                        <UserPlus size={32} strokeWidth={2.5} />
                     </div>
-                    <div className="minimal-text">
-                        <span>โอนสิทธิ์</span>
-                        <small>Transfer</small>
+                    <div className="btn-card-content">
+                        <h2>โอนสิทธิ์</h2>
+                        <span className="btn-card-desc">ส่งมอบกุญแจให้ผู้อื่น</span>
                     </div>
                 </button>
             </div>
