@@ -33,6 +33,7 @@ import { createAdmsRoutes } from './src/routes/admsRoutes.js';
 import borrowReasonsRouter from './src/routes/borrowReasons.js';
 import teacherRouter from './src/routes/teacherRoutes.js';
 import * as hardwareController from './src/controllers/hardwareController.js';
+import { syncTodayInternal } from './src/controllers/authorizationController.js';
 
 // initialize express app, HTTP server, and Socket.IO
 const app = express();
@@ -681,6 +682,43 @@ io.on('connection', (socket) => {
     console.log(`🏷️  nfc:write-result: slot=${data.slotNumber}, success=${data.success}`);
     // forward ไปยัง io level เพื่อให้ controller key.js รับได้
     io.emit('nfc:write-result', data);
+  });
+
+  // ── key:request-reconcile — Kiosk → Backend → Hardware: สั่ง scan ทุกช่อง ──
+  socket.on('key:request-reconcile', (callback) => {
+    console.log('🔄 key:request-reconcile: สั่ง hardware scan ทุกช่อง...');
+    // ส่งไปให้ hardware service scan ทุกช่อง
+    io.to('gpio').emit('key:do-reconcile-scan');
+    // hardware จะตอบกลับผ่าน 'key:reconcile-result' event
+    if (typeof callback === 'function') callback({ success: true, message: 'สั่ง scan แล้ว' });
+  });
+
+  // ── key:reconcile — Hardware → Backend: ส่งผล scan กลับมาเพื่อ auto-return ──
+  socket.on('key:reconcile', async (data, callback) => {
+    try {
+      const { slotStatuses } = data; // [{slotNumber, uid}, ...]
+      console.log(`🔄 key:reconcile: ได้รับ slot statuses ${slotStatuses?.length || 0} ช่อง`);
+      const result = await hardwareController.reconcileKeys(slotStatuses || []);
+      // แจ้ง kiosk ว่า reconcile เสร็จแล้ว
+      io.to('kiosk').emit('key:reconcile-done', result);
+      if (typeof callback === 'function') callback({ success: true, ...result });
+    } catch (err) {
+      console.error('❌ key:reconcile error:', err);
+      if (typeof callback === 'function') callback({ success: false, message: err.message });
+    }
+  });
+
+  // ── auth:sync-today — Hardware startup → sync daily authorizations ──
+  socket.on('auth:sync-today', async (callback) => {
+    try {
+      console.log('📅 auth:sync-today: Syncing daily authorizations...');
+      const result = await syncTodayInternal();
+      console.log(`📅 auth:sync-today: ${result.message}`);
+      if (typeof callback === 'function') callback({ success: true, ...result });
+    } catch (err) {
+      console.error('❌ auth:sync-today error:', err);
+      if (typeof callback === 'function') callback({ success: false, message: err.message });
+    }
   });
 
   socket.on('disconnect', () => {

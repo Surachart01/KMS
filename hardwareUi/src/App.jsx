@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { socket, getKeys, borrowKey, returnKey, identifyUser, transferKey, swapKey, moveKey, checkSwapEligibility, checkTransferEligibility } from './socket.js';
+import { socket, getKeys, borrowKey, returnKey, identifyUser, transferKey, swapKey, moveKey, checkSwapEligibility, checkTransferEligibility, requestReconcile } from './socket.js';
 import Header from './components/Header.jsx';
 import HomePage from './pages/HomePage.jsx';
 import KeyListPage from './pages/KeyListPage.jsx';
@@ -272,6 +272,13 @@ export default function App() {
         setMode('borrow');
         setLoading(true);
         try {
+            // ── Reconcile: scan ทุกช่อง auto-return กุญแจที่คืนแล้วแต่ไม่ได้กดเมนู ──
+            console.log('🔄 [Borrow] Running reconcile before fetching keys...');
+            const reconcileResult = await requestReconcile();
+            if (reconcileResult?.reconciled > 0) {
+                console.log(`✅ [Borrow] Reconcile auto-returned ${reconcileResult.reconciled} key(s)`);
+            }
+
             const res = await getKeys();
             if (res?.success) {
                 setKeys(res.data || []);

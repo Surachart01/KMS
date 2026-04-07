@@ -1725,3 +1725,137 @@ export const getUserStatus = async (req, res) => {
         });
     }
 };
+
+/**
+ * reconcileKeys — ตรวจสอบการคืนกุญแจอัตโนมัติ
+ * 
+ * รับ slotStatuses จาก Hardware Service (array ของ { slotNumber, uid })
+ * เทียบกับ DB: ถ้า slot มี NFC tag อยู่ (uid != null) แต่ booking ยัง BORROWED
+ * → auto-return booking นั้น
+ * 
+ * @param {Array<{slotNumber: number, uid: string|null}>} slotStatuses
+ * @returns {Promise<{reconciled: number, details: Array}>}
+ */
+export const reconcileKeys = async (slotStatuses) => {
+    const reconciled = [];
+
+    try {
+        // ดึง key ทั้งหมดที่มีคน BORROWED อยู่
+        const borrowedBookings = await prisma.booking.findMany({
+            where: { status: "BORROWED" },
+            include: {
+                key: true,
+                user: { select: { id: true, studentCode: true, firstName: true, lastName: true, score: true } },
+            },
+        });
+
+        if (borrowedBookings.length === 0) {
+            console.log("🔍 [Reconcile] ไม่มี booking ที่ BORROWED อยู่");
+            return { reconciled: 0, details: [] };
+        }
+
+        console.log(`🔍 [Reconcile] ตรวจสอบ ${borrowedBookings.length} bookings กับ ${slotStatuses.length} slots...`);
+
+        for (const booking of borrowedBookings) {
+            const slotNumber = booking.key?.slotNumber;
+            const expectedUid = booking.key?.nfcUid?.toUpperCase();
+            if (!slotNumber) continue;
+
+            // หา slot status ของช่องนี้
+            const slotStatus = slotStatuses.find(s => s.slotNumber === slotNumber);
+            if (!slotStatus) continue; // ไม่มีข้อมูล slot นี้จาก hardware
+
+            // ถ้าเจอ NFC tag ในช่อง && UID ตรงกับกุญแจที่ assigned ไว้
+            // → แปลว่ากุญแจถูกเอาคืนมาแล้ว แต่ไม่ได้กดเมนูคืน
+            const detectedUid = slotStatus.uid?.toUpperCase();
+            if (!detectedUid) continue; // ช่องว่าง → ยังไม่ได้คืน
+
+            // เช็ค UID ตรง (ถ้ามี expectedUid ในระบบ)
+            if (expectedUid && detectedUid !== expectedUid) {
+                console.log(`⚠️ [Reconcile] Slot ${slotNumber}: UID ไม่ตรง (${detectedUid} ≠ ${expectedUid}), ข้าม`);
+                continue;
+            }
+
+            // ✅ Auto-return: กุญแจอยู่ในช่องถูกต้อง แต่ DB ยัง BORROWED
+            console.log(`🔄 [Reconcile] Auto-return: Slot ${slotNumber} (${booking.key.roomCode}) — booking ${booking.id}`);
+
+            const now = new Date();
+
+            // คำนวณ penalty (ถ้าคืนช้า)
+            const penaltyResult = await calculatePenalty(booking.borrowAt, booking.dueAt, now);
+
+            await prisma.$transaction(async (tx) => {
+                // อัปเดต booking เป็น RETURNED/LATE
+                await tx.booking.update({
+                    where: { id: booking.id },
+                    data: {
+                        returnAt: now,
+                        status: penaltyResult.isLate ? "LATE" : "RETURNED",
+                        lateMinutes: penaltyResult.lateMinutes,
+                        penaltyScore: penaltyResult.penaltyScore,
+                    },
+                });
+
+                // หักคะแนนถ้าสาย
+                if (penaltyResult.isLate && penaltyResult.penaltyScore > 0) {
+                    const newScore = Math.max(0, booking.user.score - penaltyResult.penaltyScore);
+                    const shouldBan = newScore <= 0;
+                    await tx.user.update({
+                        where: { id: booking.user.id },
+                        data: { score: newScore, isBanned: shouldBan },
+                    });
+
+                    await tx.penaltyLog.create({
+                        data: {
+                            userId: booking.user.id,
+                            bookingId: booking.id,
+                            type: "LATE_RETURN",
+                            scoreCut: penaltyResult.penaltyScore,
+                            reason: `คืนกุญแจห้อง ${booking.key.roomCode} ช้า ${penaltyResult.lateMinutes} นาที (ตรวจพบอัตโนมัติ)`,
+                        },
+                    });
+                }
+
+                // บันทึก log
+                await tx.systemLog.create({
+                    data: {
+                        userId: booking.user.id,
+                        action: "AUTO_RECONCILE_RETURN",
+                        details: JSON.stringify({
+                            bookingId: booking.id,
+                            roomCode: booking.key.roomCode,
+                            slotNumber,
+                            detectedUid,
+                            lateMinutes: penaltyResult.lateMinutes,
+                            penaltyScore: penaltyResult.penaltyScore,
+                            isLate: penaltyResult.isLate,
+                            message: "กุญแจถูกคืนมาแล้ว (ตรวจพบจาก NFC อัตโนมัติ)",
+                        }),
+                    },
+                });
+            });
+
+            reconciled.push({
+                bookingId: booking.id,
+                roomCode: booking.key.roomCode,
+                slotNumber,
+                studentCode: booking.user.studentCode,
+                userName: `${booking.user.firstName} ${booking.user.lastName}`,
+                isLate: penaltyResult.isLate,
+                lateMinutes: penaltyResult.lateMinutes,
+            });
+        }
+
+        if (reconciled.length > 0) {
+            console.log(`✅ [Reconcile] Auto-return สำเร็จ ${reconciled.length} รายการ:`,
+                reconciled.map(r => `${r.roomCode}(slot${r.slotNumber})`).join(', '));
+        } else {
+            console.log("✅ [Reconcile] ไม่มีกุญแจที่ต้อง auto-return");
+        }
+
+        return { reconciled: reconciled.length, details: reconciled };
+    } catch (error) {
+        console.error("❌ [Reconcile] Error:", error);
+        return { reconciled: 0, details: [], error: error.message };
+    }
+};

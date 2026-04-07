@@ -108,3 +108,26 @@ export function transferKey(studentCodeA, studentCodeB, reason, returnByTime) {
         });
     });
 }
+
+/**
+ * requestReconcile — สั่ง scan ทุกช่อง NFC เพื่อ auto-return กุญแจที่คืนแล้วแต่ไม่ได้กดเมนู
+ * เรียกก่อนเบิกกุญแจใหม่ เพื่อให้ข้อมูลตู้ตรงกับ DB
+ */
+export function requestReconcile() {
+    return new Promise((resolve) => {
+        const timeout = setTimeout(() => {
+            resolve({ success: false, message: 'Reconcile timeout' });
+        }, 15000); // 15 วินาที timeout
+
+        // Listen สำหรับผลลัพธ์
+        socket.once('key:reconcile-done', (result) => {
+            clearTimeout(timeout);
+            resolve({ success: true, ...result });
+        });
+
+        socket.emit('key:request-reconcile', (ack) => {
+            console.log('📡 requestReconcile: sent', ack);
+        });
+    });
+}
+

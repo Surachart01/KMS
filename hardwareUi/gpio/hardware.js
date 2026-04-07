@@ -1320,6 +1320,66 @@ socket.on('led:stop-blink', (data) => {
     }
 });
 
+// ── key:do-reconcile-scan — Backend สั่งให้ scan ทุกช่อง เพื่อ auto-return กุญแจที่คืนแล้ว ──
+socket.on('key:do-reconcile-scan', async () => {
+    logDebug('🔄 [Reconcile] ได้รับคำสั่ง scan ทุกช่องเพื่อเช็คการคืน...');
+    
+    // ถ้ากำลัง unlock หรือ polling อยู่ ให้รอ
+    if (isUnlocking) {
+        logDebug('⏳ [Reconcile] ระบบกำลังทำงานอยู่ ข้ามการ scan');
+        socket.emit('key:reconcile', { slotStatuses: [] });
+        return;
+    }
+
+    const slotStatuses = [];
+    
+    // สร้างรายการ slot จากบอร์ดที่เชื่อมต่อจริง
+    let slotsToCheck = [];
+    if (nfcMode === 'esp8266') {
+        for (const [boardId] of esp8266Boards.entries()) {
+            if (boardId === 1) { for (let s = 1; s <= 4; s++) slotsToCheck.push(s); }
+            if (boardId === 2) { for (let s = 5; s <= 7; s++) slotsToCheck.push(s); }
+            if (boardId === 3) { for (let s = 8; s <= 10; s++) slotsToCheck.push(s); }
+        }
+        if (slotsToCheck.length === 0) slotsToCheck = [1, 2, 3, 4, 5, 6, 7];
+    } else if (nfcMode === 'mock') {
+        // Mock mode: ใช้ slotHasKey state ที่มีอยู่
+        for (let s = 1; s <= 10; s++) {
+            slotStatuses.push({ slotNumber: s, uid: slotHasKey[`last_uid_${s}`] || null });
+        }
+        socket.emit('key:reconcile', { slotStatuses });
+        return;
+    } else {
+        for (let s = 1; s <= 10; s++) slotsToCheck.push(s);
+    }
+
+    // หยุด polling ชั่วคราว
+    const wasPolling = isPollingSlot;
+    isPollingSlot = true;
+
+    try {
+        for (const slot of slotsToCheck) {
+            if (pullCheckingSlots.has(slot)) {
+                // slot กำลัง pull check อยู่ → ข้าม
+                slotStatuses.push({ slotNumber: slot, uid: null });
+                continue;
+            }
+            try {
+                const uid = await readNfcAtSlot(slot);
+                slotStatuses.push({ slotNumber: slot, uid: uid || null });
+            } catch (e) {
+                slotStatuses.push({ slotNumber: slot, uid: null });
+            }
+            await new Promise(r => setTimeout(r, 200));
+        }
+    } finally {
+        isPollingSlot = wasPolling;
+    }
+
+    logDebug(`🔄 [Reconcile] Scan เสร็จ: ${slotStatuses.filter(s => s.uid).length}/${slotsToCheck.length} ช่องมีกุญแจ`);
+    socket.emit('key:reconcile', { slotStatuses });
+});
+
 // ─────────────────────────────────────────────
 // NFC Polling (RC522 ×10 SPI + CS GPIO)
 // ─────────────────────────────────────────────
@@ -1504,6 +1564,10 @@ process.on('SIGTERM', () => {
     // Refresh periodically in case staff updates NFC UID mapping
     setInterval(refreshKeyUidCache, 60_000);
 
+    // ── Sync Daily Authorizations ──
+    // สร้างรายชื่อผู้มีสิทธิ์เบิกในวันนี้อัตโนมัติ
+    syncDailyAuthorizations();
+
     // ─────────────────────────────────────────────
     // INIT ALL LEDS STATE BEFORE POLLING LOOP
     // ─────────────────────────────────────────────
@@ -1516,5 +1580,39 @@ process.on('SIGTERM', () => {
 
     startNfcPolling();
 
+    // ── Initial Reconcile: เช็คกุญแจที่อาจคืนแล้วระหว่าง offline ──
+    setTimeout(() => requestReconcile(), 5000);
+
     console.log('✅ Hardware Service running — waiting for events...');
 })();
+
+/**
+ * syncDailyAuthorizations — สั่ง Backend sync สิทธิ์เบิกกุญแจประจำวัน
+ * เรียกตอน startup เพื่อให้รายชื่อผู้มีสิทธิ์พร้อมใช้ทันที
+ */
+function syncDailyAuthorizations() {
+    if (!socket.connected) {
+        // รอจน connected แล้วค่อย sync
+        socket.once('connect', () => syncDailyAuthorizations());
+        return;
+    }
+    console.log('📅 [Startup] สั่ง sync daily authorizations...');
+    socket.emit('auth:sync-today', (response) => {
+        if (response?.success) {
+            console.log(`📅 [Startup] Sync สำเร็จ: ${response.message}`);
+        } else {
+            console.log(`📅 [Startup] Sync ล้มเหลว: ${response?.message || 'unknown error'}`);
+        }
+    });
+}
+
+/**
+ * requestReconcile — สั่ง scan ทุกช่อง และ emit ผลไปให้ Backend เช็ค auto-return
+ */
+function requestReconcile() {
+    if (!socket.connected) return;
+    console.log('🔄 [Reconcile] Triggering reconcile scan...');
+    // trigger ตัวเองผ่าน socket handler เดียวกัน
+    socket.emit('key:do-reconcile-scan');
+}
+

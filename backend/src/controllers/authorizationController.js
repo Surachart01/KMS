@@ -305,64 +305,65 @@ export const syncSchedule = async (req, res) => {
  */
 export const syncToday = async (req, res) => {
     try {
-        const now = new Date();
-        // Create UTC midnight date to match @db.Date storage
-        const today = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
-        const dayOfWeek = now.getDay(); // 0=Sun, 1=Mon, ..., 6=Sat
-
-        // Fetch schedules for today's dayOfWeek with enrolled students
-        const schedules = await prisma.schedule.findMany({
-            where: { dayOfWeek },
-            include: {
-                students: true,
-                subject: { select: { id: true, code: true, name: true } }
-            }
-        });
-
-        if (schedules.length === 0) {
-            return res.status(200).json({
-                message: 'ไม่มีตารางสอนในวันนี้',
-                count: 0,
-                scheduleCount: 0
-            });
-        }
-
-        // Delete existing schedule-based authorizations for today
-        await prisma.dailyAuthorization.deleteMany({
-            where: {
-                date: today,
-                source: 'SCHEDULE'
-            }
-        });
-
-        const authorizations = [];
-        for (const schedule of schedules) {
-            for (const student of schedule.students || []) {
-                authorizations.push({
-                    userId: student.id,
-                    roomCode: schedule.roomCode,
-                    date: today,
-                    startTime: schedule.startTime,
-                    endTime: schedule.endTime,
-                    scheduleId: schedule.id,
-                    subjectId: schedule.subjectId,
-                    source: 'SCHEDULE'
-                });
-            }
-        }
-
-        const result = await prisma.dailyAuthorization.createMany({
-            data: authorizations,
-            skipDuplicates: true
-        });
-
-        return res.status(200).json({
-            message: `ซิงค์สำเร็จ ${result.count} รายการ (ลบข้อมูลเก่าแล้ว)`,
-            count: result.count,
-            scheduleCount: schedules.length
-        });
+        const result = await syncTodayInternal();
+        return res.status(200).json(result);
     } catch (error) {
         console.error('Error syncing today:', error);
         return res.status(500).json({ message: 'เกิดข้อผิดพลาดในการซิงค์' });
     }
 };
+
+/**
+ * syncTodayInternal — Sync daily authorizations (ใช้ได้โดยตรง ไม่ต้องผ่าน req/res)
+ * เรียกจาก Socket event หรือ startup ได้เลย
+ */
+export const syncTodayInternal = async () => {
+    const now = new Date();
+    const today = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+    const dayOfWeek = now.getDay();
+
+    const schedules = await prisma.schedule.findMany({
+        where: { dayOfWeek },
+        include: {
+            students: true,
+            subject: { select: { id: true, code: true, name: true } }
+        }
+    });
+
+    if (schedules.length === 0) {
+        return { message: 'ไม่มีตารางสอนในวันนี้', count: 0, scheduleCount: 0 };
+    }
+
+    await prisma.dailyAuthorization.deleteMany({
+        where: { date: today, source: 'SCHEDULE' }
+    });
+
+    const authorizations = [];
+    for (const schedule of schedules) {
+        for (const student of schedule.students || []) {
+            authorizations.push({
+                userId: student.id,
+                roomCode: schedule.roomCode,
+                date: today,
+                startTime: schedule.startTime,
+                endTime: schedule.endTime,
+                scheduleId: schedule.id,
+                subjectId: schedule.subjectId,
+                source: 'SCHEDULE'
+            });
+        }
+    }
+
+    const result = await prisma.dailyAuthorization.createMany({
+        data: authorizations,
+        skipDuplicates: true
+    });
+
+    console.log(`✅ [DailyAuth] ซิงค์สำเร็จ ${result.count} รายการ จาก ${schedules.length} ตารางสอน`);
+    return {
+        message: `ซิงค์สำเร็จ ${result.count} รายการ`,
+        count: result.count,
+        scheduleCount: schedules.length
+    };
+};
+
