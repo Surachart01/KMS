@@ -1,0 +1,86 @@
+version: '3.8'
+
+services:
+  # ── Database ──
+  postgres:
+    image: postgres:15-alpine
+    container_name: SKMS-postgresdb
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "34669:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  # ── Database Admin ──
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: SKMS-pgadmin
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
+    ports:
+      - "8080:80"
+    depends_on:
+      - postgres
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+
+  # ── Redis ──
+  redis:
+    image: redis:alpine
+    container_name: SKMS-redis
+    restart: always
+    ports:
+      - "63797:6379"
+    command: redis-server --requirepass "${REDIS_PASSWORD}"
+    volumes:
+      - redis_data:/data
+
+  # ── Backend (Express + Prisma + Socket.IO) ──
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: SKMS-backend
+    restart: always
+    ports:
+      - "4556:4556"
+    environment:
+      PORT: 4556
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
+      NODE_ENV: production
+      JWT_SECRET: ${JWT_SECRET}
+      HARDWARE_TOKEN: ${HARDWARE_TOKEN}
+      EMAIL_USER: ${EMAIL_USER}
+      EMAIL_PASS: ${EMAIL_PASS}
+    depends_on:
+      - postgres
+      - redis
+
+  # ── Frontend (Next.js) ──
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:4556/api
+    container_name: SKMS-frontend
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:4556/api
+      NEXT_PUBLIC_REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
+  pgadmin_data:
+  redis_data:

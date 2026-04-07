@@ -721,8 +721,28 @@ io.on('connection', (socket) => {
     }
   });
 
+  // ── key:auto-return — Hardware NFC polling ตรวจเจอกุญแจเสียบกลับ → auto-return + penalty ทันที ──
+  socket.on('key:auto-return', async (data) => {
+    try {
+      const { slotNumber, uid } = data;
+      console.log(`🔄 key:auto-return: พบกุญแจเสียบกลับช่อง ${slotNumber} (UID: ${uid})`);
+      
+      // เรียก reconcileKeys สำหรับช่องนี้ช่องเดียว
+      const result = await hardwareController.reconcileKeys([{ slotNumber, uid }]);
+      
+      if (result.reconciled > 0) {
+        console.log(`✅ key:auto-return: Auto-return สำเร็จ ${result.reconciled} รายการ`);
+        // แจ้ง kiosk ว่ามีการ auto-return (อัปเดต UI ถ้าเปิดอยู่)
+        io.to('kiosk').emit('key:reconcile-done', result);
+      }
+    } catch (err) {
+      console.error('❌ key:auto-return error:', err);
+    }
+  });
+
   socket.on('disconnect', () => {
     console.log(`🔌 Socket disconnected: ${socket.id}`);
+
   });
 });
 

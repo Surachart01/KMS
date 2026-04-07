@@ -1478,6 +1478,14 @@ function startNfcPolling() {
                     // อัปเดตไฟเฉพาะถ้าไม่มี Feedback อื่นทำงานอยู่ (เช่น ไฟกระพริบ Success)
                     if (!activeFeedbackSlots.has(currentSlot)) {
                         setLedRelay(currentSlot, false); // 🟢 กุญแจอยู่
+
+                        // ── Real-time Auto-Return: เจอกุญแจเสียบกลับ → แจ้ง Backend ทันที ──
+                        // ⚠️ ข้ามถ้า slot กำลัง formal return อยู่ (activeFeedbackSlots)
+                        // เพราะ WaitForKeyReturnPage จะจัดการผ่าน returnKey API เอง
+                        logDebug(`🔄 [AutoReturn] ส่ง auto-return สำหรับช่อง ${currentSlot} (UID: ${uid})`);
+                        socket.emit('key:auto-return', { slotNumber: currentSlot, uid });
+                    } else {
+                        logDebug(`⏭️ [AutoReturn] ข้าม auto-return ช่อง ${currentSlot} — กำลัง formal return อยู่`);
                     }
                 }
                 if (!slotHasKey[`last_uid_${currentSlot}`] || slotHasKey[`last_uid_${currentSlot}`] !== uid) {

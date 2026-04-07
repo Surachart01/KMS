@@ -1,18 +1,20 @@
-# ใช้ Node.js เวอร์ชันล่าสุด
-FROM node:18
+# ── Stage 1: Install dependencies ──
+FROM node:18-alpine AS deps
+WORKDIR /app
+COPY package.json yarn.lock ./
+RUN yarn install --frozen-lockfile
 
-# กำหนดโฟลเดอร์ทำงานใน Container
+# ── Stage 2: Build Prisma + Production ──
+FROM node:18-alpine AS runner
 WORKDIR /app
 
-# คัดลอก package.json และติดตั้ง dependencies
-COPY package.json package-lock.json ./
-RUN npm install
-
-# คัดลอกโค้ดทั้งหมดไปยัง container
+COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# เปิดพอร์ตที่ใช้งาน
+# Generate Prisma Client
+RUN npx prisma generate
+
 EXPOSE 4556
 
-# คอมไพล์ Prisma Client และรันเซิร์ฟเวอร์
-CMD ["sh", "-c", "npx prisma generate && node src/server.js"]
+# Start: migrate DB then run server
+CMD ["sh", "-c", "npx prisma db push --skip-generate && node server.js"]
