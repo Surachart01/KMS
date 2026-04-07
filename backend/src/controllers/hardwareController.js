@@ -312,6 +312,9 @@ export const borrowKey = async (req, res) => {
             });
         }
 
+        // ครู/เจ้าหน้าที่ เบิกได้ทุกกรณีโดยไม่ต้องมีสิทธิ์หรือเหตุผล
+        const isPrivileged = user.role === 'TEACHER' || user.role === 'STAFF';
+
         // === ขั้นตอนที่ 2: ตรวจว่ายังไม่ได้เบิกกุญแจอื่นค้างอยู่ ===
         const existingBorrow = await prisma.booking.findFirst({
             where: { userId: user.id, status: "BORROWED" },
@@ -371,8 +374,8 @@ export const borrowKey = async (req, res) => {
 
         console.log(`   Authorization found: ${authorization ? JSON.stringify(authorization) : 'NONE'}`);
 
-        // ถ้าไม่มีสิทธิ์ → ต้องมีเหตุผล (Reason) มาด้วย
-        if (!authorization && !req.body.reason) {
+        // ถ้าไม่มีสิทธิ์ → ต้องมีเหตุผล (Reason) มาด้วย (ยกเว้นครู/เจ้าหน้าที่)
+        if (!authorization && !req.body.reason && !isPrivileged) {
             return res.status(403).json({
                 success: false,
                 message: "REQUIRE_REASON", // ส่ง code พิเศษเพื่อให้ Frontend รู้ว่าต้องถามเหตุผล
@@ -389,7 +392,8 @@ export const borrowKey = async (req, res) => {
         });
 
         // ถ้าไม่มีสิทธิ์เบิกปกติ (authorization) และกำลังพยายามเบิกด้วยเหตุผล
-        if (!authorization && req.body.reason) {
+        // ข้ามการตรวจสอบนี้สำหรับครู/เจ้าหน้าที่
+        if (!authorization && req.body.reason && !isPrivileged) {
             if (relevantSchedule) {
                 // มีคนที่มีเรียนในห้องนี้ตอนนี้ (หรือกำลังจะเริ่ม)
                 const isScheduledUser = relevantSchedule.userId === user.id;
@@ -431,7 +435,8 @@ export const borrowKey = async (req, res) => {
         }
 
         // ตรวจสอบเวลาคืน (กรณีเบิกนอกตาราง) ไม่ให้ทับคาบเรียนถัดไป
-        if (!authorization && req.body.returnByTime) {
+        // ข้ามการตรวจสอบนี้สำหรับครู/เจ้าหน้าที่
+        if (!authorization && req.body.returnByTime && !isPrivileged) {
             const returnBy = new Date(req.body.returnByTime);
 
             const conflicting = await prisma.dailyAuthorization.findFirst({
@@ -482,9 +487,9 @@ export const borrowKey = async (req, res) => {
         }
 
         // === ขั้นตอนที่ 5: สร้าง Booking (ไม่ต้องจองล่วงหน้า) ===
-        // ถ้าไม่มี authoriztion ใช้เหตุผลที่ส่งมา
-        const bookingSource = authorization ? "FACE_SCANNER" : "FACE_SCANNER_WITH_REASON";
-        const bookingReason = authorization ? null : req.body.reason;
+        // ถ้าไม่มี authoriztion ใช้เหตุผลที่ส่งมา (ครู/เจ้าหน้าที่ไม่ต้องมีเหตุผล)
+        const bookingSource = authorization ? "FACE_SCANNER" : (isPrivileged ? "FACE_SCANNER_PRIVILEGED" : "FACE_SCANNER_WITH_REASON");
+        const bookingReason = authorization ? null : (isPrivileged ? `เบิกโดย${user.role === 'TEACHER' ? 'อาจารย์' : 'เจ้าหน้าที่'}` : req.body.reason);
 
         // กำหนดเวลาคืน:
         // 1. ถ้า frontend ส่ง returnByTime มา → ใช้เป็น dueAt ตรงๆ
