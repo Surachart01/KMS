@@ -934,6 +934,8 @@ async function startKeyPullCheck(slotNumber, bookingId) {
         
         if (earlyPulled) {
             logDebug(`✅ การเบิกสำเร็จ (ดึงออกเร็ว)`);
+            setLedRelay(slotNumber, true); // 🔴 แดง — กุญแจถูกดึงออก
+            slotHasKey[`last_uid_${slotNumber}`] = null; // ล้าง cached UID
             socket.emit('key:pulled', { slotNumber, bookingId });
         } else {
             logDebug(`🔒 ครบเวลา 10 วิ -> Final Verification (Fast Check)...`);
