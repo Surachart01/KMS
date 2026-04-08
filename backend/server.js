@@ -35,9 +35,22 @@ import teacherRouter from './src/routes/teacherRoutes.js';
 import * as hardwareController from './src/controllers/hardwareController.js';
 import { syncTodayInternal } from './src/controllers/authorizationController.js';
 
-// initialize express app, HTTP server, and Socket.IO
 const app = express();
 const httpServer = createServer(app);
+
+// ================================
+// HANDLE NGINX PROXY PREFIX (GLOBAL)
+// ================================
+// ดักลบ /kmsws ตั้งแต่ระดับ HTTP Server ก่อนจะถึง Socket.IO และ Express
+const stripPrefix = (req) => {
+  if (req.url && req.url.startsWith('/kmsws')) {
+    req.url = req.url.replace('/kmsws', '');
+    if (req.url === '') req.url = '/';
+  }
+};
+httpServer.prependListener('request', (req, res) => stripPrefix(req));
+httpServer.prependListener('upgrade', (req, socket, head) => stripPrefix(req));
+
 const io = new Server(httpServer, {
   cors: { origin: '*', methods: ['GET', 'POST'] },
 });
@@ -49,18 +62,6 @@ app.use(cors({
 }));
 app.use(express.json());
 dotenv.config();
-
-// ================================
-// HANDLE NGINX PROXY PREFIX
-// ================================
-// ถ้าระบบรับ Request ที่นำหน้าด้วย /kmsws ให้ตัดทิ้ง เพื่อให้ Route เดิมทำงานได้ทั้ง 2 รูปแบบ
-app.use((req, res, next) => {
-  if (req.url.startsWith('/kmsws')) {
-    req.url = req.url.replace('/kmsws', '');
-    if (req.url === '') req.url = '/';
-  }
-  next();
-});
 
 // Make io accessible to routes that need it
 app.set('io', io);
