@@ -1,468 +1,12952 @@
 import { PrismaClient } from '@prisma/client';
-import bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
+const majors = [
+  {
+    "id": "ba744988-5ed3-4c8f-bf70-db7bb8c60ff4",
+    "code": "TCT",
+    "name": "เทคโนโลยีคอมพิวเตอร์"
+  },
+  {
+    "id": "123fb904-8ad6-4d75-805f-c872b404e886",
+    "code": "CED",
+    "name": "คอมพิวเตอร์ศึกษา"
+  }
+];
+const sections = [
+  {
+    "id": "tct-de-ra",
+    "name": "DE-RA",
+    "majorId": "ba744988-5ed3-4c8f-bf70-db7bb8c60ff4"
+  },
+  {
+    "id": "tct-de-rb",
+    "name": "DE-RB",
+    "majorId": "ba744988-5ed3-4c8f-bf70-db7bb8c60ff4"
+  },
+  {
+    "id": "ced-de-ra",
+    "name": "DE-RA",
+    "majorId": "123fb904-8ad6-4d75-805f-c872b404e886"
+  }
+];
+const users = [
+  {
+    "id": "ef87ede5-9764-454d-a685-3f070242992b",
+    "studentCode": "STAFF001",
+    "email": "admin@kmutnb.ac.th",
+    "password": "$2b$10$HVu0vxKAIdNyBWZS/ubVc.duiIc.0uGZxneMf8Myw1wD9KwXalHXS",
+    "firstName": "Admin",
+    "lastName": "System",
+    "role": "STAFF",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": null,
+    "createdAt": new Date("2026-02-03T07:14:55.296Z"),
+    "updatedAt": new Date("2026-02-03T07:14:55.296Z")
+  },
+  {
+    "id": "21dda778-aa98-4419-a318-0c8951641162",
+    "studentCode": "6702041510067",
+    "email": "s6702041510067@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "นารีรัตน์",
+    "lastName": "จันทนา",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "tct-de-ra",
+    "createdAt": new Date("2026-02-09T19:38:42.923Z"),
+    "updatedAt": new Date("2026-03-12T10:59:33.331Z")
+  },
+  {
+    "id": "1372f6fc-65eb-419f-a060-301153d459f4",
+    "studentCode": "6702041510148",
+    "email": "s6702041510148@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "ภูธาร",
+    "lastName": "เอ็นดู",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "tct-de-ra",
+    "createdAt": new Date("2026-02-09T19:38:42.951Z"),
+    "updatedAt": new Date("2026-03-12T10:59:33.346Z")
+  },
+  {
+    "id": "ce4c8300-5a57-4144-b720-ba44ccea04b9",
+    "studentCode": "6702041510202",
+    "email": "s6702041510202@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "ชลธิชา",
+    "lastName": "พึ่งพักตร์",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "tct-de-ra",
+    "createdAt": new Date("2026-02-09T19:38:42.976Z"),
+    "updatedAt": new Date("2026-03-25T08:12:35.428Z")
+  },
+  {
+    "id": "9e0fef1e-909f-4c25-ba4c-b716122d658a",
+    "studentCode": "6702041511012",
+    "email": "s6702041511012@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "ณัฐวุฒิ",
+    "lastName": "อาบสา",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "tct-de-rb",
+    "createdAt": new Date("2026-03-25T08:08:45.051Z"),
+    "updatedAt": new Date("2026-03-25T08:08:45.051Z")
+  },
+  {
+    "id": "7c50486b-2880-4c06-9b5f-d9e5dbcbbf35",
+    "studentCode": "6702041510172",
+    "email": "s6702041510172@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "ศรัณย์ภัทร์",
+    "lastName": "เปิดชั้น",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "tct-de-ra",
+    "createdAt": new Date("2026-02-09T19:38:42.962Z"),
+    "updatedAt": new Date("2026-03-12T10:59:33.357Z")
+  },
+  {
+    "id": "576bd29e-4ef4-4fa3-a1de-63a4b29aeb2f",
+    "studentCode": "6702041510229",
+    "email": "s6702041510229@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "ณฐพงษ์",
+    "lastName": "ฉวีจันทร์",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "tct-de-ra",
+    "createdAt": new Date("2026-02-09T19:38:42.982Z"),
+    "updatedAt": new Date("2026-03-12T10:59:33.373Z")
+  },
+  {
+    "id": "9155b909-63c8-45aa-a5b6-badf2815f247",
+    "studentCode": "6702041510237",
+    "email": "s6702041510237@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "เพลงพิณ",
+    "lastName": "จีระพัฒน์",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "tct-de-ra",
+    "createdAt": new Date("2026-02-09T19:38:42.984Z"),
+    "updatedAt": new Date("2026-03-12T10:59:33.376Z")
+  },
+  {
+    "id": "f74693ea-076a-4904-978f-693ba2dd7866",
+    "studentCode": "6702041510245",
+    "email": "s6702041510245@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "เจษฎาพร",
+    "lastName": "จันทร์วิเศษ",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "tct-de-ra",
+    "createdAt": new Date("2026-02-09T19:38:42.990Z"),
+    "updatedAt": new Date("2026-03-12T10:59:33.380Z")
+  },
+  {
+    "id": "c1aa06b9-352e-486e-a82b-2ac1336517b9",
+    "studentCode": "6702041510253",
+    "email": "s6702041510253@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "พีรพล",
+    "lastName": "สีลาโล้",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "tct-de-ra",
+    "createdAt": new Date("2026-02-09T19:38:42.993Z"),
+    "updatedAt": new Date("2026-03-12T10:59:33.383Z")
+  },
+  {
+    "id": "6500e16c-1379-45be-8925-f5a71256e3ed",
+    "studentCode": "6702041510261",
+    "email": "s6702041510261@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "กรวิทย์",
+    "lastName": "หอมแสนศรี",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "tct-de-ra",
+    "createdAt": new Date("2026-02-09T19:38:42.996Z"),
+    "updatedAt": new Date("2026-03-12T10:59:33.388Z")
+  },
+  {
+    "id": "9cefc08a-a43f-4401-be9d-ccdf22d7009b",
+    "studentCode": "6702041510270",
+    "email": "s6702041510270@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "สิรวิชญ์",
+    "lastName": "พานทอง",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "tct-de-ra",
+    "createdAt": new Date("2026-02-09T19:38:42.998Z"),
+    "updatedAt": new Date("2026-03-12T10:59:33.391Z")
+  },
+  {
+    "id": "2e991ce8-030d-4925-a113-f24674d8cb59",
+    "studentCode": "6702041510296",
+    "email": "s6702041510296@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "วราวุฒิ",
+    "lastName": "ศิรศาสตร์",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "tct-de-ra",
+    "createdAt": new Date("2026-02-09T19:38:43.006Z"),
+    "updatedAt": new Date("2026-03-12T10:59:33.398Z")
+  },
+  {
+    "id": "85135fc8-24b8-4f5f-b11d-5ac89830db7b",
+    "studentCode": "6702041511021",
+    "email": "s6702041511021@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "บุญญิสา",
+    "lastName": "เอี่ยมสำอางค์",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "tct-de-rb",
+    "createdAt": new Date("2026-03-25T08:08:45.057Z"),
+    "updatedAt": new Date("2026-03-25T08:08:45.057Z")
+  },
+  {
+    "id": "ecdcb42e-6255-42da-8a78-523bc33a3e36",
+    "studentCode": "6702041510075",
+    "email": "s6702041510075@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "รุจน์",
+    "lastName": "วัชประดิษฐ์",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "tct-de-ra",
+    "createdAt": new Date("2026-02-09T19:38:42.927Z"),
+    "updatedAt": new Date("2026-03-12T10:59:33.334Z")
+  },
+  {
+    "id": "1458ade2-bb6e-40b8-91c6-9cc5822c5447",
+    "studentCode": "6702041511039",
+    "email": "s6702041511039@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "สุภาพร",
+    "lastName": "ตุ้มทอง",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "tct-de-rb",
+    "createdAt": new Date("2026-03-25T08:08:45.060Z"),
+    "updatedAt": new Date("2026-03-25T08:08:45.060Z")
+  },
+  {
+    "id": "2d658f11-34cb-4c94-b7b2-88eb34209297",
+    "studentCode": "6702041510156",
+    "email": "s6702041510156@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "วรรวิษา",
+    "lastName": "พันธุ์สาย",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "tct-de-ra",
+    "createdAt": new Date("2026-02-09T19:38:42.955Z"),
+    "updatedAt": new Date("2026-03-25T08:12:35.422Z")
+  },
+  {
+    "id": "2d953a71-e326-41f1-81b6-4ff082c852bd",
+    "studentCode": "ced4576839",
+    "email": "titlemk36@gmail.com",
+    "password": "$2b$10$gBqPdlMaXj0H9Ucjl00LfOV8uYBOW5ReQi35t34lxh1b3d/KxIQM2",
+    "firstName": "สุรชาติ (เจ้าหน้าที่)",
+    "lastName": "ลิ้มรัตนพันธ์",
+    "role": "STAFF",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": null,
+    "createdAt": new Date("2026-03-22T04:49:45.043Z"),
+    "updatedAt": new Date("2026-03-22T04:49:45.043Z")
+  },
+  {
+    "id": "dd8ed91c-1b01-4fe5-b0a2-ae69dd8cdcd2",
+    "studentCode": "6702041511047",
+    "email": "s6702041511047@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "ประกายดาว",
+    "lastName": "ผลสอน",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "tct-de-rb",
+    "createdAt": new Date("2026-03-25T08:08:45.064Z"),
+    "updatedAt": new Date("2026-03-25T08:08:45.064Z")
+  },
+  {
+    "id": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "studentCode": "6702041510164",
+    "email": "s6702041510164@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "สุรชาติ",
+    "lastName": "ลิ้มรัตนพันธ์",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "tct-de-ra",
+    "createdAt": new Date("2026-02-09T19:38:42.959Z"),
+    "updatedAt": new Date("2026-03-31T10:08:08.820Z")
+  },
+  {
+    "id": "fcb8564b-bd4b-41a9-bdeb-7d3e0182942d",
+    "studentCode": "6702041511055",
+    "email": "s6702041511055@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "รุ่งนภา",
+    "lastName": "เอี่ยมชูกุล",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "tct-de-rb",
+    "createdAt": new Date("2026-03-25T08:08:45.067Z"),
+    "updatedAt": new Date("2026-03-25T08:08:45.067Z")
+  },
+  {
+    "id": "11193aec-ff66-441a-8ace-03f3e3a3ac9b",
+    "studentCode": "6702041510091",
+    "email": "s6702041510091@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "ศิริวรรณ",
+    "lastName": "ศรีหิรัญ",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "tct-de-ra",
+    "createdAt": new Date("2026-02-09T19:38:42.935Z"),
+    "updatedAt": new Date("2026-03-12T10:59:33.338Z")
+  },
+  {
+    "id": "e5c7d7ec-2028-481a-9a9b-1ab7b6dfe160",
+    "studentCode": "6702041510105",
+    "email": "s6702041510105@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "อภิวรรณ",
+    "lastName": "จันทร์พาณิชย์",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "tct-de-ra",
+    "createdAt": new Date("2026-02-09T19:38:42.940Z"),
+    "updatedAt": new Date("2026-03-12T10:59:33.340Z")
+  },
+  {
+    "id": "393fb8e0-7b96-48e0-8602-a98337e522d0",
+    "studentCode": "6702041510288",
+    "email": "s6702041510288@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "ปัจพล",
+    "lastName": "บุญชู",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "tct-de-ra",
+    "createdAt": new Date("2026-02-09T19:38:43.001Z"),
+    "updatedAt": new Date("2026-03-12T10:59:33.394Z")
+  },
+  {
+    "id": "ce7c3b8a-3b61-4ea4-822a-5403160ad267",
+    "studentCode": "6702041510024",
+    "email": "s6702041510024@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "ชวัลวิทย์",
+    "lastName": "หมั่นถนอม",
+    "role": "STUDENT",
+    "score": 90,
+    "isBanned": false,
+    "sectionId": "tct-de-ra",
+    "createdAt": new Date("2026-02-09T19:38:42.904Z"),
+    "updatedAt": new Date("2026-03-12T10:59:33.322Z")
+  },
+  {
+    "id": "b1157ae6-657f-46d9-877a-ca9e9bd08cc1",
+    "studentCode": "6702041510032",
+    "email": "s6702041510032@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "ณัฐวุฒิ",
+    "lastName": "เพชรนุ้ย",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "tct-de-ra",
+    "createdAt": new Date("2026-02-09T19:38:42.909Z"),
+    "updatedAt": new Date("2026-03-12T10:59:33.325Z")
+  },
+  {
+    "id": "c027fd82-5cca-4431-aa13-b413f420b57f",
+    "studentCode": "6702041510041",
+    "email": "s6702041510041@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "ประภัสสร",
+    "lastName": "ชัยพรม",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "tct-de-ra",
+    "createdAt": new Date("2026-02-09T19:38:42.914Z"),
+    "updatedAt": new Date("2026-03-12T10:59:33.327Z")
+  },
+  {
+    "id": "391a0415-cfdd-40a8-b189-745d163d40cb",
+    "studentCode": "6702041510059",
+    "email": "s6702041510059@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "ฐนิชา",
+    "lastName": "สวนวงค์",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "tct-de-ra",
+    "createdAt": new Date("2026-02-09T19:38:42.918Z"),
+    "updatedAt": new Date("2026-03-12T10:59:33.330Z")
+  },
+  {
+    "id": "8c5038ff-365e-448a-8176-0dc164b10d9b",
+    "studentCode": "6702041510113",
+    "email": "s6702041510113@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "พิชญุตย์",
+    "lastName": "สมบุญ",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "tct-de-ra",
+    "createdAt": new Date("2026-02-09T19:38:42.943Z"),
+    "updatedAt": new Date("2026-03-12T10:59:33.342Z")
+  },
+  {
+    "id": "ba4182d5-1e2e-4589-bba8-afef6da8705d",
+    "studentCode": "6702041511063",
+    "email": "s6702041511063@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "พชร",
+    "lastName": "เพียซ้าย",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "tct-de-rb",
+    "createdAt": new Date("2026-03-25T08:08:45.072Z"),
+    "updatedAt": new Date("2026-03-25T08:08:45.072Z")
+  },
+  {
+    "id": "040845c3-87b2-4c3a-b71f-ac4ee3ec9537",
+    "studentCode": "6702041510130",
+    "email": "s6702041510130@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "พิตตินันท์",
+    "lastName": "วิทยาศิลป์",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "tct-de-ra",
+    "createdAt": new Date("2026-02-09T19:38:42.947Z"),
+    "updatedAt": new Date("2026-03-12T10:59:33.344Z")
+  },
+  {
+    "id": "d3e0d5c5-4d60-469b-8754-675804901c53",
+    "studentCode": "1234566",
+    "email": "titlemy36@gmail.com",
+    "password": "$2b$10$o6PXUlHgxEPkbwDPXnRtF.qmYiBYiUzfLETeOs/WMoaUaHPO9eDHi",
+    "firstName": "SAURACHAT",
+    "lastName": "LIMRATTANAP",
+    "role": "TEACHER",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": null,
+    "createdAt": new Date("2026-02-20T17:47:50.968Z"),
+    "updatedAt": new Date("2026-04-07T06:47:07.374Z")
+  },
+  {
+    "id": "f5dfd7e8-1e1f-4278-b82f-cd7825b2da13",
+    "studentCode": "6702041511098",
+    "email": "s6702041511098@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "ธนเขตฐ์",
+    "lastName": "สายสุวรรณ",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "tct-de-rb",
+    "createdAt": new Date("2026-03-25T08:08:45.081Z"),
+    "updatedAt": new Date("2026-03-25T08:12:35.436Z")
+  },
+  {
+    "id": "9f90f6c9-7dca-4a7e-852c-08bc783b3c7e",
+    "studentCode": "6702041510211",
+    "email": "s6702041510211@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "อภิชาติ",
+    "lastName": "ถีเจริญ",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "tct-de-ra",
+    "createdAt": new Date("2026-02-09T19:38:42.979Z"),
+    "updatedAt": new Date("2026-03-12T10:59:33.369Z")
+  },
+  {
+    "id": "8f692844-ce1c-4d62-bd0c-90abc6595d3a",
+    "studentCode": "6702041511071",
+    "email": "s6702041511071@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "ปาริชาติ",
+    "lastName": "ปานมี",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "tct-de-rb",
+    "createdAt": new Date("2026-03-25T08:08:45.075Z"),
+    "updatedAt": new Date("2026-03-25T08:08:45.075Z")
+  },
+  {
+    "id": "be0bc3f7-d394-464a-a0bc-8387f7d22c90",
+    "studentCode": "6702041511080",
+    "email": "s6702041511080@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "วรากร",
+    "lastName": "คำสี",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "tct-de-rb",
+    "createdAt": new Date("2026-03-25T08:08:45.078Z"),
+    "updatedAt": new Date("2026-03-25T08:08:45.078Z")
+  },
+  {
+    "id": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "studentCode": "6702041510181",
+    "email": "s6702041510181@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "ปิยะพงษ์",
+    "lastName": "ยะจันโท",
+    "role": "STUDENT",
+    "score": 75,
+    "isBanned": false,
+    "sectionId": "tct-de-ra",
+    "createdAt": new Date("2026-02-09T19:38:42.969Z"),
+    "updatedAt": new Date("2026-03-31T10:08:19.539Z")
+  },
+  {
+    "id": "558f2da6-76ca-4382-8a33-35050393d4be",
+    "studentCode": "6702041511128",
+    "email": "s6702041511128@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "สุทธิกานต์",
+    "lastName": "รักใหม่",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "tct-de-rb",
+    "createdAt": new Date("2026-03-25T08:08:45.084Z"),
+    "updatedAt": new Date("2026-03-25T08:08:45.084Z")
+  },
+  {
+    "id": "4c8dd6bd-bd2c-46f9-b330-8e1a3bd17122",
+    "studentCode": "6702041511136",
+    "email": "s6702041511136@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "ณัฏฐณิชา",
+    "lastName": "อิ่นท่าม",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "tct-de-rb",
+    "createdAt": new Date("2026-03-25T08:08:45.088Z"),
+    "updatedAt": new Date("2026-03-25T08:08:45.088Z")
+  },
+  {
+    "id": "f8b47fdf-76d7-45f4-a5ae-0f55e151d877",
+    "studentCode": "6702041511144",
+    "email": "s6702041511144@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "เจนจิรา",
+    "lastName": "ศรีภูษิต",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "tct-de-rb",
+    "createdAt": new Date("2026-03-25T08:08:45.091Z"),
+    "updatedAt": new Date("2026-03-25T08:08:45.091Z")
+  },
+  {
+    "id": "0cb593f5-5365-4694-b86d-51c3e8d5f762",
+    "studentCode": "6702041511152",
+    "email": "s6702041511152@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "กัญจนพร",
+    "lastName": "แก้วทับทิม",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "tct-de-rb",
+    "createdAt": new Date("2026-03-25T08:08:45.093Z"),
+    "updatedAt": new Date("2026-03-25T08:08:45.093Z")
+  },
+  {
+    "id": "0fae1523-cd5e-4667-bf71-d7fd603db23e",
+    "studentCode": "6702041511161",
+    "email": "s6702041511161@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "นภัสสร",
+    "lastName": "พ่อครวงศ์",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "tct-de-rb",
+    "createdAt": new Date("2026-03-25T08:08:45.097Z"),
+    "updatedAt": new Date("2026-03-25T08:08:45.097Z")
+  },
+  {
+    "id": "68529f70-0cbd-4554-b118-ee9952268dbe",
+    "studentCode": "6702041511179",
+    "email": "s6702041511179@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "ณัฐภาส",
+    "lastName": "เงินห้อย",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "tct-de-rb",
+    "createdAt": new Date("2026-03-25T08:08:45.103Z"),
+    "updatedAt": new Date("2026-03-25T08:08:45.103Z")
+  },
+  {
+    "id": "180f1ea8-70ce-44e3-bcae-4edd23ad1607",
+    "studentCode": "6702041511187",
+    "email": "s6702041511187@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "กิตติธัช",
+    "lastName": "ปานโศก",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "tct-de-rb",
+    "createdAt": new Date("2026-03-25T08:08:45.109Z"),
+    "updatedAt": new Date("2026-03-25T08:08:45.109Z")
+  },
+  {
+    "id": "59b39fb6-6444-47af-8600-61633b7cd398",
+    "studentCode": "6702041511195",
+    "email": "s6702041511195@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "เสฏฐนันท์",
+    "lastName": "ทิพย์สังวาลย์",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "tct-de-rb",
+    "createdAt": new Date("2026-03-25T08:08:45.116Z"),
+    "updatedAt": new Date("2026-03-25T08:08:45.116Z")
+  },
+  {
+    "id": "f67eca98-2ba9-4322-bfbb-d1c9317b9d79",
+    "studentCode": "6702041511209",
+    "email": "s6702041511209@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "ณรงค์ชัย",
+    "lastName": "สุราษฎารมย์",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "tct-de-rb",
+    "createdAt": new Date("2026-03-25T08:08:45.123Z"),
+    "updatedAt": new Date("2026-03-25T08:08:45.123Z")
+  },
+  {
+    "id": "5ac6609d-e691-4cf4-b5b2-c7566f99edb7",
+    "studentCode": "6702041511217",
+    "email": "s6702041511217@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "ธันยพร",
+    "lastName": "นิ่มนวล",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "tct-de-rb",
+    "createdAt": new Date("2026-03-25T08:08:45.131Z"),
+    "updatedAt": new Date("2026-03-25T08:08:45.131Z")
+  },
+  {
+    "id": "47fc0493-dcfe-4de4-84fb-226fec80b931",
+    "studentCode": "6702041511233",
+    "email": "s6702041511233@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "ธนนันท์",
+    "lastName": "เดชมงคลศรี",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "tct-de-rb",
+    "createdAt": new Date("2026-03-25T08:08:45.138Z"),
+    "updatedAt": new Date("2026-03-25T08:08:45.138Z")
+  },
+  {
+    "id": "f1de1ffb-1822-45d3-b8f7-e2afc87a0bcf",
+    "studentCode": "6702041511268",
+    "email": "s6702041511268@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "นรภัทร",
+    "lastName": "ธิติชุณหกุล",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "tct-de-rb",
+    "createdAt": new Date("2026-03-25T08:08:45.164Z"),
+    "updatedAt": new Date("2026-03-25T08:08:45.164Z")
+  },
+  {
+    "id": "99d96c3e-bb46-4dfc-95da-180180c3d919",
+    "studentCode": "6702041511284",
+    "email": "s6702041511284@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "เอกรัตน์",
+    "lastName": "นาคเมือง",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "tct-de-rb",
+    "createdAt": new Date("2026-03-25T08:08:45.174Z"),
+    "updatedAt": new Date("2026-03-25T08:08:45.174Z")
+  },
+  {
+    "id": "8e436af5-839d-490c-911e-8138669196f8",
+    "studentCode": "6702041511292",
+    "email": "s6702041511292@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "อริสา",
+    "lastName": "ชินแสน",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "tct-de-rb",
+    "createdAt": new Date("2026-03-25T08:08:45.183Z"),
+    "updatedAt": new Date("2026-03-25T08:08:45.183Z")
+  },
+  {
+    "id": "38dd2b1d-844a-4684-a8e5-2e938050ea1e",
+    "studentCode": "นักศึกษา",
+    "email": null,
+    "password": null,
+    "firstName": " ",
+    "lastName": "",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": null,
+    "createdAt": new Date("2026-03-25T08:12:35.384Z"),
+    "updatedAt": new Date("2026-03-25T08:12:35.384Z")
+  },
+  {
+    "id": "13635691-70ac-4e4e-b095-c05d02e90e8d",
+    "studentCode": "6502041610101",
+    "email": "s6502041610101@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "ณัฐชา",
+    "lastName": "ทราฤทธิ์",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "ced-de-ra",
+    "createdAt": new Date("2026-03-25T08:12:35.392Z"),
+    "updatedAt": new Date("2026-03-25T08:12:35.392Z")
+  },
+  {
+    "id": "e4cc76e4-aaa4-4917-b37e-0b7808c3ac2c",
+    "studentCode": "6502041620085",
+    "email": "s6502041620085@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "ปาณัสม์",
+    "lastName": "ฉันทะวิบูลย์",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "ced-de-ra",
+    "createdAt": new Date("2026-03-25T08:12:35.399Z"),
+    "updatedAt": new Date("2026-03-25T08:12:35.399Z")
+  },
+  {
+    "id": "c07d8bf3-03db-4057-a6fe-aaec5106144e",
+    "studentCode": "6602041610046",
+    "email": "s6602041610046@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "วลัยกร",
+    "lastName": "อินทเกษร",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "ced-de-ra",
+    "createdAt": new Date("2026-03-25T08:12:35.404Z"),
+    "updatedAt": new Date("2026-03-25T08:12:35.404Z")
+  },
+  {
+    "id": "4b75f40d-e156-4aec-8a22-7c2a7008b566",
+    "studentCode": "6602041620173",
+    "email": "s6602041620173@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "กนกวรรณ",
+    "lastName": "พันธุ์แตง",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "ced-de-ra",
+    "createdAt": new Date("2026-03-25T08:12:35.409Z"),
+    "updatedAt": new Date("2026-03-25T08:12:35.409Z")
+  },
+  {
+    "id": "b2988236-8de1-4ce3-bced-39943483f203",
+    "studentCode": "6702041510083",
+    "email": "s6702041510083@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "คุณาสิน",
+    "lastName": "ไชยโสดา",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "tct-de-ra",
+    "createdAt": new Date("2026-02-09T19:38:42.932Z"),
+    "updatedAt": new Date("2026-03-25T08:12:35.415Z")
+  },
+  {
+    "id": "7955bd30-fb2a-4f82-a9b9-4615764acd40",
+    "studentCode": "6702041511241",
+    "email": "s6702041511241@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "ธนภัทร",
+    "lastName": "ฤทธิ์เดช",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "tct-de-rb",
+    "createdAt": new Date("2026-03-25T08:08:45.146Z"),
+    "updatedAt": new Date("2026-03-25T08:12:35.443Z")
+  },
+  {
+    "id": "3baaba62-f128-4319-aaac-b2ad957b38d1",
+    "studentCode": "6702041511250",
+    "email": "s6702041511250@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "เพลินตา",
+    "lastName": "ไชยวรรณ",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "tct-de-rb",
+    "createdAt": new Date("2026-03-25T08:08:45.154Z"),
+    "updatedAt": new Date("2026-03-25T08:12:35.450Z")
+  },
+  {
+    "id": "3c0ecff4-601d-472b-920c-b3997330a6a2",
+    "studentCode": "6802041510015",
+    "email": "s6802041510015@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "คฑาวุฒิ",
+    "lastName": "นิยมลาภ",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "tct-de-ra",
+    "createdAt": new Date("2026-03-25T08:13:09.124Z"),
+    "updatedAt": new Date("2026-03-25T08:13:09.124Z")
+  },
+  {
+    "id": "f34da8dd-83ff-4034-87a2-988e943498e9",
+    "studentCode": "6802041510023",
+    "email": "s6802041510023@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "ธนพล",
+    "lastName": "อวยพร",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "tct-de-ra",
+    "createdAt": new Date("2026-03-25T08:13:09.131Z"),
+    "updatedAt": new Date("2026-03-25T08:13:09.131Z")
+  },
+  {
+    "id": "012236b8-c48f-4d1a-93be-89a24f477034",
+    "studentCode": "6802041510031",
+    "email": "s6802041510031@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "มนัสวี",
+    "lastName": "มีสมบูรณ์",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "tct-de-ra",
+    "createdAt": new Date("2026-03-25T08:13:09.137Z"),
+    "updatedAt": new Date("2026-03-25T08:13:09.137Z")
+  },
+  {
+    "id": "849b7363-e9b4-4b2d-ac7f-5930deba07ed",
+    "studentCode": "6802041510040",
+    "email": "s6802041510040@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "อติเทพ",
+    "lastName": "ทวาโรจน์",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "tct-de-ra",
+    "createdAt": new Date("2026-03-25T08:13:09.144Z"),
+    "updatedAt": new Date("2026-03-25T08:13:09.144Z")
+  },
+  {
+    "id": "dccfc0d3-e3e4-45cd-a3d6-eb0a1a2b3c9d",
+    "studentCode": "6802041510058",
+    "email": "s6802041510058@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "สาวิทย์",
+    "lastName": "ศรีดารา",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "tct-de-ra",
+    "createdAt": new Date("2026-03-25T08:13:09.151Z"),
+    "updatedAt": new Date("2026-03-25T08:13:09.151Z")
+  },
+  {
+    "id": "9dc5bcc2-a8b1-419a-a5c7-4a864ecdc3d5",
+    "studentCode": "6802041510066",
+    "email": "s6802041510066@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "พงศกร",
+    "lastName": "ศรีษเกตุ",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "tct-de-ra",
+    "createdAt": new Date("2026-03-25T08:13:09.156Z"),
+    "updatedAt": new Date("2026-03-25T08:13:09.156Z")
+  },
+  {
+    "id": "632848de-036a-420e-8ffe-2a0c4ba449dd",
+    "studentCode": "6802041510074",
+    "email": "s6802041510074@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "กนกพล",
+    "lastName": "เดชอุดมพันธ์",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "tct-de-ra",
+    "createdAt": new Date("2026-03-25T08:13:09.162Z"),
+    "updatedAt": new Date("2026-03-25T08:13:09.162Z")
+  },
+  {
+    "id": "d75482bf-41dc-43f0-b3c8-7f1f34677dae",
+    "studentCode": "6802041510082",
+    "email": "s6802041510082@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "จีระนันท์",
+    "lastName": "เถาอั้น",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "tct-de-ra",
+    "createdAt": new Date("2026-03-25T08:13:09.169Z"),
+    "updatedAt": new Date("2026-03-25T08:13:09.169Z")
+  },
+  {
+    "id": "13f2aa7f-a7f3-4d8c-9b68-bc57fef631bc",
+    "studentCode": "6802041510091",
+    "email": "s6802041510091@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "วีรภัทร",
+    "lastName": "ครุนิติวัฒน์",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "tct-de-ra",
+    "createdAt": new Date("2026-03-25T08:13:09.177Z"),
+    "updatedAt": new Date("2026-03-25T08:13:09.177Z")
+  },
+  {
+    "id": "6bf1b99a-ef44-4300-994c-3df77f87d481",
+    "studentCode": "6802041510104",
+    "email": "s6802041510104@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "อะลีฟ",
+    "lastName": "โมกาเดส",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "tct-de-ra",
+    "createdAt": new Date("2026-03-25T08:13:09.186Z"),
+    "updatedAt": new Date("2026-03-25T08:13:09.186Z")
+  },
+  {
+    "id": "9bd7942a-2467-4b6a-97e9-0eddf4b96f03",
+    "studentCode": "6802041510112",
+    "email": "s6802041510112@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "ณบวร",
+    "lastName": "ลิ้มวัฒนะ",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "tct-de-ra",
+    "createdAt": new Date("2026-03-25T08:13:09.193Z"),
+    "updatedAt": new Date("2026-03-25T08:13:09.193Z")
+  },
+  {
+    "id": "2d712c69-29d5-478c-a811-516e91a91f83",
+    "studentCode": "6802041510121",
+    "email": "s6802041510121@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "จิดาภา",
+    "lastName": "สุขาภิรมย์",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "tct-de-ra",
+    "createdAt": new Date("2026-03-25T08:13:09.201Z"),
+    "updatedAt": new Date("2026-03-25T08:13:09.201Z")
+  },
+  {
+    "id": "fe4bf6b9-fdcf-43df-ac34-4ec958a3f612",
+    "studentCode": "6802041510139",
+    "email": "s6802041510139@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "ภูรินท์",
+    "lastName": "พุ่มพานทอง",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "tct-de-ra",
+    "createdAt": new Date("2026-03-25T08:13:09.208Z"),
+    "updatedAt": new Date("2026-03-25T08:13:09.208Z")
+  },
+  {
+    "id": "fbaffc02-5266-4fcb-8644-ac395d5ecb71",
+    "studentCode": "6802041510147",
+    "email": "s6802041510147@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "สุวิมล",
+    "lastName": "ทองคำ",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "tct-de-ra",
+    "createdAt": new Date("2026-03-25T08:13:09.217Z"),
+    "updatedAt": new Date("2026-03-25T08:13:09.217Z")
+  },
+  {
+    "id": "fbae6123-d812-489e-a779-68ca3ded836c",
+    "studentCode": "6802041510155",
+    "email": "s6802041510155@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "วรัญญา",
+    "lastName": "ฉวีวรรณ์",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "tct-de-ra",
+    "createdAt": new Date("2026-03-25T08:13:09.223Z"),
+    "updatedAt": new Date("2026-03-25T08:13:09.223Z")
+  },
+  {
+    "id": "a7e2ecd8-dedd-48b2-9513-f36a23b19125",
+    "studentCode": "6802041510163",
+    "email": "s6802041510163@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "ศักดิ์ดา",
+    "lastName": "ยังโหมด",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "tct-de-ra",
+    "createdAt": new Date("2026-03-25T08:13:09.231Z"),
+    "updatedAt": new Date("2026-03-25T08:13:09.231Z")
+  },
+  {
+    "id": "2959696f-91f4-4aa1-b68d-fb543edad42d",
+    "studentCode": "6802041510171",
+    "email": "s6802041510171@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "ตะวัน",
+    "lastName": "เรืองอ่อน",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "tct-de-ra",
+    "createdAt": new Date("2026-03-25T08:13:09.238Z"),
+    "updatedAt": new Date("2026-03-25T08:13:09.238Z")
+  },
+  {
+    "id": "9f7071e7-12a8-42c5-8ee0-dc018c827a03",
+    "studentCode": "6802041510180",
+    "email": "s6802041510180@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "ธีระวัฒน์",
+    "lastName": "นุ่นงาม",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "tct-de-ra",
+    "createdAt": new Date("2026-03-25T08:13:09.244Z"),
+    "updatedAt": new Date("2026-03-25T08:13:09.244Z")
+  },
+  {
+    "id": "b39cef64-8666-475c-8028-08e0428e3652",
+    "studentCode": "6802041510198",
+    "email": "s6802041510198@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "อภินัทธ์",
+    "lastName": "ลัดลอย",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "tct-de-ra",
+    "createdAt": new Date("2026-03-25T08:13:09.252Z"),
+    "updatedAt": new Date("2026-03-25T08:13:09.252Z")
+  },
+  {
+    "id": "b3cec1bf-6b7b-46f4-9122-9a6c83ba384d",
+    "studentCode": "6802041510201",
+    "email": "s6802041510201@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "ธิติมา",
+    "lastName": "เกิดม่วง",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "tct-de-ra",
+    "createdAt": new Date("2026-03-25T08:13:09.260Z"),
+    "updatedAt": new Date("2026-03-25T08:13:09.260Z")
+  },
+  {
+    "id": "fea305d4-df25-4f46-99ab-29cda37a8742",
+    "studentCode": "6802041510210",
+    "email": "s6802041510210@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "ปรัชคฌา",
+    "lastName": "น้อยศรี",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "tct-de-ra",
+    "createdAt": new Date("2026-03-25T08:13:09.269Z"),
+    "updatedAt": new Date("2026-03-25T08:13:09.269Z")
+  },
+  {
+    "id": "bf0bf017-26ec-47d0-ac46-b355f3acf7a1",
+    "studentCode": "6802041510228",
+    "email": "s6802041510228@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "แพรทิวา",
+    "lastName": "ผาสุข",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "tct-de-ra",
+    "createdAt": new Date("2026-03-25T08:13:09.276Z"),
+    "updatedAt": new Date("2026-03-25T08:13:09.276Z")
+  },
+  {
+    "id": "f4a72527-3009-4739-9e0d-05c547f8b54c",
+    "studentCode": "6802041510236",
+    "email": "s6802041510236@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "ณัฐนนท์",
+    "lastName": "เวชฤทธิ์",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "tct-de-ra",
+    "createdAt": new Date("2026-03-25T08:13:09.285Z"),
+    "updatedAt": new Date("2026-03-25T08:13:09.285Z")
+  },
+  {
+    "id": "82cddcc3-93fd-4766-8c67-e8313cc7aa02",
+    "studentCode": "6802041510244",
+    "email": "s6802041510244@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "สุพรรณ",
+    "lastName": "เรืองสมบูรณ์",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "tct-de-ra",
+    "createdAt": new Date("2026-03-25T08:13:09.292Z"),
+    "updatedAt": new Date("2026-03-25T08:13:09.292Z")
+  },
+  {
+    "id": "4b5687b2-f3cd-439f-8387-8758c44cf82d",
+    "studentCode": "6802041510252",
+    "email": "s6802041510252@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "ฐิตาภรณ์",
+    "lastName": "แสงอากาศ",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "tct-de-ra",
+    "createdAt": new Date("2026-03-25T08:13:09.302Z"),
+    "updatedAt": new Date("2026-03-25T08:13:09.302Z")
+  },
+  {
+    "id": "35f13030-01f1-448d-84e9-b44c1b44bb66",
+    "studentCode": "6802041510279",
+    "email": "s6802041510279@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "กิตติพัตท์",
+    "lastName": "อินอารีย์",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "tct-de-ra",
+    "createdAt": new Date("2026-03-25T08:13:09.310Z"),
+    "updatedAt": new Date("2026-03-25T08:13:09.310Z")
+  },
+  {
+    "id": "3f1be364-e740-470e-a4ea-bdd98ab4e021",
+    "studentCode": "6802041510287",
+    "email": "s6802041510287@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "ภูมิภัทร",
+    "lastName": "คุ้มภัย",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "tct-de-ra",
+    "createdAt": new Date("2026-03-25T08:13:09.320Z"),
+    "updatedAt": new Date("2026-03-25T08:13:09.320Z")
+  },
+  {
+    "id": "e1f92cae-988a-44f0-bead-ffff59456565",
+    "studentCode": "6802041510295",
+    "email": "s6802041510295@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "ชญานิษฐ์",
+    "lastName": "นุสติ",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "tct-de-ra",
+    "createdAt": new Date("2026-03-25T08:13:09.328Z"),
+    "updatedAt": new Date("2026-03-25T08:13:09.328Z")
+  },
+  {
+    "id": "d6fbb71d-06d9-4d8f-9ff5-880bcb2ee0fe",
+    "studentCode": "6802041510309",
+    "email": "s6802041510309@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "ภัทรดนัย",
+    "lastName": "จารนัย",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "tct-de-ra",
+    "createdAt": new Date("2026-03-25T08:13:09.338Z"),
+    "updatedAt": new Date("2026-03-25T08:13:09.338Z")
+  },
+  {
+    "id": "915db16f-1f1d-461d-906f-d85eb1fa14ed",
+    "studentCode": "6802041510325",
+    "email": "s6802041510325@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "ณัฐกิตติ์",
+    "lastName": "จินากูล",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "tct-de-ra",
+    "createdAt": new Date("2026-03-25T08:13:09.346Z"),
+    "updatedAt": new Date("2026-03-25T08:13:09.346Z")
+  },
+  {
+    "id": "dd3f502b-be69-4c1e-a186-f49f5b37a32d",
+    "studentCode": "6502041620158",
+    "email": "s6502041620158@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "ภาณุพงศ์",
+    "lastName": "เถาว์อั้น",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "ced-de-ra",
+    "createdAt": new Date("2026-03-25T08:13:29.126Z"),
+    "updatedAt": new Date("2026-03-25T08:13:29.126Z")
+  },
+  {
+    "id": "2cac2ba6-3b5f-42a2-be05-96c453fa0471",
+    "studentCode": "6702041610011",
+    "email": "s6702041610011@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "อัญรัตน์",
+    "lastName": "สว่างแจ้ง",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "ced-de-ra",
+    "createdAt": new Date("2026-03-25T08:13:29.135Z"),
+    "updatedAt": new Date("2026-03-25T08:13:29.135Z")
+  },
+  {
+    "id": "6b5e4811-188d-473e-b949-65b3476c6537",
+    "studentCode": "6702041610029",
+    "email": "s6702041610029@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "ภูมิบดี",
+    "lastName": "ศรีบุญเรือง",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "ced-de-ra",
+    "createdAt": new Date("2026-03-25T08:13:29.142Z"),
+    "updatedAt": new Date("2026-03-25T08:13:29.142Z")
+  },
+  {
+    "id": "d91fb9a3-a7d4-4389-96cf-5248da9815d9",
+    "studentCode": "6702041610037",
+    "email": "s6702041610037@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "ปกป้อง",
+    "lastName": "พินพันธุ์",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "ced-de-ra",
+    "createdAt": new Date("2026-03-25T08:13:29.150Z"),
+    "updatedAt": new Date("2026-03-25T08:13:29.150Z")
+  },
+  {
+    "id": "fe3a33fa-0743-441d-85af-efbebd1c08b5",
+    "studentCode": "6702041610045",
+    "email": "s6702041610045@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "กนกพงศ์",
+    "lastName": "หัวคำ",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "ced-de-ra",
+    "createdAt": new Date("2026-03-25T08:13:29.157Z"),
+    "updatedAt": new Date("2026-03-25T08:13:29.157Z")
+  },
+  {
+    "id": "e006e44c-6800-4d84-a531-297cd852e64e",
+    "studentCode": "6702041610053",
+    "email": "s6702041610053@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "ณัฐวรา",
+    "lastName": "วิเศษทรัพย์",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "ced-de-ra",
+    "createdAt": new Date("2026-03-25T08:13:29.164Z"),
+    "updatedAt": new Date("2026-03-25T08:13:29.164Z")
+  },
+  {
+    "id": "c7f8ee2b-a1f0-422e-890c-0f2507fc7ea2",
+    "studentCode": "6702041610061",
+    "email": "s6702041610061@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "ภูวดล",
+    "lastName": "ธรรมนิตยกุล",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "ced-de-ra",
+    "createdAt": new Date("2026-03-25T08:13:29.171Z"),
+    "updatedAt": new Date("2026-03-25T08:13:29.171Z")
+  },
+  {
+    "id": "4ebcf511-4aa4-4810-9a53-65f8cae6f0d5",
+    "studentCode": "6702041610070",
+    "email": "s6702041610070@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "สุชาดา",
+    "lastName": "ชิดโคกสูง",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "ced-de-ra",
+    "createdAt": new Date("2026-03-25T08:13:29.179Z"),
+    "updatedAt": new Date("2026-03-25T08:13:29.179Z")
+  },
+  {
+    "id": "1e7e3502-695b-4c4a-bd52-fba33535ebd3",
+    "studentCode": "6702041610088",
+    "email": "s6702041610088@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "ดุจตะวัน",
+    "lastName": "พลเสนา",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "ced-de-ra",
+    "createdAt": new Date("2026-03-25T08:13:29.187Z"),
+    "updatedAt": new Date("2026-03-25T08:13:29.187Z")
+  },
+  {
+    "id": "e2aaa1a3-92af-4874-bb41-e5b65b939016",
+    "studentCode": "6702041610096",
+    "email": "s6702041610096@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "ธนาดล",
+    "lastName": "ใจเมือง",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "ced-de-ra",
+    "createdAt": new Date("2026-03-25T08:13:29.195Z"),
+    "updatedAt": new Date("2026-03-25T08:13:29.195Z")
+  },
+  {
+    "id": "ddc35cbe-e04d-482f-a3cf-23bdbb6b7f2c",
+    "studentCode": "6702041610100",
+    "email": "s6702041610100@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "พันธชา",
+    "lastName": "สุขดิบ",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "ced-de-ra",
+    "createdAt": new Date("2026-03-25T08:13:29.202Z"),
+    "updatedAt": new Date("2026-03-25T08:13:29.202Z")
+  },
+  {
+    "id": "21cede3f-4cf9-4f6e-b97e-e2c52aa79caa",
+    "studentCode": "6702041610118",
+    "email": "s6702041610118@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "กันตธีร์",
+    "lastName": "พลเสน",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "ced-de-ra",
+    "createdAt": new Date("2026-03-25T08:13:29.213Z"),
+    "updatedAt": new Date("2026-03-25T08:13:29.213Z")
+  },
+  {
+    "id": "014fcabf-39a6-41f2-b4e5-e157ad6ae153",
+    "studentCode": "6702041610126",
+    "email": "s6702041610126@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "สุภัสสรา",
+    "lastName": "ทองเจิม",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "ced-de-ra",
+    "createdAt": new Date("2026-03-25T08:13:29.221Z"),
+    "updatedAt": new Date("2026-03-25T08:13:29.221Z")
+  },
+  {
+    "id": "8ec50e92-c928-4272-a49d-630419edab47",
+    "studentCode": "6702041610134",
+    "email": "s6702041610134@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "บัณฑิตา",
+    "lastName": "บุญฤทธิ์",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "ced-de-ra",
+    "createdAt": new Date("2026-03-25T08:13:29.228Z"),
+    "updatedAt": new Date("2026-03-25T08:13:29.228Z")
+  },
+  {
+    "id": "e1b1fe72-6046-4ef8-aa1e-ef3b1f88a8bc",
+    "studentCode": "6702041610142",
+    "email": "s6702041610142@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "ธีรพล",
+    "lastName": "เอี่ยมสอาด",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "ced-de-ra",
+    "createdAt": new Date("2026-03-25T08:13:29.235Z"),
+    "updatedAt": new Date("2026-03-25T08:13:29.235Z")
+  },
+  {
+    "id": "8a089fcf-8ea3-4915-9903-b74db9e85932",
+    "studentCode": "6702041610151",
+    "email": "s6702041610151@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "บดินทร์",
+    "lastName": "ตะริศูนย์",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "ced-de-ra",
+    "createdAt": new Date("2026-03-25T08:13:29.241Z"),
+    "updatedAt": new Date("2026-03-25T08:13:29.241Z")
+  },
+  {
+    "id": "f3aa48b8-21b4-4ac2-be2c-3c04f21b3ee4",
+    "studentCode": "6702041610169",
+    "email": "s6702041610169@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "ชัชรินทร์",
+    "lastName": "เชยชูเดช",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "ced-de-ra",
+    "createdAt": new Date("2026-03-25T08:13:29.250Z"),
+    "updatedAt": new Date("2026-03-25T08:13:29.250Z")
+  },
+  {
+    "id": "44bfbe0a-2369-48f5-9bd3-9c0611e55dff",
+    "studentCode": "6702041610177",
+    "email": "s6702041610177@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "ฐปนรรฆ์",
+    "lastName": "ธงภักดิ์",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "ced-de-ra",
+    "createdAt": new Date("2026-03-25T08:13:29.257Z"),
+    "updatedAt": new Date("2026-03-25T08:13:29.257Z")
+  },
+  {
+    "id": "9f1b82b0-bf70-4c92-96bc-27749df93436",
+    "studentCode": "6702041610193",
+    "email": "s6702041610193@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "พณัฐพนธ์",
+    "lastName": "สบายแท้",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "ced-de-ra",
+    "createdAt": new Date("2026-03-25T08:13:29.266Z"),
+    "updatedAt": new Date("2026-03-25T08:13:29.266Z")
+  },
+  {
+    "id": "b8765ab4-e12e-4333-b886-ba67cb3ffcfa",
+    "studentCode": "6702041610207",
+    "email": "s6702041610207@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "สิตรินทร์",
+    "lastName": "ผาเลิศ",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "ced-de-ra",
+    "createdAt": new Date("2026-03-25T08:13:29.273Z"),
+    "updatedAt": new Date("2026-03-25T08:13:29.273Z")
+  },
+  {
+    "id": "12d8dd0a-3ac9-4cf2-bc40-9fc23744aa6c",
+    "studentCode": "6702041610215",
+    "email": "s6702041610215@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "ณัฐดนัย",
+    "lastName": "โพธิ์ทอง",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "ced-de-ra",
+    "createdAt": new Date("2026-03-25T08:13:29.282Z"),
+    "updatedAt": new Date("2026-03-25T08:13:29.282Z")
+  },
+  {
+    "id": "1d89c663-fd09-4d8d-b857-9dcc456b0f6f",
+    "studentCode": "6702041610223",
+    "email": "s6702041610223@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "อิงชิตะ",
+    "lastName": "บุญอาจ",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "ced-de-ra",
+    "createdAt": new Date("2026-03-25T08:13:29.290Z"),
+    "updatedAt": new Date("2026-03-25T08:13:29.290Z")
+  },
+  {
+    "id": "96134339-fc53-4238-8324-604d3c866c3b",
+    "studentCode": "6702041610231",
+    "email": "s6702041610231@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "ศุภสัณห์",
+    "lastName": "อนันตศิริ",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "ced-de-ra",
+    "createdAt": new Date("2026-03-25T08:13:29.298Z"),
+    "updatedAt": new Date("2026-03-25T08:13:29.298Z")
+  },
+  {
+    "id": "d0f1f839-0866-4619-9841-841974dee770",
+    "studentCode": "6702041610240",
+    "email": "s6702041610240@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "ธัญพิชชา",
+    "lastName": "มีสุข",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "ced-de-ra",
+    "createdAt": new Date("2026-03-25T08:13:29.306Z"),
+    "updatedAt": new Date("2026-03-25T08:13:29.306Z")
+  },
+  {
+    "id": "dec42ecd-c2db-4b60-8d27-c582cf17997e",
+    "studentCode": "6702041610258",
+    "email": "s6702041610258@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "มงคล",
+    "lastName": "จาดสกุล",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "ced-de-ra",
+    "createdAt": new Date("2026-03-25T08:13:29.313Z"),
+    "updatedAt": new Date("2026-03-25T08:13:29.313Z")
+  },
+  {
+    "id": "20c19274-79ab-48f4-8a51-679f083b3c2e",
+    "studentCode": "6702041610266",
+    "email": "s6702041610266@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "เมธิส",
+    "lastName": "รมณีย์",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "ced-de-ra",
+    "createdAt": new Date("2026-03-25T08:13:29.320Z"),
+    "updatedAt": new Date("2026-03-25T08:13:29.320Z")
+  },
+  {
+    "id": "d2b784cd-33a2-41c6-8f1f-a6c13d6dfc4e",
+    "studentCode": "6702041610282",
+    "email": "s6702041610282@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "นพวรรณ",
+    "lastName": "กลิ่นนิรันดร์",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "ced-de-ra",
+    "createdAt": new Date("2026-03-25T08:13:29.328Z"),
+    "updatedAt": new Date("2026-03-25T08:13:29.328Z")
+  },
+  {
+    "id": "ef81421d-47f6-48cd-80c1-11b1e6e033e7",
+    "studentCode": "6702041610291",
+    "email": "s6702041610291@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "ยลรดี",
+    "lastName": "รุ่งแจ่ม",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "ced-de-ra",
+    "createdAt": new Date("2026-03-25T08:13:29.336Z"),
+    "updatedAt": new Date("2026-03-25T08:13:29.336Z")
+  },
+  {
+    "id": "5e3f99b0-78b4-4836-ba91-c873004314db",
+    "studentCode": "6702041610304",
+    "email": "s6702041610304@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "ภูเบศ",
+    "lastName": "อินทวีโร",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "ced-de-ra",
+    "createdAt": new Date("2026-03-25T08:13:29.344Z"),
+    "updatedAt": new Date("2026-03-25T08:13:29.344Z")
+  },
+  {
+    "id": "348437bb-e158-4970-80fc-6b9038cf1486",
+    "studentCode": "6702041610321",
+    "email": "s6702041610321@email.kmutnb.ac.th",
+    "password": null,
+    "firstName": "ณัฐดนัย",
+    "lastName": "เหล่าเรือง",
+    "role": "STUDENT",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": "ced-de-ra",
+    "createdAt": new Date("2026-03-25T08:13:29.353Z"),
+    "updatedAt": new Date("2026-03-25T08:13:29.353Z")
+  },
+  {
+    "id": "0f38c975-3185-4c2d-9a1a-979408accb9b",
+    "studentCode": "T0002",
+    "email": "titlem36@gmail.com",
+    "password": "$2b$10$0tHwllFKBGYEL3iOkGCXIuyqVJUV1kWot3jQMbY7r.SPzPovuHZFa",
+    "firstName": "ดอสซี่",
+    "lastName": "จุบุ",
+    "role": "TEACHER",
+    "score": 100,
+    "isBanned": false,
+    "sectionId": null,
+    "createdAt": new Date("2026-04-07T06:46:32.686Z"),
+    "updatedAt": new Date("2026-04-07T06:46:32.686Z")
+  }
+];
+const subjects = [
+  {
+    "id": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "code": "020413215",
+    "name": "ปัญญาประดิษฐ์"
+  },
+  {
+    "id": "14e6470a-dad4-4ced-8eac-8b743f078cfd",
+    "code": "01000009",
+    "name": "Web Service"
+  },
+  {
+    "id": "9c807e3d-7e19-46f1-961c-a1f3181430ca",
+    "code": "020413222",
+    "name": "การพัฒนาโปรแกรมบนอุปกรณ์เคลื่อนที่"
+  },
+  {
+    "id": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "code": "020413214",
+    "name": "ระบบฝังตัวและอินเทอร์เน็ตของสรรพสิ่ง"
+  }
+];
+const subjectTeachers = [
+  {
+    "id": "6b01181c-39b4-4c6b-966e-a33442405656",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "teacherId": "d3e0d5c5-4d60-469b-8754-675804901c53"
+  }
+];
+const keys = [
+  {
+    "id": "7ea08f25-3ac0-4745-a84e-776917abcad5",
+    "roomCode": "52-2 ครึ่ง",
+    "slotNumber": 8,
+    "nfcUid": "04:53:E7:04:30:02:89",
+    "isActive": true
+  },
+  {
+    "id": "key-44-703",
+    "roomCode": "52-205",
+    "slotNumber": 1,
+    "nfcUid": "04:63:40:A5:30:02:89",
+    "isActive": true
+  },
+  {
+    "id": "e4c2e1fb-8938-4a39-96bf-5017dbdfe189",
+    "roomCode": "52-211",
+    "slotNumber": 2,
+    "nfcUid": "04:23:F6:57:30:02:89",
+    "isActive": true
+  },
+  {
+    "id": "5a66e75d-a6f9-4657-ba4c-9641ef621b4a",
+    "roomCode": "52-213",
+    "slotNumber": 3,
+    "nfcUid": "04:83:C8:4C:30:02:89",
+    "isActive": true
+  },
+  {
+    "id": "2cb5a65d-36b3-44cc-aeda-4666dfe02f24",
+    "roomCode": "52-215",
+    "slotNumber": 4,
+    "nfcUid": "04:A3:0B:A8:30:02:89",
+    "isActive": true
+  },
+  {
+    "id": "477966dc-72ab-4a4f-a387-1ac4fa6d10d8",
+    "roomCode": "52-511",
+    "slotNumber": 5,
+    "nfcUid": "04:A3:C8:64:30:02:89",
+    "isActive": true
+  },
+  {
+    "id": "cdfadc02-7781-40ec-8ae8-fa2abade6f75",
+    "roomCode": "52-702",
+    "slotNumber": 7,
+    "nfcUid": "04:13:EC:23:31:02:89",
+    "isActive": true
+  },
+  {
+    "id": "1c2d3fa1-3a48-4bc7-9ce4-524fe7328325",
+    "roomCode": "52-701",
+    "slotNumber": 6,
+    "nfcUid": "04:B3:C4:09:30:02:89",
+    "isActive": true
+  }
+];
+const schedules = [
+  {
+    "id": "dbc02d05-aadb-4b32-9857-849e8b8cf761",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "roomCode": "52-211",
+    "dayOfWeek": 5,
+    "startTime": new Date("2024-01-01T01:00:00.000Z"),
+    "endTime": new Date("2024-01-01T03:00:00.000Z"),
+    "createdAt": new Date("2026-03-25T08:13:09.117Z")
+  },
+  {
+    "id": "69a3e7a8-9b21-472e-b0a7-9013a614da73",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "roomCode": "52-205",
+    "dayOfWeek": 3,
+    "startTime": new Date("2024-01-01T06:00:00.000Z"),
+    "endTime": new Date("2024-01-01T08:00:00.000Z"),
+    "createdAt": new Date("2026-03-25T08:13:29.117Z")
+  },
+  {
+    "id": "ccf0aac2-b3ad-4de1-9d70-85c95120abcf",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "roomCode": "52-701",
+    "dayOfWeek": 3,
+    "startTime": new Date("2026-03-25T06:00:00.916Z"),
+    "endTime": new Date("2026-03-25T07:30:00.916Z"),
+    "createdAt": new Date("2026-03-25T08:08:45.043Z")
+  },
+  {
+    "id": "de4d0bc5-208d-4828-9855-973c858e120d",
+    "subjectId": "9c807e3d-7e19-46f1-961c-a1f3181430ca",
+    "roomCode": "52-205",
+    "dayOfWeek": 2,
+    "startTime": new Date("2026-04-07T08:00:00.472Z"),
+    "endTime": new Date("2026-04-07T12:00:00.472Z"),
+    "createdAt": new Date("2026-03-25T08:12:35.378Z")
+  },
+  {
+    "id": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "roomCode": "52-213",
+    "dayOfWeek": 2,
+    "startTime": new Date("2026-04-07T08:00:00.835Z"),
+    "endTime": new Date("2026-04-07T16:00:00.835Z"),
+    "createdAt": new Date("2026-03-12T10:59:33.315Z")
+  }
+];
+const borrowReasons = [
+  {
+    "id": "4a538196-58dd-403c-9e96-86f9d59c82e9",
+    "label": "กิจกรรมพิเศษ",
+    "durationMinutes": 120,
+    "isActive": true,
+    "order": 2,
+    "createdAt": new Date("2026-02-20T17:15:54.914Z"),
+    "updatedAt": new Date("2026-02-20T17:15:54.914Z")
+  },
+  {
+    "id": "8f201186-5f4a-445e-9e59-62ffb4e5fbd7",
+    "label": "ซ่อมบำรุง",
+    "durationMinutes": 120,
+    "isActive": true,
+    "order": 3,
+    "createdAt": new Date("2026-02-20T17:15:54.914Z"),
+    "updatedAt": new Date("2026-02-20T17:15:54.914Z")
+  },
+  {
+    "id": "0498ad6b-aa3d-4fd3-9fd6-6b2539eafc43",
+    "label": "ประชุม",
+    "durationMinutes": 120,
+    "isActive": true,
+    "order": 4,
+    "createdAt": new Date("2026-02-20T17:15:54.914Z"),
+    "updatedAt": new Date("2026-02-20T17:15:54.914Z")
+  },
+  {
+    "id": "4cb58508-224a-4cd9-89d8-b38ff9b22468",
+    "label": "สอนชดเชย",
+    "durationMinutes": 90,
+    "isActive": true,
+    "order": 1,
+    "createdAt": new Date("2026-02-20T17:15:54.914Z"),
+    "updatedAt": new Date("2026-02-20T17:34:39.742Z")
+  },
+  {
+    "id": "c4419795-543c-4e1f-8129-c840e7722555",
+    "label": "อื่นๆ",
+    "durationMinutes": 0,
+    "isActive": false,
+    "order": 99,
+    "createdAt": new Date("2026-02-20T17:15:54.914Z"),
+    "updatedAt": new Date("2026-02-20T17:34:52.678Z")
+  }
+];
+const penaltyConfigs = [
+  {
+    "id": "beb8dfa0-835e-4723-8817-077ece3c2b9e",
+    "graceMinutes": 30,
+    "scorePerInterval": 5,
+    "intervalMinutes": 15,
+    "restoreDays": 7,
+    "isActive": true,
+    "createdAt": new Date("2026-02-03T07:16:19.495Z")
+  }
+];
+const bookings = [
+  {
+    "id": "4bb7b3c9-f357-4ccd-851d-c9d121bee331",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "keyId": "5a66e75d-a6f9-4657-ba4c-9641ef621b4a",
+    "subjectId": null,
+    "borrowAt": new Date("2026-03-26T10:45:17.793Z"),
+    "dueAt": new Date("2026-03-26T14:45:17.793Z"),
+    "returnAt": new Date("2026-03-26T10:45:52.943Z"),
+    "status": "RETURNED",
+    "reason": null,
+    "lateMinutes": 0,
+    "penaltyScore": 0,
+    "createdAt": new Date("2026-03-26T10:45:17.804Z")
+  },
+  {
+    "id": "824d3863-47eb-4bf6-8974-789be7022971",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "keyId": "5a66e75d-a6f9-4657-ba4c-9641ef621b4a",
+    "subjectId": null,
+    "borrowAt": new Date("2026-03-26T13:54:40.742Z"),
+    "dueAt": new Date("2026-03-26T22:58:00.000Z"),
+    "returnAt": new Date("2026-03-26T13:55:03.585Z"),
+    "status": "RETURNED",
+    "reason": "กิจกรรมพิเศษ",
+    "lateMinutes": 0,
+    "penaltyScore": 0,
+    "createdAt": new Date("2026-03-26T13:54:40.759Z")
+  },
+  {
+    "id": "0d912b85-f9fb-4799-b4ec-694897ed9b28",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "keyId": "key-44-703",
+    "subjectId": null,
+    "borrowAt": new Date("2026-03-27T08:18:28.349Z"),
+    "dueAt": new Date("2026-03-28T08:00:00.000Z"),
+    "returnAt": new Date("2026-03-27T08:53:18.349Z"),
+    "status": "RETURNED",
+    "reason": "กิจกรรมพิเศษ",
+    "lateMinutes": 0,
+    "penaltyScore": 0,
+    "createdAt": new Date("2026-03-27T08:18:28.363Z")
+  },
+  {
+    "id": "e30a131f-51cc-4df3-b6a2-625f40ab1d30",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "keyId": "5a66e75d-a6f9-4657-ba4c-9641ef621b4a",
+    "subjectId": null,
+    "borrowAt": new Date("2026-03-27T08:54:24.635Z"),
+    "dueAt": new Date("2026-03-27T10:00:00.000Z"),
+    "returnAt": new Date("2026-03-27T09:01:17.269Z"),
+    "status": "RETURNED",
+    "reason": "กิจกรรมพิเศษ",
+    "lateMinutes": 0,
+    "penaltyScore": 0,
+    "createdAt": new Date("2026-03-27T08:54:24.642Z")
+  },
+  {
+    "id": "fa6a78ff-e89f-450c-8275-d8beda18cced",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "keyId": "5a66e75d-a6f9-4657-ba4c-9641ef621b4a",
+    "subjectId": null,
+    "borrowAt": new Date("2026-03-27T09:14:31.453Z"),
+    "dueAt": new Date("2026-03-27T10:30:00.000Z"),
+    "returnAt": new Date("2026-03-27T09:14:53.992Z"),
+    "status": "RETURNED",
+    "reason": "กิจกรรมพิเศษ",
+    "lateMinutes": 0,
+    "penaltyScore": 0,
+    "createdAt": new Date("2026-03-27T09:14:31.460Z")
+  },
+  {
+    "id": "5c187aec-685a-4c8d-a175-c738fc60aeb5",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "keyId": "e4c2e1fb-8938-4a39-96bf-5017dbdfe189",
+    "subjectId": null,
+    "borrowAt": new Date("2026-03-27T09:16:29.040Z"),
+    "dueAt": new Date("2026-03-27T11:00:00.000Z"),
+    "returnAt": new Date("2026-03-27T09:20:07.398Z"),
+    "status": "RETURNED",
+    "reason": "กิจกรรมพิเศษ",
+    "lateMinutes": 0,
+    "penaltyScore": 0,
+    "createdAt": new Date("2026-03-27T09:16:29.053Z")
+  },
+  {
+    "id": "d4008f4d-3da4-4796-9549-902061be46f0",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "keyId": "477966dc-72ab-4a4f-a387-1ac4fa6d10d8",
+    "subjectId": null,
+    "borrowAt": new Date("2026-03-27T09:18:17.807Z"),
+    "dueAt": new Date("2026-03-27T11:00:00.000Z"),
+    "returnAt": new Date("2026-03-27T09:20:18.246Z"),
+    "status": "RETURNED",
+    "reason": "สอนชดเชย",
+    "lateMinutes": 0,
+    "penaltyScore": 0,
+    "createdAt": new Date("2026-03-27T09:18:17.815Z")
+  },
+  {
+    "id": "292a3db1-86d7-4122-a7db-276fbc936808",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "keyId": "5a66e75d-a6f9-4657-ba4c-9641ef621b4a",
+    "subjectId": null,
+    "borrowAt": new Date("2026-03-27T09:20:33.684Z"),
+    "dueAt": new Date("2026-03-27T11:00:00.000Z"),
+    "returnAt": new Date("2026-03-27T09:42:10.040Z"),
+    "status": "RETURNED",
+    "reason": "ซ่อมบำรุง",
+    "lateMinutes": 0,
+    "penaltyScore": 0,
+    "createdAt": new Date("2026-03-27T09:20:33.692Z")
+  },
+  {
+    "id": "12580632-74ce-4768-9b00-c6199bc0a926",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "keyId": "key-44-703",
+    "subjectId": null,
+    "borrowAt": new Date("2026-03-27T09:42:22.178Z"),
+    "dueAt": new Date("2026-03-27T11:00:00.000Z"),
+    "returnAt": new Date("2026-03-27T09:42:51.315Z"),
+    "status": "RETURNED",
+    "reason": "กิจกรรมพิเศษ",
+    "lateMinutes": 0,
+    "penaltyScore": 0,
+    "createdAt": new Date("2026-03-27T09:42:22.184Z")
+  },
+  {
+    "id": "333aad53-90eb-4e75-990c-ee552111de21",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "keyId": "5a66e75d-a6f9-4657-ba4c-9641ef621b4a",
+    "subjectId": null,
+    "borrowAt": new Date("2026-03-27T09:43:02.492Z"),
+    "dueAt": new Date("2026-03-27T11:00:00.000Z"),
+    "returnAt": new Date("2026-03-27T09:43:50.148Z"),
+    "status": "RETURNED",
+    "reason": "กิจกรรมพิเศษ",
+    "lateMinutes": 0,
+    "penaltyScore": 0,
+    "createdAt": new Date("2026-03-27T09:43:02.502Z")
+  },
+  {
+    "id": "3daf0258-3d19-4de5-a4e7-58c8b8524944",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "keyId": "5a66e75d-a6f9-4657-ba4c-9641ef621b4a",
+    "subjectId": null,
+    "borrowAt": new Date("2026-03-27T09:45:31.522Z"),
+    "dueAt": new Date("2026-03-27T11:00:00.000Z"),
+    "returnAt": new Date("2026-03-27T09:46:41.439Z"),
+    "status": "RETURNED",
+    "reason": "กิจกรรมพิเศษ",
+    "lateMinutes": 0,
+    "penaltyScore": 0,
+    "createdAt": new Date("2026-03-27T09:45:31.532Z")
+  },
+  {
+    "id": "434d912c-f2e3-4825-a19b-a2b8ec01102b",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "keyId": "477966dc-72ab-4a4f-a387-1ac4fa6d10d8",
+    "subjectId": null,
+    "borrowAt": new Date("2026-03-27T09:52:27.164Z"),
+    "dueAt": new Date("2026-03-27T11:00:00.000Z"),
+    "returnAt": new Date("2026-03-27T09:54:21.929Z"),
+    "status": "RETURNED",
+    "reason": "กิจกรรมพิเศษ",
+    "lateMinutes": 0,
+    "penaltyScore": 0,
+    "createdAt": new Date("2026-03-27T09:52:27.177Z")
+  },
+  {
+    "id": "b39990fd-61c4-4694-b177-4903444c44dc",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "keyId": "477966dc-72ab-4a4f-a387-1ac4fa6d10d8",
+    "subjectId": null,
+    "borrowAt": new Date("2026-03-27T10:30:10.979Z"),
+    "dueAt": new Date("2026-03-27T12:00:00.000Z"),
+    "returnAt": new Date("2026-03-27T10:31:27.265Z"),
+    "status": "RETURNED",
+    "reason": "สอนชดเชย",
+    "lateMinutes": 0,
+    "penaltyScore": 0,
+    "createdAt": new Date("2026-03-27T10:30:10.989Z")
+  },
+  {
+    "id": "d4bfc70d-eb51-499a-af0a-fbe64e050b1c",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "keyId": "477966dc-72ab-4a4f-a387-1ac4fa6d10d8",
+    "subjectId": null,
+    "borrowAt": new Date("2026-03-27T10:33:01.580Z"),
+    "dueAt": new Date("2026-03-27T12:00:00.000Z"),
+    "returnAt": new Date("2026-03-27T10:33:26.708Z"),
+    "status": "RETURNED",
+    "reason": "สอนชดเชย",
+    "lateMinutes": 0,
+    "penaltyScore": 0,
+    "createdAt": new Date("2026-03-27T10:33:01.587Z")
+  },
+  {
+    "id": "b33cf124-8bce-4651-8e0b-0c1fafc280ca",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "keyId": "key-44-703",
+    "subjectId": null,
+    "borrowAt": new Date("2026-03-27T10:33:35.863Z"),
+    "dueAt": new Date("2026-03-27T12:00:00.000Z"),
+    "returnAt": new Date("2026-03-27T10:33:52.318Z"),
+    "status": "RETURNED",
+    "reason": "สอนชดเชย",
+    "lateMinutes": 0,
+    "penaltyScore": 0,
+    "createdAt": new Date("2026-03-27T10:33:35.868Z")
+  },
+  {
+    "id": "002abafd-d5e7-480b-923c-9de8d33b6391",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "keyId": "2cb5a65d-36b3-44cc-aeda-4666dfe02f24",
+    "subjectId": null,
+    "borrowAt": new Date("2026-03-27T10:34:38.571Z"),
+    "dueAt": new Date("2026-03-27T12:00:00.000Z"),
+    "returnAt": new Date("2026-03-27T10:35:48.092Z"),
+    "status": "RETURNED",
+    "reason": "สอนชดเชย",
+    "lateMinutes": 0,
+    "penaltyScore": 0,
+    "createdAt": new Date("2026-03-27T10:34:38.577Z")
+  },
+  {
+    "id": "f6923481-745f-49e9-96de-612884e623ae",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "keyId": "477966dc-72ab-4a4f-a387-1ac4fa6d10d8",
+    "subjectId": null,
+    "borrowAt": new Date("2026-03-27T10:38:25.538Z"),
+    "dueAt": new Date("2026-03-27T12:00:00.000Z"),
+    "returnAt": new Date("2026-03-27T10:38:46.196Z"),
+    "status": "RETURNED",
+    "reason": "สอนชดเชย",
+    "lateMinutes": 0,
+    "penaltyScore": 0,
+    "createdAt": new Date("2026-03-27T10:38:25.550Z")
+  },
+  {
+    "id": "a72fdf6f-4911-49b2-adc1-657d3a0ded59",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "keyId": "5a66e75d-a6f9-4657-ba4c-9641ef621b4a",
+    "subjectId": null,
+    "borrowAt": new Date("2026-03-27T10:49:06.377Z"),
+    "dueAt": new Date("2026-03-27T12:00:00.000Z"),
+    "returnAt": new Date("2026-03-27T10:49:21.202Z"),
+    "status": "RETURNED",
+    "reason": "ซ่อมบำรุง",
+    "lateMinutes": 0,
+    "penaltyScore": 0,
+    "createdAt": new Date("2026-03-27T10:49:06.388Z")
+  },
+  {
+    "id": "d5566401-5657-4a41-8c2a-62b27a8d94a3",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "keyId": "477966dc-72ab-4a4f-a387-1ac4fa6d10d8",
+    "subjectId": null,
+    "borrowAt": new Date("2026-03-27T10:49:35.530Z"),
+    "dueAt": new Date("2026-03-27T12:00:00.000Z"),
+    "returnAt": new Date("2026-03-27T10:49:55.449Z"),
+    "status": "RETURNED",
+    "reason": "สอนชดเชย",
+    "lateMinutes": 0,
+    "penaltyScore": 0,
+    "createdAt": new Date("2026-03-27T10:49:35.535Z")
+  },
+  {
+    "id": "509a20a8-d873-49a3-8017-c7aaf78204dd",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "keyId": "1c2d3fa1-3a48-4bc7-9ce4-524fe7328325",
+    "subjectId": null,
+    "borrowAt": new Date("2026-03-27T10:50:14.696Z"),
+    "dueAt": new Date("2026-03-27T12:00:00.000Z"),
+    "returnAt": new Date("2026-03-27T10:50:38.822Z"),
+    "status": "RETURNED",
+    "reason": "กิจกรรมพิเศษ",
+    "lateMinutes": 0,
+    "penaltyScore": 0,
+    "createdAt": new Date("2026-03-27T10:50:14.708Z")
+  },
+  {
+    "id": "5261987b-24ae-4a22-b86f-ed56eece5974",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "keyId": "cdfadc02-7781-40ec-8ae8-fa2abade6f75",
+    "subjectId": null,
+    "borrowAt": new Date("2026-03-27T10:51:11.430Z"),
+    "dueAt": new Date("2026-03-27T12:00:00.000Z"),
+    "returnAt": new Date("2026-03-27T10:51:26.151Z"),
+    "status": "RETURNED",
+    "reason": "ประชุม",
+    "lateMinutes": 0,
+    "penaltyScore": 0,
+    "createdAt": new Date("2026-03-27T10:51:11.438Z")
+  },
+  {
+    "id": "a498d925-bd29-4604-bdb6-06f38430e77e",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "keyId": "cdfadc02-7781-40ec-8ae8-fa2abade6f75",
+    "subjectId": null,
+    "borrowAt": new Date("2026-03-27T10:51:36.607Z"),
+    "dueAt": new Date("2026-03-27T12:00:00.000Z"),
+    "returnAt": new Date("2026-03-27T10:51:53.437Z"),
+    "status": "RETURNED",
+    "reason": "กิจกรรมพิเศษ",
+    "lateMinutes": 0,
+    "penaltyScore": 0,
+    "createdAt": new Date("2026-03-27T10:51:36.616Z")
+  },
+  {
+    "id": "897ffd75-a60b-464d-a0f6-b19661e40bd5",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "keyId": "5a66e75d-a6f9-4657-ba4c-9641ef621b4a",
+    "subjectId": null,
+    "borrowAt": new Date("2026-03-27T10:59:06.548Z"),
+    "dueAt": new Date("2026-03-27T12:00:00.000Z"),
+    "returnAt": new Date("2026-03-27T11:38:22.992Z"),
+    "status": "RETURNED",
+    "reason": "กิจกรรมพิเศษ",
+    "lateMinutes": 0,
+    "penaltyScore": 0,
+    "createdAt": new Date("2026-03-27T10:59:06.559Z")
+  },
+  {
+    "id": "5c65d865-b199-4bcf-a42b-a154a610e651",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "keyId": "5a66e75d-a6f9-4657-ba4c-9641ef621b4a",
+    "subjectId": null,
+    "borrowAt": new Date("2026-03-27T11:38:33.225Z"),
+    "dueAt": new Date("2026-03-27T13:00:00.000Z"),
+    "returnAt": new Date("2026-03-27T11:39:22.175Z"),
+    "status": "RETURNED",
+    "reason": "กิจกรรมพิเศษ",
+    "lateMinutes": 0,
+    "penaltyScore": 0,
+    "createdAt": new Date("2026-03-27T11:38:33.233Z")
+  },
+  {
+    "id": "c130577c-9af7-4e8c-b5c0-af1165cd876c",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "keyId": "5a66e75d-a6f9-4657-ba4c-9641ef621b4a",
+    "subjectId": null,
+    "borrowAt": new Date("2026-03-27T11:41:52.220Z"),
+    "dueAt": new Date("2026-03-27T13:00:00.000Z"),
+    "returnAt": new Date("2026-03-27T11:44:59.157Z"),
+    "status": "RETURNED",
+    "reason": "สอนชดเชย",
+    "lateMinutes": 0,
+    "penaltyScore": 0,
+    "createdAt": new Date("2026-03-27T11:41:52.230Z")
+  },
+  {
+    "id": "0ceb4609-e1a1-4cb7-a6f8-c254a70339c3",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "keyId": "5a66e75d-a6f9-4657-ba4c-9641ef621b4a",
+    "subjectId": null,
+    "borrowAt": new Date("2026-03-27T11:45:40.656Z"),
+    "dueAt": new Date("2026-03-27T13:00:00.000Z"),
+    "returnAt": new Date("2026-03-27T11:47:34.906Z"),
+    "status": "RETURNED",
+    "reason": "กิจกรรมพิเศษ",
+    "lateMinutes": 0,
+    "penaltyScore": 0,
+    "createdAt": new Date("2026-03-27T11:45:40.666Z")
+  },
+  {
+    "id": "ad86f6a8-356e-494f-89e5-f7c6f6187ce5",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "keyId": "5a66e75d-a6f9-4657-ba4c-9641ef621b4a",
+    "subjectId": null,
+    "borrowAt": new Date("2026-03-27T11:54:07.457Z"),
+    "dueAt": new Date("2026-03-27T13:00:00.000Z"),
+    "returnAt": new Date("2026-03-27T11:54:34.514Z"),
+    "status": "RETURNED",
+    "reason": "กิจกรรมพิเศษ",
+    "lateMinutes": 0,
+    "penaltyScore": 0,
+    "createdAt": new Date("2026-03-27T11:54:07.465Z")
+  },
+  {
+    "id": "b125d2f1-ce74-4865-8473-92ec0085cba1",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "keyId": "5a66e75d-a6f9-4657-ba4c-9641ef621b4a",
+    "subjectId": null,
+    "borrowAt": new Date("2026-03-27T11:58:48.101Z"),
+    "dueAt": new Date("2026-03-27T13:00:00.000Z"),
+    "returnAt": new Date("2026-03-27T11:59:16.543Z"),
+    "status": "RETURNED",
+    "reason": "กิจกรรมพิเศษ",
+    "lateMinutes": 0,
+    "penaltyScore": 0,
+    "createdAt": new Date("2026-03-27T11:58:48.112Z")
+  },
+  {
+    "id": "3468c3f8-c3cb-4f57-9b91-4c3bee3808c8",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "keyId": "5a66e75d-a6f9-4657-ba4c-9641ef621b4a",
+    "subjectId": null,
+    "borrowAt": new Date("2026-03-27T12:01:11.920Z"),
+    "dueAt": new Date("2026-03-27T14:00:00.000Z"),
+    "returnAt": new Date("2026-03-27T12:01:38.990Z"),
+    "status": "RETURNED",
+    "reason": "กิจกรรมพิเศษ",
+    "lateMinutes": 0,
+    "penaltyScore": 0,
+    "createdAt": new Date("2026-03-27T12:01:11.929Z")
+  },
+  {
+    "id": "04a9540f-4aa3-4b89-83b0-75a75d8b585e",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "keyId": "477966dc-72ab-4a4f-a387-1ac4fa6d10d8",
+    "subjectId": null,
+    "borrowAt": new Date("2026-03-27T12:01:52.617Z"),
+    "dueAt": new Date("2026-03-27T14:00:00.000Z"),
+    "returnAt": new Date("2026-03-27T12:02:27.356Z"),
+    "status": "RETURNED",
+    "reason": "ประชุม",
+    "lateMinutes": 0,
+    "penaltyScore": 0,
+    "createdAt": new Date("2026-03-27T12:01:52.627Z")
+  },
+  {
+    "id": "60d928c4-da2a-4747-9db8-36bdb2bad7c9",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "keyId": "477966dc-72ab-4a4f-a387-1ac4fa6d10d8",
+    "subjectId": null,
+    "borrowAt": new Date("2026-03-27T12:02:56.222Z"),
+    "dueAt": new Date("2026-03-27T14:00:00.000Z"),
+    "returnAt": new Date("2026-03-27T12:12:12.311Z"),
+    "status": "RETURNED",
+    "reason": "กิจกรรมพิเศษ",
+    "lateMinutes": 0,
+    "penaltyScore": 0,
+    "createdAt": new Date("2026-03-27T12:02:56.244Z")
+  },
+  {
+    "id": "287fa90d-bb4f-46c3-b918-3f2b29f5c9f5",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "keyId": "5a66e75d-a6f9-4657-ba4c-9641ef621b4a",
+    "subjectId": null,
+    "borrowAt": new Date("2026-03-27T12:12:23.011Z"),
+    "dueAt": new Date("2026-03-27T14:00:00.000Z"),
+    "returnAt": new Date("2026-03-27T12:12:44.893Z"),
+    "status": "RETURNED",
+    "reason": "กิจกรรมพิเศษ",
+    "lateMinutes": 0,
+    "penaltyScore": 0,
+    "createdAt": new Date("2026-03-27T12:12:23.024Z")
+  },
+  {
+    "id": "71def2b6-b935-4fb5-93ae-26020c8b5a4d",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "keyId": "5a66e75d-a6f9-4657-ba4c-9641ef621b4a",
+    "subjectId": null,
+    "borrowAt": new Date("2026-03-27T12:13:15.429Z"),
+    "dueAt": new Date("2026-03-27T14:00:00.000Z"),
+    "returnAt": new Date("2026-03-27T12:14:35.616Z"),
+    "status": "RETURNED",
+    "reason": "ซ่อมบำรุง",
+    "lateMinutes": 0,
+    "penaltyScore": 0,
+    "createdAt": new Date("2026-03-27T12:13:15.437Z")
+  },
+  {
+    "id": "ca89b623-0e80-419d-86e6-40eab38777e9",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "keyId": "5a66e75d-a6f9-4657-ba4c-9641ef621b4a",
+    "subjectId": null,
+    "borrowAt": new Date("2026-03-27T12:16:18.285Z"),
+    "dueAt": new Date("2026-03-27T14:00:00.000Z"),
+    "returnAt": new Date("2026-03-27T12:18:59.671Z"),
+    "status": "RETURNED",
+    "reason": "กิจกรรมพิเศษ",
+    "lateMinutes": 0,
+    "penaltyScore": 0,
+    "createdAt": new Date("2026-03-27T12:16:18.293Z")
+  },
+  {
+    "id": "9578e98b-45ac-4e7f-9315-6f8764a0da4e",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "keyId": "5a66e75d-a6f9-4657-ba4c-9641ef621b4a",
+    "subjectId": null,
+    "borrowAt": new Date("2026-03-27T12:19:22.283Z"),
+    "dueAt": new Date("2026-03-27T14:00:00.000Z"),
+    "returnAt": new Date("2026-03-27T12:35:23.349Z"),
+    "status": "RETURNED",
+    "reason": "กิจกรรมพิเศษ",
+    "lateMinutes": 0,
+    "penaltyScore": 0,
+    "createdAt": new Date("2026-03-27T12:19:22.290Z")
+  },
+  {
+    "id": "9a22872b-5ec2-42c0-94e6-0384abaf9870",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "keyId": "5a66e75d-a6f9-4657-ba4c-9641ef621b4a",
+    "subjectId": null,
+    "borrowAt": new Date("2026-03-27T12:36:53.661Z"),
+    "dueAt": new Date("2026-03-27T14:00:00.000Z"),
+    "returnAt": new Date("2026-03-27T12:37:07.368Z"),
+    "status": "RETURNED",
+    "reason": "สอนชดเชย",
+    "lateMinutes": 0,
+    "penaltyScore": 0,
+    "createdAt": new Date("2026-03-27T12:36:53.684Z")
+  },
+  {
+    "id": "0548617d-e1dc-4d0e-8571-c0161df3108d",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "keyId": "key-44-703",
+    "subjectId": null,
+    "borrowAt": new Date("2026-03-27T12:37:53.795Z"),
+    "dueAt": new Date("2026-03-27T14:00:00.000Z"),
+    "returnAt": new Date("2026-03-27T12:43:21.497Z"),
+    "status": "RETURNED",
+    "reason": "สอนชดเชย",
+    "lateMinutes": 0,
+    "penaltyScore": 0,
+    "createdAt": new Date("2026-03-27T12:37:53.806Z")
+  },
+  {
+    "id": "1818f0ad-c4a7-4ed7-a89d-fc3a19632ee9",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "keyId": "5a66e75d-a6f9-4657-ba4c-9641ef621b4a",
+    "subjectId": null,
+    "borrowAt": new Date("2026-03-27T12:43:42.463Z"),
+    "dueAt": new Date("2026-03-27T14:00:00.000Z"),
+    "returnAt": new Date("2026-03-27T12:44:31.004Z"),
+    "status": "RETURNED",
+    "reason": "สอนชดเชย",
+    "lateMinutes": 0,
+    "penaltyScore": 0,
+    "createdAt": new Date("2026-03-27T12:43:42.470Z")
+  },
+  {
+    "id": "5b0ee826-bb30-4978-bc1b-d18aa842b654",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "keyId": "5a66e75d-a6f9-4657-ba4c-9641ef621b4a",
+    "subjectId": null,
+    "borrowAt": new Date("2026-03-27T12:50:35.698Z"),
+    "dueAt": new Date("2026-03-27T14:00:00.000Z"),
+    "returnAt": new Date("2026-03-27T12:50:55.814Z"),
+    "status": "RETURNED",
+    "reason": "สอนชดเชย",
+    "lateMinutes": 0,
+    "penaltyScore": 0,
+    "createdAt": new Date("2026-03-27T12:50:35.706Z")
+  },
+  {
+    "id": "e911e844-a0b0-4e7b-afcf-f947bc296079",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "keyId": "key-44-703",
+    "subjectId": null,
+    "borrowAt": new Date("2026-03-27T12:51:49.405Z"),
+    "dueAt": new Date("2026-03-27T14:00:00.000Z"),
+    "returnAt": new Date("2026-03-27T12:52:04.857Z"),
+    "status": "RETURNED",
+    "reason": "สอนชดเชย",
+    "lateMinutes": 0,
+    "penaltyScore": 0,
+    "createdAt": new Date("2026-03-27T12:51:49.416Z")
+  },
+  {
+    "id": "98371a7a-d147-41af-9bb3-e1c5d81eee0c",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "keyId": "5a66e75d-a6f9-4657-ba4c-9641ef621b4a",
+    "subjectId": null,
+    "borrowAt": new Date("2026-03-27T12:56:06.008Z"),
+    "dueAt": new Date("2026-03-27T14:00:00.000Z"),
+    "returnAt": new Date("2026-03-27T12:56:22.725Z"),
+    "status": "RETURNED",
+    "reason": "สอนชดเชย",
+    "lateMinutes": 0,
+    "penaltyScore": 0,
+    "createdAt": new Date("2026-03-27T12:56:06.021Z")
+  },
+  {
+    "id": "c70d7f34-c684-4c01-b4ed-9b36aa113b2c",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "keyId": "5a66e75d-a6f9-4657-ba4c-9641ef621b4a",
+    "subjectId": null,
+    "borrowAt": new Date("2026-03-27T12:58:48.688Z"),
+    "dueAt": new Date("2026-03-27T15:00:00.000Z"),
+    "returnAt": new Date("2026-03-27T12:59:19.364Z"),
+    "status": "RETURNED",
+    "reason": "กิจกรรมพิเศษ",
+    "lateMinutes": 0,
+    "penaltyScore": 0,
+    "createdAt": new Date("2026-03-27T12:58:48.700Z")
+  },
+  {
+    "id": "4c8fa53a-17a3-4718-9f3f-506e0510a3fe",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "keyId": "5a66e75d-a6f9-4657-ba4c-9641ef621b4a",
+    "subjectId": null,
+    "borrowAt": new Date("2026-03-27T12:59:35.113Z"),
+    "dueAt": new Date("2026-03-27T14:00:00.000Z"),
+    "returnAt": new Date("2026-03-27T13:00:01.374Z"),
+    "status": "RETURNED",
+    "reason": "กิจกรรมพิเศษ",
+    "lateMinutes": 0,
+    "penaltyScore": 0,
+    "createdAt": new Date("2026-03-27T12:59:35.123Z")
+  },
+  {
+    "id": "20e5c5ee-e8c7-4a63-b395-2f9cf1adb99c",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "keyId": "5a66e75d-a6f9-4657-ba4c-9641ef621b4a",
+    "subjectId": null,
+    "borrowAt": new Date("2026-03-27T13:01:36.201Z"),
+    "dueAt": new Date("2026-03-27T17:01:36.201Z"),
+    "returnAt": new Date("2026-03-28T05:32:28.329Z"),
+    "status": "LATE",
+    "reason": null,
+    "lateMinutes": 720,
+    "penaltyScore": 240,
+    "createdAt": new Date("2026-03-27T13:01:36.211Z")
+  },
+  {
+    "id": "d9098080-c5be-4f6a-9c73-97f5353255f0",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "keyId": "5a66e75d-a6f9-4657-ba4c-9641ef621b4a",
+    "subjectId": null,
+    "borrowAt": new Date("2026-03-28T05:37:24.416Z"),
+    "dueAt": new Date("2026-03-28T07:00:00.000Z"),
+    "returnAt": new Date("2026-03-28T05:37:54.370Z"),
+    "status": "RETURNED",
+    "reason": "สอนชดเชย",
+    "lateMinutes": 0,
+    "penaltyScore": 0,
+    "createdAt": new Date("2026-03-28T05:37:24.431Z")
+  },
+  {
+    "id": "0e8eb1cc-7b3f-4f58-a9ad-a8d98c161fc8",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "keyId": "5a66e75d-a6f9-4657-ba4c-9641ef621b4a",
+    "subjectId": null,
+    "borrowAt": new Date("2026-03-28T05:39:14.135Z"),
+    "dueAt": new Date("2026-03-28T09:39:14.135Z"),
+    "returnAt": new Date("2026-03-28T05:53:46.721Z"),
+    "status": "RETURNED",
+    "reason": null,
+    "lateMinutes": 0,
+    "penaltyScore": 0,
+    "createdAt": new Date("2026-03-28T05:39:14.146Z")
+  },
+  {
+    "id": "2afebef8-e7f0-4c36-83d4-17b8f05d693b",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "keyId": "5a66e75d-a6f9-4657-ba4c-9641ef621b4a",
+    "subjectId": null,
+    "borrowAt": new Date("2026-03-28T05:54:57.194Z"),
+    "dueAt": new Date("2026-03-28T07:00:00.000Z"),
+    "returnAt": new Date("2026-03-28T05:59:40.271Z"),
+    "status": "RETURNED",
+    "reason": "กิจกรรมพิเศษ",
+    "lateMinutes": 0,
+    "penaltyScore": 0,
+    "createdAt": new Date("2026-03-28T05:54:57.207Z")
+  },
+  {
+    "id": "70836e88-7afb-41ce-9d63-7d1215d14ca8",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "keyId": "2cb5a65d-36b3-44cc-aeda-4666dfe02f24",
+    "subjectId": null,
+    "borrowAt": new Date("2026-03-28T05:57:04.960Z"),
+    "dueAt": new Date("2026-03-28T07:30:00.000Z"),
+    "returnAt": new Date("2026-03-28T05:59:57.792Z"),
+    "status": "RETURNED",
+    "reason": "สอนชดเชย",
+    "lateMinutes": 0,
+    "penaltyScore": 0,
+    "createdAt": new Date("2026-03-28T05:57:04.972Z")
+  },
+  {
+    "id": "76f9739e-c175-4b8b-b899-80b4caffbf95",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "keyId": "2cb5a65d-36b3-44cc-aeda-4666dfe02f24",
+    "subjectId": null,
+    "borrowAt": new Date("2026-03-28T06:00:38.035Z"),
+    "dueAt": new Date("2026-03-28T08:00:00.000Z"),
+    "returnAt": new Date("2026-03-28T06:09:35.309Z"),
+    "status": "RETURNED",
+    "reason": "สอนชดเชย",
+    "lateMinutes": 0,
+    "penaltyScore": 0,
+    "createdAt": new Date("2026-03-28T06:00:38.044Z")
+  },
+  {
+    "id": "f0712216-df7e-4e95-9076-fbfbe73036f9",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "keyId": "5a66e75d-a6f9-4657-ba4c-9641ef621b4a",
+    "subjectId": null,
+    "borrowAt": new Date("2026-03-28T06:00:13.840Z"),
+    "dueAt": new Date("2026-03-28T08:00:00.000Z"),
+    "returnAt": new Date("2026-03-28T06:08:40.807Z"),
+    "status": "RETURNED",
+    "reason": "กิจกรรมพิเศษ",
+    "lateMinutes": 0,
+    "penaltyScore": 0,
+    "createdAt": new Date("2026-03-28T06:00:13.852Z")
+  },
+  {
+    "id": "0a2450cb-54b5-41ca-8d7e-cc36d21d5f3e",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "keyId": "5a66e75d-a6f9-4657-ba4c-9641ef621b4a",
+    "subjectId": null,
+    "borrowAt": new Date("2026-03-30T07:52:37.149Z"),
+    "dueAt": new Date("2026-03-30T09:00:00.000Z"),
+    "returnAt": new Date("2026-03-30T07:53:00.375Z"),
+    "status": "RETURNED",
+    "reason": "สอนชดเชย",
+    "lateMinutes": 0,
+    "penaltyScore": 0,
+    "createdAt": new Date("2026-03-30T07:52:37.161Z")
+  },
+  {
+    "id": "b0560488-549e-4ae6-ae64-422af900c9c2",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "keyId": "2cb5a65d-36b3-44cc-aeda-4666dfe02f24",
+    "subjectId": null,
+    "borrowAt": new Date("2026-03-30T08:08:37.168Z"),
+    "dueAt": new Date("2026-03-30T10:00:00.000Z"),
+    "returnAt": new Date("2026-03-30T08:08:58.249Z"),
+    "status": "RETURNED",
+    "reason": "สอนชดเชย",
+    "lateMinutes": 0,
+    "penaltyScore": 0,
+    "createdAt": new Date("2026-03-30T08:08:37.175Z")
+  },
+  {
+    "id": "f9c470ab-48de-4f79-8cbf-43956a6e8336",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "keyId": "5a66e75d-a6f9-4657-ba4c-9641ef621b4a",
+    "subjectId": null,
+    "borrowAt": new Date("2026-03-30T08:07:50.561Z"),
+    "dueAt": new Date("2026-03-30T12:07:50.561Z"),
+    "returnAt": new Date("2026-03-30T08:09:17.425Z"),
+    "status": "RETURNED",
+    "reason": null,
+    "lateMinutes": 0,
+    "penaltyScore": 0,
+    "createdAt": new Date("2026-03-30T08:07:50.571Z")
+  },
+  {
+    "id": "7aabfe21-ad8d-429d-8221-59e87464e8e9",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "keyId": "5a66e75d-a6f9-4657-ba4c-9641ef621b4a",
+    "subjectId": null,
+    "borrowAt": new Date("2026-03-30T08:14:35.059Z"),
+    "dueAt": new Date("2026-03-30T12:14:35.059Z"),
+    "returnAt": new Date("2026-03-30T08:16:07.308Z"),
+    "status": "RETURNED",
+    "reason": null,
+    "lateMinutes": 0,
+    "penaltyScore": 0,
+    "createdAt": new Date("2026-03-30T08:14:35.069Z")
+  },
+  {
+    "id": "4bb88bd7-7f87-44f8-802d-7dbc4f59577c",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "keyId": "5a66e75d-a6f9-4657-ba4c-9641ef621b4a",
+    "subjectId": null,
+    "borrowAt": new Date("2026-03-30T08:17:03.283Z"),
+    "dueAt": new Date("2026-03-30T12:17:03.283Z"),
+    "returnAt": new Date("2026-03-30T08:18:43.093Z"),
+    "status": "RETURNED",
+    "reason": null,
+    "lateMinutes": 0,
+    "penaltyScore": 0,
+    "createdAt": new Date("2026-03-30T08:17:03.295Z")
+  },
+  {
+    "id": "8af16c23-9ec2-4b64-a724-a31eb17c6e13",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "keyId": "5a66e75d-a6f9-4657-ba4c-9641ef621b4a",
+    "subjectId": null,
+    "borrowAt": new Date("2026-03-30T09:15:43.195Z"),
+    "dueAt": new Date("2026-03-30T13:15:43.195Z"),
+    "returnAt": new Date("2026-03-30T09:17:22.025Z"),
+    "status": "RETURNED",
+    "reason": null,
+    "lateMinutes": 0,
+    "penaltyScore": 0,
+    "createdAt": new Date("2026-03-30T09:15:43.207Z")
+  },
+  {
+    "id": "497e11fc-46fc-4e92-bb64-3e0cc601e35e",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "keyId": "5a66e75d-a6f9-4657-ba4c-9641ef621b4a",
+    "subjectId": null,
+    "borrowAt": new Date("2026-03-30T11:16:46.851Z"),
+    "dueAt": new Date("2026-03-30T15:16:46.851Z"),
+    "returnAt": new Date("2026-03-30T11:30:45.133Z"),
+    "status": "RETURNED",
+    "reason": null,
+    "lateMinutes": 0,
+    "penaltyScore": 0,
+    "createdAt": new Date("2026-03-30T11:16:46.866Z")
+  },
+  {
+    "id": "19ced70e-9f55-4716-9d62-f37d30a310cb",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "keyId": "2cb5a65d-36b3-44cc-aeda-4666dfe02f24",
+    "subjectId": null,
+    "borrowAt": new Date("2026-03-30T11:28:51.142Z"),
+    "dueAt": new Date("2026-03-30T13:00:00.000Z"),
+    "returnAt": new Date("2026-03-30T11:34:18.579Z"),
+    "status": "RETURNED",
+    "reason": "สอนชดเชย",
+    "lateMinutes": 0,
+    "penaltyScore": 0,
+    "createdAt": new Date("2026-03-30T11:28:51.159Z")
+  },
+  {
+    "id": "e2f3c7ca-8f36-4ce1-a55d-ba268b23bdfb",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "keyId": "2cb5a65d-36b3-44cc-aeda-4666dfe02f24",
+    "subjectId": null,
+    "borrowAt": new Date("2026-03-31T06:49:08.072Z"),
+    "dueAt": new Date("2026-03-31T08:00:00.000Z"),
+    "returnAt": new Date("2026-03-31T06:51:16.979Z"),
+    "status": "RETURNED",
+    "reason": "กิจกรรมพิเศษ",
+    "lateMinutes": 0,
+    "penaltyScore": 0,
+    "createdAt": new Date("2026-03-31T06:49:08.082Z")
+  },
+  {
+    "id": "c7832d7f-a168-483a-b4c2-d07ca3dccacc",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "keyId": "5a66e75d-a6f9-4657-ba4c-9641ef621b4a",
+    "subjectId": null,
+    "borrowAt": new Date("2026-03-31T06:48:37.165Z"),
+    "dueAt": new Date("2026-03-31T08:00:00.000Z"),
+    "returnAt": new Date("2026-03-31T06:51:31.173Z"),
+    "status": "RETURNED",
+    "reason": "กิจกรรมพิเศษ",
+    "lateMinutes": 0,
+    "penaltyScore": 0,
+    "createdAt": new Date("2026-03-31T06:48:37.183Z")
+  },
+  {
+    "id": "fbe5e409-91c4-4277-a4ae-25f5983095e0",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "keyId": "key-44-703",
+    "subjectId": null,
+    "borrowAt": new Date("2026-03-31T07:25:11.210Z"),
+    "dueAt": new Date("2026-03-31T11:00:00.000Z"),
+    "returnAt": new Date("2026-03-31T07:31:27.197Z"),
+    "status": "RETURNED",
+    "reason": "กิจกรรมพิเศษ",
+    "lateMinutes": 0,
+    "penaltyScore": 0,
+    "createdAt": new Date("2026-03-31T07:25:11.224Z")
+  },
+  {
+    "id": "8898f24e-3cc1-48fe-a179-8cfcaeb43de7",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "keyId": "5a66e75d-a6f9-4657-ba4c-9641ef621b4a",
+    "subjectId": null,
+    "borrowAt": new Date("2026-03-31T10:35:35.356Z"),
+    "dueAt": new Date("2026-03-31T14:35:35.356Z"),
+    "returnAt": new Date("2026-03-31T10:36:09.935Z"),
+    "status": "RETURNED",
+    "reason": null,
+    "lateMinutes": 0,
+    "penaltyScore": 0,
+    "createdAt": new Date("2026-03-31T10:35:35.367Z")
+  },
+  {
+    "id": "cff7ddef-364c-4001-8861-47e2b24c2608",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "keyId": "key-44-703",
+    "subjectId": null,
+    "borrowAt": new Date("2026-03-31T10:35:50.304Z"),
+    "dueAt": new Date("2026-03-31T14:35:50.304Z"),
+    "returnAt": new Date("2026-03-31T10:36:40.070Z"),
+    "status": "RETURNED",
+    "reason": null,
+    "lateMinutes": 0,
+    "penaltyScore": 0,
+    "createdAt": new Date("2026-03-31T10:35:50.313Z")
+  },
+  {
+    "id": "c90d3ff0-919a-458d-9aca-4ebe52334279",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "keyId": "5a66e75d-a6f9-4657-ba4c-9641ef621b4a",
+    "subjectId": null,
+    "borrowAt": new Date("2026-03-31T07:24:37.232Z"),
+    "dueAt": new Date("2026-03-31T04:00:00.000Z"),
+    "returnAt": new Date("2026-03-31T10:07:43.389Z"),
+    "status": "LATE",
+    "reason": null,
+    "lateMinutes": 337,
+    "penaltyScore": 115,
+    "createdAt": new Date("2026-03-31T07:24:37.244Z")
+  },
+  {
+    "id": "20f3c519-5897-4b98-9430-3192bb0f3557",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "keyId": "key-44-703",
+    "subjectId": null,
+    "borrowAt": new Date("2026-03-31T07:47:41.257Z"),
+    "dueAt": new Date("2026-03-31T08:30:00.000Z"),
+    "returnAt": new Date("2026-03-31T10:08:19.530Z"),
+    "status": "LATE",
+    "reason": "กิจกรรมพิเศษ",
+    "lateMinutes": 68,
+    "penaltyScore": 25,
+    "createdAt": new Date("2026-03-31T07:47:41.264Z")
+  },
+  {
+    "id": "97ff4d78-5b32-4caa-91d0-5407034b7558",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "keyId": "5a66e75d-a6f9-4657-ba4c-9641ef621b4a",
+    "subjectId": null,
+    "borrowAt": new Date("2026-03-31T10:36:20.322Z"),
+    "dueAt": new Date("2026-03-31T14:36:20.322Z"),
+    "returnAt": new Date("2026-03-31T10:36:50.394Z"),
+    "status": "RETURNED",
+    "reason": null,
+    "lateMinutes": 0,
+    "penaltyScore": 0,
+    "createdAt": new Date("2026-03-31T10:36:20.331Z")
+  },
+  {
+    "id": "39ab9fb7-ee4a-49af-b39d-878db5129b1e",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "keyId": "5a66e75d-a6f9-4657-ba4c-9641ef621b4a",
+    "subjectId": null,
+    "borrowAt": new Date("2026-03-31T10:38:09.724Z"),
+    "dueAt": new Date("2026-03-31T14:38:09.724Z"),
+    "returnAt": new Date("2026-03-31T10:38:55.448Z"),
+    "status": "RETURNED",
+    "reason": null,
+    "lateMinutes": 0,
+    "penaltyScore": 0,
+    "createdAt": new Date("2026-03-31T10:38:09.736Z")
+  },
+  {
+    "id": "42411938-896a-4638-9ab0-e6b8014f7d06",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "keyId": "5a66e75d-a6f9-4657-ba4c-9641ef621b4a",
+    "subjectId": null,
+    "borrowAt": new Date("2026-03-31T10:40:09.221Z"),
+    "dueAt": new Date("2026-03-31T14:40:09.221Z"),
+    "returnAt": new Date("2026-03-31T10:42:20.959Z"),
+    "status": "RETURNED",
+    "reason": null,
+    "lateMinutes": 0,
+    "penaltyScore": 0,
+    "createdAt": new Date("2026-03-31T10:40:09.229Z")
+  },
+  {
+    "id": "939f8c58-344d-4932-8b25-9727b70bc913",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "keyId": "key-44-703",
+    "subjectId": null,
+    "borrowAt": new Date("2026-03-31T10:38:38.540Z"),
+    "dueAt": new Date("2026-03-31T14:38:38.540Z"),
+    "returnAt": new Date("2026-03-31T10:42:34.942Z"),
+    "status": "RETURNED",
+    "reason": null,
+    "lateMinutes": 0,
+    "penaltyScore": 0,
+    "createdAt": new Date("2026-03-31T10:38:38.550Z")
+  },
+  {
+    "id": "d9abb127-d299-42ff-984f-e2838ce07ca2",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "keyId": "5a66e75d-a6f9-4657-ba4c-9641ef621b4a",
+    "subjectId": null,
+    "borrowAt": new Date("2026-03-31T10:43:38.325Z"),
+    "dueAt": new Date("2026-03-31T14:43:38.325Z"),
+    "returnAt": new Date("2026-03-31T10:47:08.780Z"),
+    "status": "RETURNED",
+    "reason": null,
+    "lateMinutes": 0,
+    "penaltyScore": 0,
+    "createdAt": new Date("2026-03-31T10:43:38.332Z")
+  },
+  {
+    "id": "1ec980cf-3ea9-4bed-a0bf-a8a6ca2e6bbd",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "keyId": "5a66e75d-a6f9-4657-ba4c-9641ef621b4a",
+    "subjectId": null,
+    "borrowAt": new Date("2026-03-31T10:50:58.875Z"),
+    "dueAt": new Date("2026-03-31T13:00:00.000Z"),
+    "returnAt": new Date("2026-03-31T11:19:03.303Z"),
+    "status": "RETURNED",
+    "reason": "ทำความสะอาด",
+    "lateMinutes": 0,
+    "penaltyScore": 0,
+    "createdAt": new Date("2026-03-31T10:50:58.887Z")
+  },
+  {
+    "id": "5413229d-c821-4d5a-b10a-a219975dc108",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "keyId": "e4c2e1fb-8938-4a39-96bf-5017dbdfe189",
+    "subjectId": null,
+    "borrowAt": new Date("2026-03-31T11:18:41.948Z"),
+    "dueAt": new Date("2026-03-31T13:00:00.000Z"),
+    "returnAt": new Date("2026-03-31T11:19:20.111Z"),
+    "status": "RETURNED",
+    "reason": "กิจกรรมพิเศษ",
+    "lateMinutes": 0,
+    "penaltyScore": 0,
+    "createdAt": new Date("2026-03-31T11:18:41.959Z")
+  },
+  {
+    "id": "853eacb9-4ea4-4731-a1f0-d0f78891141f",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "keyId": "cdfadc02-7781-40ec-8ae8-fa2abade6f75",
+    "subjectId": null,
+    "borrowAt": new Date("2026-04-02T06:52:48.760Z"),
+    "dueAt": new Date("2026-04-02T08:00:00.000Z"),
+    "returnAt": new Date("2026-04-02T06:53:08.042Z"),
+    "status": "RETURNED",
+    "reason": "สอนชดเชย",
+    "lateMinutes": 0,
+    "penaltyScore": 0,
+    "createdAt": new Date("2026-04-02T06:52:48.776Z")
+  },
+  {
+    "id": "54bacfe4-513d-4d6f-83a5-70322cfef374",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "keyId": "5a66e75d-a6f9-4657-ba4c-9641ef621b4a",
+    "subjectId": null,
+    "borrowAt": new Date("2026-04-02T06:53:23.414Z"),
+    "dueAt": new Date("2026-04-02T08:00:00.000Z"),
+    "returnAt": new Date("2026-04-02T06:53:55.506Z"),
+    "status": "RETURNED",
+    "reason": "สอนชดเชย",
+    "lateMinutes": 0,
+    "penaltyScore": 0,
+    "createdAt": new Date("2026-04-02T06:53:23.421Z")
+  },
+  {
+    "id": "a1b1cd76-46cf-4d3a-99a2-2d3fca12eb61",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "keyId": "5a66e75d-a6f9-4657-ba4c-9641ef621b4a",
+    "subjectId": null,
+    "borrowAt": new Date("2026-04-07T06:05:40.397Z"),
+    "dueAt": new Date("2026-04-07T08:00:00.000Z"),
+    "returnAt": new Date("2026-04-07T06:06:10.852Z"),
+    "status": "RETURNED",
+    "reason": "กิจกรรมพิเศษ",
+    "lateMinutes": 0,
+    "penaltyScore": 0,
+    "createdAt": new Date("2026-04-07T06:05:40.403Z")
+  },
+  {
+    "id": "093e99fa-9b5a-442d-ba70-cde9fe74fc17",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "keyId": "e4c2e1fb-8938-4a39-96bf-5017dbdfe189",
+    "subjectId": null,
+    "borrowAt": new Date("2026-04-07T06:05:19.153Z"),
+    "dueAt": new Date("2026-04-07T08:00:00.000Z"),
+    "returnAt": new Date("2026-04-07T06:06:28.932Z"),
+    "status": "RETURNED",
+    "reason": "กิจกรรมพิเศษ",
+    "lateMinutes": 0,
+    "penaltyScore": 0,
+    "createdAt": new Date("2026-04-07T06:05:19.168Z")
+  },
+  {
+    "id": "c538ddeb-739a-4166-be55-f67daacf7db8",
+    "userId": "d3e0d5c5-4d60-469b-8754-675804901c53",
+    "keyId": "key-44-703",
+    "subjectId": null,
+    "borrowAt": new Date("2026-04-07T06:48:04.618Z"),
+    "dueAt": null,
+    "returnAt": new Date("2026-04-07T06:48:25.887Z"),
+    "status": "RETURNED",
+    "reason": "เบิกโดยอาจารย์",
+    "lateMinutes": 0,
+    "penaltyScore": 0,
+    "createdAt": new Date("2026-04-07T06:48:04.630Z")
+  },
+  {
+    "id": "5370e849-451d-462c-9cc6-485d96ea5f72",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "keyId": "5a66e75d-a6f9-4657-ba4c-9641ef621b4a",
+    "subjectId": null,
+    "borrowAt": new Date("2026-04-07T06:49:28.252Z"),
+    "dueAt": new Date("2026-04-07T08:00:00.000Z"),
+    "returnAt": new Date("2026-04-07T06:49:41.036Z"),
+    "status": "RETURNED",
+    "reason": "สอนชดเชย",
+    "lateMinutes": 0,
+    "penaltyScore": 0,
+    "createdAt": new Date("2026-04-07T06:49:28.264Z")
+  },
+  {
+    "id": "7db29bc8-8c19-4e7a-a2d3-6feb6968e8a3",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "keyId": "5a66e75d-a6f9-4657-ba4c-9641ef621b4a",
+    "subjectId": null,
+    "borrowAt": new Date("2026-04-07T07:13:11.997Z"),
+    "dueAt": new Date("2026-04-07T09:00:00.000Z"),
+    "returnAt": new Date("2026-04-07T07:28:49.369Z"),
+    "status": "RETURNED",
+    "reason": "สอนชดเชย",
+    "lateMinutes": 0,
+    "penaltyScore": 0,
+    "createdAt": new Date("2026-04-07T07:13:12.008Z")
+  },
+  {
+    "id": "7e585759-9c14-4561-b32f-2530b21704bb",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "keyId": "7ea08f25-3ac0-4745-a84e-776917abcad5",
+    "subjectId": null,
+    "borrowAt": new Date("2026-04-07T07:28:56.026Z"),
+    "dueAt": new Date("2026-04-07T09:00:00.000Z"),
+    "returnAt": new Date("2026-04-07T07:49:22.676Z"),
+    "status": "RETURNED",
+    "reason": "สอนชดเชย",
+    "lateMinutes": 0,
+    "penaltyScore": 0,
+    "createdAt": new Date("2026-04-07T07:28:56.043Z")
+  },
+  {
+    "id": "2121df2c-092a-40b7-9079-84ea7cc6a8b6",
+    "userId": "d3e0d5c5-4d60-469b-8754-675804901c53",
+    "keyId": "7ea08f25-3ac0-4745-a84e-776917abcad5",
+    "subjectId": null,
+    "borrowAt": new Date("2026-04-07T07:49:32.972Z"),
+    "dueAt": null,
+    "returnAt": new Date("2026-04-07T07:49:57.820Z"),
+    "status": "RETURNED",
+    "reason": "เบิกโดยอาจารย์",
+    "lateMinutes": 0,
+    "penaltyScore": 0,
+    "createdAt": new Date("2026-04-07T07:49:32.986Z")
+  },
+  {
+    "id": "8c9f76da-3a7a-4ba7-b9b8-47537c86097e",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "keyId": "7ea08f25-3ac0-4745-a84e-776917abcad5",
+    "subjectId": null,
+    "borrowAt": new Date("2026-04-07T07:50:16.190Z"),
+    "dueAt": new Date("2026-04-07T09:00:00.000Z"),
+    "returnAt": new Date("2026-04-07T07:55:02.246Z"),
+    "status": "RETURNED",
+    "reason": "สอนชดเชย",
+    "lateMinutes": 0,
+    "penaltyScore": 0,
+    "createdAt": new Date("2026-04-07T07:50:16.203Z")
+  },
+  {
+    "id": "e4d78030-99e3-4ce6-b2f3-e27ad00859ef",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "keyId": "7ea08f25-3ac0-4745-a84e-776917abcad5",
+    "subjectId": null,
+    "borrowAt": new Date("2026-04-07T07:55:55.068Z"),
+    "dueAt": new Date("2026-04-07T09:00:00.000Z"),
+    "returnAt": new Date("2026-04-07T07:57:31.352Z"),
+    "status": "RETURNED",
+    "reason": "สอนชดเชย",
+    "lateMinutes": 0,
+    "penaltyScore": 0,
+    "createdAt": new Date("2026-04-07T07:55:55.083Z")
+  },
+  {
+    "id": "870c58f1-51c1-4d80-a624-0cfce81836da",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "keyId": "1c2d3fa1-3a48-4bc7-9ce4-524fe7328325",
+    "subjectId": null,
+    "borrowAt": new Date("2026-04-07T09:53:12.333Z"),
+    "dueAt": new Date("2026-04-07T11:00:00.000Z"),
+    "returnAt": new Date("2026-04-07T10:14:43.941Z"),
+    "status": "RETURNED",
+    "reason": "สอนชดเชย",
+    "lateMinutes": 0,
+    "penaltyScore": 0,
+    "createdAt": new Date("2026-04-07T09:53:12.345Z")
+  },
+  {
+    "id": "99d6c805-f7d4-44f8-af7f-d95dd4949f6c",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "keyId": "key-44-703",
+    "subjectId": null,
+    "borrowAt": new Date("2026-04-07T08:17:08.901Z"),
+    "dueAt": new Date("2026-04-07T12:17:08.901Z"),
+    "returnAt": new Date("2026-04-07T08:17:42.950Z"),
+    "status": "RETURNED",
+    "reason": null,
+    "lateMinutes": 0,
+    "penaltyScore": 0,
+    "createdAt": new Date("2026-04-07T08:17:08.908Z")
+  },
+  {
+    "id": "58e6fdd6-3293-4a09-84c4-d1e2565dc891",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "keyId": "5a66e75d-a6f9-4657-ba4c-9641ef621b4a",
+    "subjectId": null,
+    "borrowAt": new Date("2026-04-07T08:16:36.071Z"),
+    "dueAt": new Date("2026-04-07T12:16:36.071Z"),
+    "returnAt": new Date("2026-04-07T08:17:50.408Z"),
+    "status": "RETURNED",
+    "reason": null,
+    "lateMinutes": 0,
+    "penaltyScore": 0,
+    "createdAt": new Date("2026-04-07T08:16:36.085Z")
+  }
+];
+const penaltyLogs = [
+  {
+    "id": "69c45bb6-d9e9-4ddb-8a53-4e3d1f57f51a",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "bookingId": "20e5c5ee-e8c7-4a63-b395-2f9cf1adb99c",
+    "type": "LATE_RETURN",
+    "scoreCut": 240,
+    "reason": "คืนกุญแจห้อง 52-213 ช้า 720 นาที (ผ่านเครื่องสแกนหน้า)",
+    "createdAt": new Date("2026-03-28T05:32:28.346Z")
+  },
+  {
+    "id": "09fd0a8d-c8dc-47ea-a7cd-94380703ffcc",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "bookingId": null,
+    "type": "MANUAL",
+    "scoreCut": -100,
+    "reason": "Admin แก้ไขคะแนน: 0 → 100",
+    "createdAt": new Date("2026-03-28T05:40:01.528Z")
+  },
+  {
+    "id": "40666a54-3f9e-4db6-86f0-b89537cfb5db",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "bookingId": "c90d3ff0-919a-458d-9aca-4ebe52334279",
+    "type": "LATE_RETURN",
+    "scoreCut": 115,
+    "reason": "คืนกุญแจห้อง 52-213 ช้า 337 นาที (ผ่านเครื่องสแกนหน้า)",
+    "createdAt": new Date("2026-03-31T10:07:43.405Z")
+  },
+  {
+    "id": "6133097d-0437-4ec1-9554-7b64e4624357",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "bookingId": null,
+    "type": "MANUAL",
+    "scoreCut": -100,
+    "reason": "Admin แก้ไขคะแนน: 0 → 100",
+    "createdAt": new Date("2026-03-31T10:08:08.823Z")
+  },
+  {
+    "id": "d77e6625-5a77-4ae4-88c4-402af42cd5ee",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "bookingId": "20f3c519-5897-4b98-9430-3192bb0f3557",
+    "type": "LATE_RETURN",
+    "scoreCut": 25,
+    "reason": "คืนกุญแจห้อง 52-205 ช้า 68 นาที (ผ่านเครื่องสแกนหน้า)",
+    "createdAt": new Date("2026-03-31T10:08:19.540Z")
+  },
+  {
+    "id": "58797c8d-6bec-4591-8a76-a28781f1b06e",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "bookingId": null,
+    "type": "MANUAL",
+    "scoreCut": -100,
+    "reason": "Admin แก้ไขคะแนน: 0 → 100",
+    "createdAt": new Date("2026-03-12T11:01:07.548Z")
+  },
+  {
+    "id": "ddc393ca-d946-4298-9717-97b903409761",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "bookingId": null,
+    "type": "MANUAL",
+    "scoreCut": -100,
+    "reason": "Admin แก้ไขคะแนน: 0 → 100",
+    "createdAt": new Date("2026-03-25T06:22:42.660Z")
+  },
+  {
+    "id": "4482fb38-c8c8-4b5c-8dec-79207f263200",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "bookingId": null,
+    "type": "LATE_RETURN",
+    "scoreCut": 2305,
+    "reason": "คืนกุญแจห้อง 52-213 ช้า 6910 นาที (ผ่านเครื่องสแกนหน้า)",
+    "createdAt": new Date("2026-03-18T09:06:24.969Z")
+  }
+];
+const dailyAuthorizations = [
+  {
+    "id": "bf8157fd-deb4-42a8-9abd-40dd924ca15e",
+    "roomCode": "52-205",
+    "date": new Date("2026-04-08T00:00:00.000Z"),
+    "startTime": new Date("2024-01-01T06:00:00.000Z"),
+    "endTime": new Date("2024-01-01T08:00:00.000Z"),
+    "userId": "dd3f502b-be69-4c1e-a186-f49f5b37a32d",
+    "source": "SCHEDULE",
+    "scheduleId": "69a3e7a8-9b21-472e-b0a7-9013a614da73",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "createdAt": new Date("2026-04-08T06:10:19.719Z"),
+    "createdBy": null
+  },
+  {
+    "id": "d912a4a4-0a9e-4df3-b5f6-be0fdd857559",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-30T00:00:00.000Z"),
+    "startTime": new Date("2026-03-31T11:17:54.647Z"),
+    "endTime": new Date("2026-03-31T13:00:00.000Z"),
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "source": "MANUAL",
+    "scheduleId": null,
+    "subjectId": null,
+    "createdAt": new Date("2026-03-31T11:17:54.672Z"),
+    "createdBy": "HARDWARE_TRANSFER"
+  },
+  {
+    "id": "dd789cf3-5817-43e0-8c00-ce7a0e996f88",
+    "roomCode": "52-205",
+    "date": new Date("2026-04-08T00:00:00.000Z"),
+    "startTime": new Date("2024-01-01T06:00:00.000Z"),
+    "endTime": new Date("2024-01-01T08:00:00.000Z"),
+    "userId": "2cac2ba6-3b5f-42a2-be05-96c453fa0471",
+    "source": "SCHEDULE",
+    "scheduleId": "69a3e7a8-9b21-472e-b0a7-9013a614da73",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "createdAt": new Date("2026-04-08T06:10:19.719Z"),
+    "createdBy": null
+  },
+  {
+    "id": "1929a6cd-d970-48ef-a73f-49290c771449",
+    "roomCode": "52-205",
+    "date": new Date("2026-04-08T00:00:00.000Z"),
+    "startTime": new Date("2024-01-01T06:00:00.000Z"),
+    "endTime": new Date("2024-01-01T08:00:00.000Z"),
+    "userId": "6b5e4811-188d-473e-b949-65b3476c6537",
+    "source": "SCHEDULE",
+    "scheduleId": "69a3e7a8-9b21-472e-b0a7-9013a614da73",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "createdAt": new Date("2026-04-08T06:10:19.719Z"),
+    "createdBy": null
+  },
+  {
+    "id": "78ce3d15-9aa8-4296-bcf9-cb0044b5bd82",
+    "roomCode": "52-205",
+    "date": new Date("2026-04-08T00:00:00.000Z"),
+    "startTime": new Date("2024-01-01T06:00:00.000Z"),
+    "endTime": new Date("2024-01-01T08:00:00.000Z"),
+    "userId": "d91fb9a3-a7d4-4389-96cf-5248da9815d9",
+    "source": "SCHEDULE",
+    "scheduleId": "69a3e7a8-9b21-472e-b0a7-9013a614da73",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "createdAt": new Date("2026-04-08T06:10:19.719Z"),
+    "createdBy": null
+  },
+  {
+    "id": "e83adc7b-ed03-47a0-8e98-25e467082896",
+    "roomCode": "52-205",
+    "date": new Date("2026-04-08T00:00:00.000Z"),
+    "startTime": new Date("2024-01-01T06:00:00.000Z"),
+    "endTime": new Date("2024-01-01T08:00:00.000Z"),
+    "userId": "fe3a33fa-0743-441d-85af-efbebd1c08b5",
+    "source": "SCHEDULE",
+    "scheduleId": "69a3e7a8-9b21-472e-b0a7-9013a614da73",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "createdAt": new Date("2026-04-08T06:10:19.719Z"),
+    "createdBy": null
+  },
+  {
+    "id": "35326da8-bcf8-403d-84ef-dbbe0772bec8",
+    "roomCode": "52-205",
+    "date": new Date("2026-04-08T00:00:00.000Z"),
+    "startTime": new Date("2024-01-01T06:00:00.000Z"),
+    "endTime": new Date("2024-01-01T08:00:00.000Z"),
+    "userId": "e006e44c-6800-4d84-a531-297cd852e64e",
+    "source": "SCHEDULE",
+    "scheduleId": "69a3e7a8-9b21-472e-b0a7-9013a614da73",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "createdAt": new Date("2026-04-08T06:10:19.719Z"),
+    "createdBy": null
+  },
+  {
+    "id": "941b18d1-fdb8-4019-b10c-bcdaeebdb438",
+    "roomCode": "52-205",
+    "date": new Date("2026-04-08T00:00:00.000Z"),
+    "startTime": new Date("2024-01-01T06:00:00.000Z"),
+    "endTime": new Date("2024-01-01T08:00:00.000Z"),
+    "userId": "c7f8ee2b-a1f0-422e-890c-0f2507fc7ea2",
+    "source": "SCHEDULE",
+    "scheduleId": "69a3e7a8-9b21-472e-b0a7-9013a614da73",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "createdAt": new Date("2026-04-08T06:10:19.719Z"),
+    "createdBy": null
+  },
+  {
+    "id": "d81262e0-95e4-423b-8276-e3196942656d",
+    "roomCode": "52-205",
+    "date": new Date("2026-04-08T00:00:00.000Z"),
+    "startTime": new Date("2024-01-01T06:00:00.000Z"),
+    "endTime": new Date("2024-01-01T08:00:00.000Z"),
+    "userId": "4ebcf511-4aa4-4810-9a53-65f8cae6f0d5",
+    "source": "SCHEDULE",
+    "scheduleId": "69a3e7a8-9b21-472e-b0a7-9013a614da73",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "createdAt": new Date("2026-04-08T06:10:19.719Z"),
+    "createdBy": null
+  },
+  {
+    "id": "fdd45113-1cc8-48f2-8d2c-90ef92109198",
+    "roomCode": "52-205",
+    "date": new Date("2026-04-08T00:00:00.000Z"),
+    "startTime": new Date("2024-01-01T06:00:00.000Z"),
+    "endTime": new Date("2024-01-01T08:00:00.000Z"),
+    "userId": "1e7e3502-695b-4c4a-bd52-fba33535ebd3",
+    "source": "SCHEDULE",
+    "scheduleId": "69a3e7a8-9b21-472e-b0a7-9013a614da73",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "createdAt": new Date("2026-04-08T06:10:19.719Z"),
+    "createdBy": null
+  },
+  {
+    "id": "fdb37504-47ff-4aaa-b283-09de08605eac",
+    "roomCode": "52-205",
+    "date": new Date("2026-04-08T00:00:00.000Z"),
+    "startTime": new Date("2024-01-01T06:00:00.000Z"),
+    "endTime": new Date("2024-01-01T08:00:00.000Z"),
+    "userId": "e2aaa1a3-92af-4874-bb41-e5b65b939016",
+    "source": "SCHEDULE",
+    "scheduleId": "69a3e7a8-9b21-472e-b0a7-9013a614da73",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "createdAt": new Date("2026-04-08T06:10:19.719Z"),
+    "createdBy": null
+  },
+  {
+    "id": "68395168-9bc0-4c7f-b129-4ee56a2c560a",
+    "roomCode": "52-205",
+    "date": new Date("2026-04-08T00:00:00.000Z"),
+    "startTime": new Date("2024-01-01T06:00:00.000Z"),
+    "endTime": new Date("2024-01-01T08:00:00.000Z"),
+    "userId": "ddc35cbe-e04d-482f-a3cf-23bdbb6b7f2c",
+    "source": "SCHEDULE",
+    "scheduleId": "69a3e7a8-9b21-472e-b0a7-9013a614da73",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "createdAt": new Date("2026-04-08T06:10:19.719Z"),
+    "createdBy": null
+  },
+  {
+    "id": "cdc8325d-c374-4f6c-8d1c-aa973a7aedd6",
+    "roomCode": "52-205",
+    "date": new Date("2026-04-08T00:00:00.000Z"),
+    "startTime": new Date("2024-01-01T06:00:00.000Z"),
+    "endTime": new Date("2024-01-01T08:00:00.000Z"),
+    "userId": "21cede3f-4cf9-4f6e-b97e-e2c52aa79caa",
+    "source": "SCHEDULE",
+    "scheduleId": "69a3e7a8-9b21-472e-b0a7-9013a614da73",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "createdAt": new Date("2026-04-08T06:10:19.719Z"),
+    "createdBy": null
+  },
+  {
+    "id": "28342c8b-b2c2-4456-bc6e-537a33a36c2d",
+    "roomCode": "52-205",
+    "date": new Date("2026-04-08T00:00:00.000Z"),
+    "startTime": new Date("2024-01-01T06:00:00.000Z"),
+    "endTime": new Date("2024-01-01T08:00:00.000Z"),
+    "userId": "014fcabf-39a6-41f2-b4e5-e157ad6ae153",
+    "source": "SCHEDULE",
+    "scheduleId": "69a3e7a8-9b21-472e-b0a7-9013a614da73",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "createdAt": new Date("2026-04-08T06:10:19.719Z"),
+    "createdBy": null
+  },
+  {
+    "id": "287b8fd6-3aac-44d5-9add-e0f8bfbed378",
+    "roomCode": "52-205",
+    "date": new Date("2026-04-08T00:00:00.000Z"),
+    "startTime": new Date("2024-01-01T06:00:00.000Z"),
+    "endTime": new Date("2024-01-01T08:00:00.000Z"),
+    "userId": "8ec50e92-c928-4272-a49d-630419edab47",
+    "source": "SCHEDULE",
+    "scheduleId": "69a3e7a8-9b21-472e-b0a7-9013a614da73",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "createdAt": new Date("2026-04-08T06:10:19.719Z"),
+    "createdBy": null
+  },
+  {
+    "id": "9248d0e3-2239-4599-86af-a031f2444d3a",
+    "roomCode": "52-205",
+    "date": new Date("2026-04-08T00:00:00.000Z"),
+    "startTime": new Date("2024-01-01T06:00:00.000Z"),
+    "endTime": new Date("2024-01-01T08:00:00.000Z"),
+    "userId": "e1b1fe72-6046-4ef8-aa1e-ef3b1f88a8bc",
+    "source": "SCHEDULE",
+    "scheduleId": "69a3e7a8-9b21-472e-b0a7-9013a614da73",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "createdAt": new Date("2026-04-08T06:10:19.719Z"),
+    "createdBy": null
+  },
+  {
+    "id": "51ce834f-578b-4339-8b07-051187007cc4",
+    "roomCode": "52-205",
+    "date": new Date("2026-04-08T00:00:00.000Z"),
+    "startTime": new Date("2024-01-01T06:00:00.000Z"),
+    "endTime": new Date("2024-01-01T08:00:00.000Z"),
+    "userId": "8a089fcf-8ea3-4915-9903-b74db9e85932",
+    "source": "SCHEDULE",
+    "scheduleId": "69a3e7a8-9b21-472e-b0a7-9013a614da73",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "createdAt": new Date("2026-04-08T06:10:19.719Z"),
+    "createdBy": null
+  },
+  {
+    "id": "b4bfcfcb-3148-4a4c-9548-f077fbbb2285",
+    "roomCode": "52-205",
+    "date": new Date("2026-04-08T00:00:00.000Z"),
+    "startTime": new Date("2024-01-01T06:00:00.000Z"),
+    "endTime": new Date("2024-01-01T08:00:00.000Z"),
+    "userId": "f3aa48b8-21b4-4ac2-be2c-3c04f21b3ee4",
+    "source": "SCHEDULE",
+    "scheduleId": "69a3e7a8-9b21-472e-b0a7-9013a614da73",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "createdAt": new Date("2026-04-08T06:10:19.719Z"),
+    "createdBy": null
+  },
+  {
+    "id": "ede52c92-466b-454b-9fca-907a3a8c61f7",
+    "roomCode": "52-205",
+    "date": new Date("2026-04-08T00:00:00.000Z"),
+    "startTime": new Date("2024-01-01T06:00:00.000Z"),
+    "endTime": new Date("2024-01-01T08:00:00.000Z"),
+    "userId": "44bfbe0a-2369-48f5-9bd3-9c0611e55dff",
+    "source": "SCHEDULE",
+    "scheduleId": "69a3e7a8-9b21-472e-b0a7-9013a614da73",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "createdAt": new Date("2026-04-08T06:10:19.719Z"),
+    "createdBy": null
+  },
+  {
+    "id": "1119f1d0-4857-4894-a0c4-7cd827c8bd34",
+    "roomCode": "52-205",
+    "date": new Date("2026-04-08T00:00:00.000Z"),
+    "startTime": new Date("2024-01-01T06:00:00.000Z"),
+    "endTime": new Date("2024-01-01T08:00:00.000Z"),
+    "userId": "9f1b82b0-bf70-4c92-96bc-27749df93436",
+    "source": "SCHEDULE",
+    "scheduleId": "69a3e7a8-9b21-472e-b0a7-9013a614da73",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "createdAt": new Date("2026-04-08T06:10:19.719Z"),
+    "createdBy": null
+  },
+  {
+    "id": "50c44c6c-706f-4cc8-bb84-c27e6c3c7ba9",
+    "roomCode": "52-205",
+    "date": new Date("2026-04-08T00:00:00.000Z"),
+    "startTime": new Date("2024-01-01T06:00:00.000Z"),
+    "endTime": new Date("2024-01-01T08:00:00.000Z"),
+    "userId": "b8765ab4-e12e-4333-b886-ba67cb3ffcfa",
+    "source": "SCHEDULE",
+    "scheduleId": "69a3e7a8-9b21-472e-b0a7-9013a614da73",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "createdAt": new Date("2026-04-08T06:10:19.719Z"),
+    "createdBy": null
+  },
+  {
+    "id": "f3c423cc-f130-404c-814a-ac5fbc7cdce8",
+    "roomCode": "52-205",
+    "date": new Date("2026-04-08T00:00:00.000Z"),
+    "startTime": new Date("2024-01-01T06:00:00.000Z"),
+    "endTime": new Date("2024-01-01T08:00:00.000Z"),
+    "userId": "12d8dd0a-3ac9-4cf2-bc40-9fc23744aa6c",
+    "source": "SCHEDULE",
+    "scheduleId": "69a3e7a8-9b21-472e-b0a7-9013a614da73",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "createdAt": new Date("2026-04-08T06:10:19.719Z"),
+    "createdBy": null
+  },
+  {
+    "id": "08a0c277-c062-40ab-8cc6-50f4f816ffa9",
+    "roomCode": "52-205",
+    "date": new Date("2026-04-08T00:00:00.000Z"),
+    "startTime": new Date("2024-01-01T06:00:00.000Z"),
+    "endTime": new Date("2024-01-01T08:00:00.000Z"),
+    "userId": "1d89c663-fd09-4d8d-b857-9dcc456b0f6f",
+    "source": "SCHEDULE",
+    "scheduleId": "69a3e7a8-9b21-472e-b0a7-9013a614da73",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "createdAt": new Date("2026-04-08T06:10:19.719Z"),
+    "createdBy": null
+  },
+  {
+    "id": "39e9e63c-0fe9-437a-8f17-ef0e221c65d2",
+    "roomCode": "52-205",
+    "date": new Date("2026-04-08T00:00:00.000Z"),
+    "startTime": new Date("2024-01-01T06:00:00.000Z"),
+    "endTime": new Date("2024-01-01T08:00:00.000Z"),
+    "userId": "96134339-fc53-4238-8324-604d3c866c3b",
+    "source": "SCHEDULE",
+    "scheduleId": "69a3e7a8-9b21-472e-b0a7-9013a614da73",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "createdAt": new Date("2026-04-08T06:10:19.719Z"),
+    "createdBy": null
+  },
+  {
+    "id": "2e5ce1f3-6107-4907-8478-3507fcbccecb",
+    "roomCode": "52-205",
+    "date": new Date("2026-04-08T00:00:00.000Z"),
+    "startTime": new Date("2024-01-01T06:00:00.000Z"),
+    "endTime": new Date("2024-01-01T08:00:00.000Z"),
+    "userId": "d0f1f839-0866-4619-9841-841974dee770",
+    "source": "SCHEDULE",
+    "scheduleId": "69a3e7a8-9b21-472e-b0a7-9013a614da73",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "createdAt": new Date("2026-04-08T06:10:19.719Z"),
+    "createdBy": null
+  },
+  {
+    "id": "8a22e671-5d2e-49eb-bb0e-f9e766e8c886",
+    "roomCode": "52-205",
+    "date": new Date("2026-04-08T00:00:00.000Z"),
+    "startTime": new Date("2024-01-01T06:00:00.000Z"),
+    "endTime": new Date("2024-01-01T08:00:00.000Z"),
+    "userId": "dec42ecd-c2db-4b60-8d27-c582cf17997e",
+    "source": "SCHEDULE",
+    "scheduleId": "69a3e7a8-9b21-472e-b0a7-9013a614da73",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "createdAt": new Date("2026-04-08T06:10:19.719Z"),
+    "createdBy": null
+  },
+  {
+    "id": "c749ea31-ec5f-4830-bebf-074d95090aa6",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-12T00:00:00.000Z"),
+    "startTime": new Date("2026-03-12T11:00:00.877Z"),
+    "endTime": new Date("2026-03-12T13:00:00.877Z"),
+    "userId": "21dda778-aa98-4419-a318-0c8951641162",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-12T11:00:26.336Z"),
+    "createdBy": null
+  },
+  {
+    "id": "7e8dbf0a-3105-40fb-bafd-95984160c6e4",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-12T00:00:00.000Z"),
+    "startTime": new Date("2026-03-12T11:00:00.877Z"),
+    "endTime": new Date("2026-03-12T13:00:00.877Z"),
+    "userId": "1372f6fc-65eb-419f-a060-301153d459f4",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-12T11:00:26.336Z"),
+    "createdBy": null
+  },
+  {
+    "id": "11e612ac-d97f-44a5-94b3-d270cd8d3db0",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-12T00:00:00.000Z"),
+    "startTime": new Date("2026-03-12T11:00:00.877Z"),
+    "endTime": new Date("2026-03-12T13:00:00.877Z"),
+    "userId": "2d658f11-34cb-4c94-b7b2-88eb34209297",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-12T11:00:26.336Z"),
+    "createdBy": null
+  },
+  {
+    "id": "cdfe8d84-5b10-4a8c-8348-1fab7ac1d270",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-12T00:00:00.000Z"),
+    "startTime": new Date("2026-03-12T11:00:00.877Z"),
+    "endTime": new Date("2026-03-12T13:00:00.877Z"),
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-12T11:00:26.336Z"),
+    "createdBy": null
+  },
+  {
+    "id": "85a0656b-8f66-449c-9378-81926adab8e7",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-12T00:00:00.000Z"),
+    "startTime": new Date("2026-03-12T11:00:00.877Z"),
+    "endTime": new Date("2026-03-12T13:00:00.877Z"),
+    "userId": "7c50486b-2880-4c06-9b5f-d9e5dbcbbf35",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-12T11:00:26.336Z"),
+    "createdBy": null
+  },
+  {
+    "id": "0ad8b7fa-2b1f-4e51-af0c-c0a49083f70a",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-12T00:00:00.000Z"),
+    "startTime": new Date("2026-03-12T11:00:00.877Z"),
+    "endTime": new Date("2026-03-12T13:00:00.877Z"),
+    "userId": "576bd29e-4ef4-4fa3-a1de-63a4b29aeb2f",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-12T11:00:26.336Z"),
+    "createdBy": null
+  },
+  {
+    "id": "c31de192-8bdd-41e7-86a7-9c4e9b0415dd",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-12T00:00:00.000Z"),
+    "startTime": new Date("2026-03-12T11:00:00.877Z"),
+    "endTime": new Date("2026-03-12T13:00:00.877Z"),
+    "userId": "9155b909-63c8-45aa-a5b6-badf2815f247",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-12T11:00:26.336Z"),
+    "createdBy": null
+  },
+  {
+    "id": "35fb09fa-8f95-4652-8415-9e4d3cee6e96",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-12T00:00:00.000Z"),
+    "startTime": new Date("2026-03-12T11:00:00.877Z"),
+    "endTime": new Date("2026-03-12T13:00:00.877Z"),
+    "userId": "f74693ea-076a-4904-978f-693ba2dd7866",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-12T11:00:26.336Z"),
+    "createdBy": null
+  },
+  {
+    "id": "9a6c267a-879d-4c1c-8d00-08dac462f601",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-12T00:00:00.000Z"),
+    "startTime": new Date("2026-03-12T11:00:00.877Z"),
+    "endTime": new Date("2026-03-12T13:00:00.877Z"),
+    "userId": "c1aa06b9-352e-486e-a82b-2ac1336517b9",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-12T11:00:26.336Z"),
+    "createdBy": null
+  },
+  {
+    "id": "09a00189-6b17-4085-8449-1d3e52a6794c",
+    "roomCode": "52-205",
+    "date": new Date("2026-04-08T00:00:00.000Z"),
+    "startTime": new Date("2024-01-01T06:00:00.000Z"),
+    "endTime": new Date("2024-01-01T08:00:00.000Z"),
+    "userId": "20c19274-79ab-48f4-8a51-679f083b3c2e",
+    "source": "SCHEDULE",
+    "scheduleId": "69a3e7a8-9b21-472e-b0a7-9013a614da73",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "createdAt": new Date("2026-04-08T06:10:19.719Z"),
+    "createdBy": null
+  },
+  {
+    "id": "2be36d69-705e-4ac3-8d1b-30713219ed17",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-12T00:00:00.000Z"),
+    "startTime": new Date("2026-03-12T11:00:00.877Z"),
+    "endTime": new Date("2026-03-12T13:00:00.877Z"),
+    "userId": "6500e16c-1379-45be-8925-f5a71256e3ed",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-12T11:00:26.336Z"),
+    "createdBy": null
+  },
+  {
+    "id": "d21bdeb0-9e9c-4ea0-8df3-de4d122a79ed",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-12T00:00:00.000Z"),
+    "startTime": new Date("2026-03-12T11:00:00.877Z"),
+    "endTime": new Date("2026-03-12T13:00:00.877Z"),
+    "userId": "9cefc08a-a43f-4401-be9d-ccdf22d7009b",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-12T11:00:26.336Z"),
+    "createdBy": null
+  },
+  {
+    "id": "b9167309-fb2a-499f-b7e5-35e3d0b84a1b",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-12T00:00:00.000Z"),
+    "startTime": new Date("2026-03-12T11:00:00.877Z"),
+    "endTime": new Date("2026-03-12T13:00:00.877Z"),
+    "userId": "2e991ce8-030d-4925-a113-f24674d8cb59",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-12T11:00:26.336Z"),
+    "createdBy": null
+  },
+  {
+    "id": "1c2a7256-5c1c-446d-8958-3c7895b800e6",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-12T00:00:00.000Z"),
+    "startTime": new Date("2026-03-12T11:00:00.877Z"),
+    "endTime": new Date("2026-03-12T13:00:00.877Z"),
+    "userId": "ecdcb42e-6255-42da-8a78-523bc33a3e36",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-12T11:00:26.336Z"),
+    "createdBy": null
+  },
+  {
+    "id": "ff047b55-60b0-4319-80ec-c03f733a48c3",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-12T00:00:00.000Z"),
+    "startTime": new Date("2026-03-12T11:00:00.877Z"),
+    "endTime": new Date("2026-03-12T13:00:00.877Z"),
+    "userId": "b2988236-8de1-4ce3-bced-39943483f203",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-12T11:00:26.336Z"),
+    "createdBy": null
+  },
+  {
+    "id": "e19e6c25-c067-4f5f-846b-f8e6c0b909fb",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-12T00:00:00.000Z"),
+    "startTime": new Date("2026-03-12T11:00:00.877Z"),
+    "endTime": new Date("2026-03-12T13:00:00.877Z"),
+    "userId": "11193aec-ff66-441a-8ace-03f3e3a3ac9b",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-12T11:00:26.336Z"),
+    "createdBy": null
+  },
+  {
+    "id": "90bdbb01-a324-4bd6-afb2-1097d8274d43",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-12T00:00:00.000Z"),
+    "startTime": new Date("2026-03-12T11:00:00.877Z"),
+    "endTime": new Date("2026-03-12T13:00:00.877Z"),
+    "userId": "e5c7d7ec-2028-481a-9a9b-1ab7b6dfe160",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-12T11:00:26.336Z"),
+    "createdBy": null
+  },
+  {
+    "id": "d72457f5-27c1-4e5f-982a-7d941bfced75",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-12T00:00:00.000Z"),
+    "startTime": new Date("2026-03-12T11:00:00.877Z"),
+    "endTime": new Date("2026-03-12T13:00:00.877Z"),
+    "userId": "393fb8e0-7b96-48e0-8602-a98337e522d0",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-12T11:00:26.336Z"),
+    "createdBy": null
+  },
+  {
+    "id": "1ed1d57d-f7c5-4070-9af1-c8cf9249b571",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-12T00:00:00.000Z"),
+    "startTime": new Date("2026-03-12T11:00:00.877Z"),
+    "endTime": new Date("2026-03-12T13:00:00.877Z"),
+    "userId": "ce7c3b8a-3b61-4ea4-822a-5403160ad267",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-12T11:00:26.336Z"),
+    "createdBy": null
+  },
+  {
+    "id": "2caa63e0-c88b-427a-98d8-e680fbcd9bc7",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-12T00:00:00.000Z"),
+    "startTime": new Date("2026-03-12T11:00:00.877Z"),
+    "endTime": new Date("2026-03-12T13:00:00.877Z"),
+    "userId": "b1157ae6-657f-46d9-877a-ca9e9bd08cc1",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-12T11:00:26.336Z"),
+    "createdBy": null
+  },
+  {
+    "id": "e1333f5d-5ae8-4394-be4b-ac522315b527",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-12T00:00:00.000Z"),
+    "startTime": new Date("2026-03-12T11:00:00.877Z"),
+    "endTime": new Date("2026-03-12T13:00:00.877Z"),
+    "userId": "c027fd82-5cca-4431-aa13-b413f420b57f",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-12T11:00:26.336Z"),
+    "createdBy": null
+  },
+  {
+    "id": "83ff205b-34a4-43ae-b3bf-9f92e76dfaba",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-12T00:00:00.000Z"),
+    "startTime": new Date("2026-03-12T11:00:00.877Z"),
+    "endTime": new Date("2026-03-12T13:00:00.877Z"),
+    "userId": "391a0415-cfdd-40a8-b189-745d163d40cb",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-12T11:00:26.336Z"),
+    "createdBy": null
+  },
+  {
+    "id": "1a49b260-6e6c-4ab0-8bc2-ff4cc9b80475",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-12T00:00:00.000Z"),
+    "startTime": new Date("2026-03-12T11:00:00.877Z"),
+    "endTime": new Date("2026-03-12T13:00:00.877Z"),
+    "userId": "8c5038ff-365e-448a-8176-0dc164b10d9b",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-12T11:00:26.336Z"),
+    "createdBy": null
+  },
+  {
+    "id": "86f85e67-19c7-4e66-8c0a-d603920f1f0e",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-12T00:00:00.000Z"),
+    "startTime": new Date("2026-03-12T11:00:00.877Z"),
+    "endTime": new Date("2026-03-12T13:00:00.877Z"),
+    "userId": "040845c3-87b2-4c3a-b71f-ac4ee3ec9537",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-12T11:00:26.336Z"),
+    "createdBy": null
+  },
+  {
+    "id": "06bc338b-bd68-4ac8-8ec5-df0a4ca8350d",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-12T00:00:00.000Z"),
+    "startTime": new Date("2026-03-12T11:00:00.877Z"),
+    "endTime": new Date("2026-03-12T13:00:00.877Z"),
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-12T11:00:26.336Z"),
+    "createdBy": null
+  },
+  {
+    "id": "4b715aaf-ab71-4d84-bade-77cbf2e8d51d",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-12T00:00:00.000Z"),
+    "startTime": new Date("2026-03-12T11:00:00.877Z"),
+    "endTime": new Date("2026-03-12T13:00:00.877Z"),
+    "userId": "ce4c8300-5a57-4144-b720-ba44ccea04b9",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-12T11:00:26.336Z"),
+    "createdBy": null
+  },
+  {
+    "id": "7947669b-dc1f-4877-85cf-55685fc55267",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-12T00:00:00.000Z"),
+    "startTime": new Date("2026-03-12T11:00:00.877Z"),
+    "endTime": new Date("2026-03-12T13:00:00.877Z"),
+    "userId": "9f90f6c9-7dca-4a7e-852c-08bc783b3c7e",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-12T11:00:26.336Z"),
+    "createdBy": null
+  },
+  {
+    "id": "aab9048d-127a-4dfc-b770-33016c7f28aa",
+    "roomCode": "52-205",
+    "date": new Date("2026-04-08T00:00:00.000Z"),
+    "startTime": new Date("2024-01-01T06:00:00.000Z"),
+    "endTime": new Date("2024-01-01T08:00:00.000Z"),
+    "userId": "d2b784cd-33a2-41c6-8f1f-a6c13d6dfc4e",
+    "source": "SCHEDULE",
+    "scheduleId": "69a3e7a8-9b21-472e-b0a7-9013a614da73",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "createdAt": new Date("2026-04-08T06:10:19.719Z"),
+    "createdBy": null
+  },
+  {
+    "id": "4a9d0183-4a40-437f-9948-0a46cc682d92",
+    "roomCode": "52-205",
+    "date": new Date("2026-04-08T00:00:00.000Z"),
+    "startTime": new Date("2024-01-01T06:00:00.000Z"),
+    "endTime": new Date("2024-01-01T08:00:00.000Z"),
+    "userId": "ef81421d-47f6-48cd-80c1-11b1e6e033e7",
+    "source": "SCHEDULE",
+    "scheduleId": "69a3e7a8-9b21-472e-b0a7-9013a614da73",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "createdAt": new Date("2026-04-08T06:10:19.719Z"),
+    "createdBy": null
+  },
+  {
+    "id": "71303d23-2aad-488b-a9cf-967ee4d85afd",
+    "roomCode": "52-205",
+    "date": new Date("2026-04-08T00:00:00.000Z"),
+    "startTime": new Date("2024-01-01T06:00:00.000Z"),
+    "endTime": new Date("2024-01-01T08:00:00.000Z"),
+    "userId": "5e3f99b0-78b4-4836-ba91-c873004314db",
+    "source": "SCHEDULE",
+    "scheduleId": "69a3e7a8-9b21-472e-b0a7-9013a614da73",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "createdAt": new Date("2026-04-08T06:10:19.719Z"),
+    "createdBy": null
+  },
+  {
+    "id": "ad4c3eb1-1772-452c-be5a-dd13a092156e",
+    "roomCode": "52-205",
+    "date": new Date("2026-04-08T00:00:00.000Z"),
+    "startTime": new Date("2024-01-01T06:00:00.000Z"),
+    "endTime": new Date("2024-01-01T08:00:00.000Z"),
+    "userId": "348437bb-e158-4970-80fc-6b9038cf1486",
+    "source": "SCHEDULE",
+    "scheduleId": "69a3e7a8-9b21-472e-b0a7-9013a614da73",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "createdAt": new Date("2026-04-08T06:10:19.719Z"),
+    "createdBy": null
+  },
+  {
+    "id": "898e736e-7eea-4fe9-8f10-cf76a36b121f",
+    "roomCode": "52-701",
+    "date": new Date("2026-04-08T00:00:00.000Z"),
+    "startTime": new Date("2026-03-25T06:00:00.916Z"),
+    "endTime": new Date("2026-03-25T07:30:00.916Z"),
+    "userId": "9e0fef1e-909f-4c25-ba4c-b716122d658a",
+    "source": "SCHEDULE",
+    "scheduleId": "ccf0aac2-b3ad-4de1-9d70-85c95120abcf",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-04-08T06:10:19.719Z"),
+    "createdBy": null
+  },
+  {
+    "id": "9bc464b1-e3bd-41c4-836d-00a3191b136d",
+    "roomCode": "52-701",
+    "date": new Date("2026-04-08T00:00:00.000Z"),
+    "startTime": new Date("2026-03-25T06:00:00.916Z"),
+    "endTime": new Date("2026-03-25T07:30:00.916Z"),
+    "userId": "85135fc8-24b8-4f5f-b11d-5ac89830db7b",
+    "source": "SCHEDULE",
+    "scheduleId": "ccf0aac2-b3ad-4de1-9d70-85c95120abcf",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-04-08T06:10:19.719Z"),
+    "createdBy": null
+  },
+  {
+    "id": "8862ec8a-aed3-4886-8b5d-d46eb3a282f8",
+    "roomCode": "52-701",
+    "date": new Date("2026-04-08T00:00:00.000Z"),
+    "startTime": new Date("2026-03-25T06:00:00.916Z"),
+    "endTime": new Date("2026-03-25T07:30:00.916Z"),
+    "userId": "1458ade2-bb6e-40b8-91c6-9cc5822c5447",
+    "source": "SCHEDULE",
+    "scheduleId": "ccf0aac2-b3ad-4de1-9d70-85c95120abcf",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-04-08T06:10:19.719Z"),
+    "createdBy": null
+  },
+  {
+    "id": "67465bed-35d9-4588-a785-882c37f4a8d3",
+    "roomCode": "52-701",
+    "date": new Date("2026-04-08T00:00:00.000Z"),
+    "startTime": new Date("2026-03-25T06:00:00.916Z"),
+    "endTime": new Date("2026-03-25T07:30:00.916Z"),
+    "userId": "dd8ed91c-1b01-4fe5-b0a2-ae69dd8cdcd2",
+    "source": "SCHEDULE",
+    "scheduleId": "ccf0aac2-b3ad-4de1-9d70-85c95120abcf",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-04-08T06:10:19.719Z"),
+    "createdBy": null
+  },
+  {
+    "id": "528926a5-cbec-454e-8c03-8477f8c58498",
+    "roomCode": "52-701",
+    "date": new Date("2026-04-08T00:00:00.000Z"),
+    "startTime": new Date("2026-03-25T06:00:00.916Z"),
+    "endTime": new Date("2026-03-25T07:30:00.916Z"),
+    "userId": "fcb8564b-bd4b-41a9-bdeb-7d3e0182942d",
+    "source": "SCHEDULE",
+    "scheduleId": "ccf0aac2-b3ad-4de1-9d70-85c95120abcf",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-04-08T06:10:19.719Z"),
+    "createdBy": null
+  },
+  {
+    "id": "1d4d5ad5-5187-446a-89d9-051d9cd584cd",
+    "roomCode": "52-701",
+    "date": new Date("2026-04-08T00:00:00.000Z"),
+    "startTime": new Date("2026-03-25T06:00:00.916Z"),
+    "endTime": new Date("2026-03-25T07:30:00.916Z"),
+    "userId": "ba4182d5-1e2e-4589-bba8-afef6da8705d",
+    "source": "SCHEDULE",
+    "scheduleId": "ccf0aac2-b3ad-4de1-9d70-85c95120abcf",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-04-08T06:10:19.719Z"),
+    "createdBy": null
+  },
+  {
+    "id": "c249eadb-b80e-41a7-a20d-3eacd3416817",
+    "roomCode": "52-701",
+    "date": new Date("2026-04-08T00:00:00.000Z"),
+    "startTime": new Date("2026-03-25T06:00:00.916Z"),
+    "endTime": new Date("2026-03-25T07:30:00.916Z"),
+    "userId": "f5dfd7e8-1e1f-4278-b82f-cd7825b2da13",
+    "source": "SCHEDULE",
+    "scheduleId": "ccf0aac2-b3ad-4de1-9d70-85c95120abcf",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-04-08T06:10:19.719Z"),
+    "createdBy": null
+  },
+  {
+    "id": "950d0c6a-0468-443f-bf7f-305a3917b4fe",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-26T00:00:00.000Z"),
+    "startTime": new Date("2026-03-25T17:00:00.166Z"),
+    "endTime": new Date("2026-03-26T13:00:00.166Z"),
+    "userId": "040845c3-87b2-4c3a-b71f-ac4ee3ec9537",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-26T10:44:00.077Z"),
+    "createdBy": null
+  },
+  {
+    "id": "dcd9b8d2-2a14-41f9-bda6-2e0bce1aab6b",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-26T00:00:00.000Z"),
+    "startTime": new Date("2026-03-25T17:00:00.166Z"),
+    "endTime": new Date("2026-03-26T13:00:00.166Z"),
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-26T10:44:00.077Z"),
+    "createdBy": null
+  },
+  {
+    "id": "dd47cf7c-4521-44f4-828c-a26f04f975b3",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-26T00:00:00.000Z"),
+    "startTime": new Date("2026-03-25T17:00:00.166Z"),
+    "endTime": new Date("2026-03-26T13:00:00.166Z"),
+    "userId": "9f90f6c9-7dca-4a7e-852c-08bc783b3c7e",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-26T10:44:00.077Z"),
+    "createdBy": null
+  },
+  {
+    "id": "045df2e0-2566-4b5c-9da6-80578595e7de",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-26T00:00:00.000Z"),
+    "startTime": new Date("2026-03-25T17:00:00.166Z"),
+    "endTime": new Date("2026-03-26T13:00:00.166Z"),
+    "userId": "b2988236-8de1-4ce3-bced-39943483f203",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-26T10:44:00.077Z"),
+    "createdBy": null
+  },
+  {
+    "id": "f087141e-dcf5-4ed9-94fa-cf4c7776bb7a",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-26T00:00:00.000Z"),
+    "startTime": new Date("2026-03-26T10:00:00.677Z"),
+    "endTime": new Date("2026-03-26T12:00:00.677Z"),
+    "userId": "ce4c8300-5a57-4144-b720-ba44ccea04b9",
+    "source": "SCHEDULE",
+    "scheduleId": "de4d0bc5-208d-4828-9855-973c858e120d",
+    "subjectId": "9c807e3d-7e19-46f1-961c-a1f3181430ca",
+    "createdAt": new Date("2026-03-26T10:44:00.077Z"),
+    "createdBy": null
+  },
+  {
+    "id": "2aac4b8b-a287-43de-bc89-f7b41a39c472",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-26T00:00:00.000Z"),
+    "startTime": new Date("2026-03-26T10:00:00.677Z"),
+    "endTime": new Date("2026-03-26T12:00:00.677Z"),
+    "userId": "2d658f11-34cb-4c94-b7b2-88eb34209297",
+    "source": "SCHEDULE",
+    "scheduleId": "de4d0bc5-208d-4828-9855-973c858e120d",
+    "subjectId": "9c807e3d-7e19-46f1-961c-a1f3181430ca",
+    "createdAt": new Date("2026-03-26T10:44:00.077Z"),
+    "createdBy": null
+  },
+  {
+    "id": "2b651774-6305-46a1-8ba0-286dad046096",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-26T00:00:00.000Z"),
+    "startTime": new Date("2026-03-26T10:00:00.677Z"),
+    "endTime": new Date("2026-03-26T12:00:00.677Z"),
+    "userId": "f5dfd7e8-1e1f-4278-b82f-cd7825b2da13",
+    "source": "SCHEDULE",
+    "scheduleId": "de4d0bc5-208d-4828-9855-973c858e120d",
+    "subjectId": "9c807e3d-7e19-46f1-961c-a1f3181430ca",
+    "createdAt": new Date("2026-03-26T10:44:00.077Z"),
+    "createdBy": null
+  },
+  {
+    "id": "dfbbcf01-ecaa-44fe-89d4-94c0d60a10ce",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-13T00:00:00.000Z"),
+    "startTime": new Date("2026-03-12T17:00:00.078Z"),
+    "endTime": new Date("2026-03-13T13:00:00.078Z"),
+    "userId": "21dda778-aa98-4419-a318-0c8951641162",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-13T08:20:15.446Z"),
+    "createdBy": null
+  },
+  {
+    "id": "799ca063-20d8-42c7-a890-dbcd90ba7b70",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-13T00:00:00.000Z"),
+    "startTime": new Date("2026-03-12T17:00:00.078Z"),
+    "endTime": new Date("2026-03-13T13:00:00.078Z"),
+    "userId": "1372f6fc-65eb-419f-a060-301153d459f4",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-13T08:20:15.446Z"),
+    "createdBy": null
+  },
+  {
+    "id": "1e7817c5-0526-4861-811c-166499c84915",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-13T00:00:00.000Z"),
+    "startTime": new Date("2026-03-12T17:00:00.078Z"),
+    "endTime": new Date("2026-03-13T13:00:00.078Z"),
+    "userId": "2d658f11-34cb-4c94-b7b2-88eb34209297",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-13T08:20:15.446Z"),
+    "createdBy": null
+  },
+  {
+    "id": "e3197bc7-ff4d-4d8d-80eb-61858d62b120",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-13T00:00:00.000Z"),
+    "startTime": new Date("2026-03-12T17:00:00.078Z"),
+    "endTime": new Date("2026-03-13T13:00:00.078Z"),
+    "userId": "7c50486b-2880-4c06-9b5f-d9e5dbcbbf35",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-13T08:20:15.446Z"),
+    "createdBy": null
+  },
+  {
+    "id": "5df55de2-bd44-4d0d-b863-9dcc96576e96",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-13T00:00:00.000Z"),
+    "startTime": new Date("2026-03-12T17:00:00.078Z"),
+    "endTime": new Date("2026-03-13T13:00:00.078Z"),
+    "userId": "576bd29e-4ef4-4fa3-a1de-63a4b29aeb2f",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-13T08:20:15.446Z"),
+    "createdBy": null
+  },
+  {
+    "id": "a207abe6-1c48-4cbb-9763-51cdf42e8324",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-13T00:00:00.000Z"),
+    "startTime": new Date("2026-03-12T17:00:00.078Z"),
+    "endTime": new Date("2026-03-13T13:00:00.078Z"),
+    "userId": "9155b909-63c8-45aa-a5b6-badf2815f247",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-13T08:20:15.446Z"),
+    "createdBy": null
+  },
+  {
+    "id": "c08d81ec-f0b5-4af9-8811-c198628c161d",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-13T00:00:00.000Z"),
+    "startTime": new Date("2026-03-12T17:00:00.078Z"),
+    "endTime": new Date("2026-03-13T13:00:00.078Z"),
+    "userId": "f74693ea-076a-4904-978f-693ba2dd7866",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-13T08:20:15.446Z"),
+    "createdBy": null
+  },
+  {
+    "id": "8a8eca20-743d-4020-894f-67e74183d81c",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-13T00:00:00.000Z"),
+    "startTime": new Date("2026-03-12T17:00:00.078Z"),
+    "endTime": new Date("2026-03-13T13:00:00.078Z"),
+    "userId": "c1aa06b9-352e-486e-a82b-2ac1336517b9",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-13T08:20:15.446Z"),
+    "createdBy": null
+  },
+  {
+    "id": "30126676-945f-48cc-a727-86259c84adbf",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-13T00:00:00.000Z"),
+    "startTime": new Date("2026-03-12T17:00:00.078Z"),
+    "endTime": new Date("2026-03-13T13:00:00.078Z"),
+    "userId": "6500e16c-1379-45be-8925-f5a71256e3ed",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-13T08:20:15.446Z"),
+    "createdBy": null
+  },
+  {
+    "id": "becb885b-81a8-4586-a094-8e7a47d6ef2e",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-13T00:00:00.000Z"),
+    "startTime": new Date("2026-03-12T17:00:00.078Z"),
+    "endTime": new Date("2026-03-13T13:00:00.078Z"),
+    "userId": "9cefc08a-a43f-4401-be9d-ccdf22d7009b",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-13T08:20:15.446Z"),
+    "createdBy": null
+  },
+  {
+    "id": "f0f0970d-ba19-461b-9efd-2c080c7f7e58",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-13T00:00:00.000Z"),
+    "startTime": new Date("2026-03-12T17:00:00.078Z"),
+    "endTime": new Date("2026-03-13T13:00:00.078Z"),
+    "userId": "2e991ce8-030d-4925-a113-f24674d8cb59",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-13T08:20:15.446Z"),
+    "createdBy": null
+  },
+  {
+    "id": "4d317199-fe76-4a92-8ce1-f0cf9037f0af",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-13T00:00:00.000Z"),
+    "startTime": new Date("2026-03-12T17:00:00.078Z"),
+    "endTime": new Date("2026-03-13T13:00:00.078Z"),
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-13T08:20:15.446Z"),
+    "createdBy": null
+  },
+  {
+    "id": "f689fef1-535a-4973-bf74-d390ca894579",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-13T00:00:00.000Z"),
+    "startTime": new Date("2026-03-12T17:00:00.078Z"),
+    "endTime": new Date("2026-03-13T13:00:00.078Z"),
+    "userId": "ecdcb42e-6255-42da-8a78-523bc33a3e36",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-13T08:20:15.446Z"),
+    "createdBy": null
+  },
+  {
+    "id": "6ab51aa5-0052-4cdb-ad18-1c9aa67e46bd",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-13T00:00:00.000Z"),
+    "startTime": new Date("2026-03-12T17:00:00.078Z"),
+    "endTime": new Date("2026-03-13T13:00:00.078Z"),
+    "userId": "b2988236-8de1-4ce3-bced-39943483f203",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-13T08:20:15.446Z"),
+    "createdBy": null
+  },
+  {
+    "id": "d7f51cba-2307-488f-91da-e249da264e5d",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-13T00:00:00.000Z"),
+    "startTime": new Date("2026-03-12T17:00:00.078Z"),
+    "endTime": new Date("2026-03-13T13:00:00.078Z"),
+    "userId": "11193aec-ff66-441a-8ace-03f3e3a3ac9b",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-13T08:20:15.446Z"),
+    "createdBy": null
+  },
+  {
+    "id": "4d63fcc2-6114-49f0-93c5-63cbd8e2c6a9",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-13T00:00:00.000Z"),
+    "startTime": new Date("2026-03-12T17:00:00.078Z"),
+    "endTime": new Date("2026-03-13T13:00:00.078Z"),
+    "userId": "e5c7d7ec-2028-481a-9a9b-1ab7b6dfe160",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-13T08:20:15.446Z"),
+    "createdBy": null
+  },
+  {
+    "id": "07627a2c-0393-4d55-aaa8-d84b1b7c1f3e",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-13T00:00:00.000Z"),
+    "startTime": new Date("2026-03-12T17:00:00.078Z"),
+    "endTime": new Date("2026-03-13T13:00:00.078Z"),
+    "userId": "393fb8e0-7b96-48e0-8602-a98337e522d0",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-13T08:20:15.446Z"),
+    "createdBy": null
+  },
+  {
+    "id": "3354c2af-d804-460d-8969-c74f4e170f82",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-13T00:00:00.000Z"),
+    "startTime": new Date("2026-03-12T17:00:00.078Z"),
+    "endTime": new Date("2026-03-13T13:00:00.078Z"),
+    "userId": "ce7c3b8a-3b61-4ea4-822a-5403160ad267",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-13T08:20:15.446Z"),
+    "createdBy": null
+  },
+  {
+    "id": "67032e4d-a643-4564-9f75-30d250bd5ada",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-13T00:00:00.000Z"),
+    "startTime": new Date("2026-03-12T17:00:00.078Z"),
+    "endTime": new Date("2026-03-13T13:00:00.078Z"),
+    "userId": "b1157ae6-657f-46d9-877a-ca9e9bd08cc1",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-13T08:20:15.446Z"),
+    "createdBy": null
+  },
+  {
+    "id": "c4d7e51f-3692-4af3-adb6-69b819b22aaa",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-13T00:00:00.000Z"),
+    "startTime": new Date("2026-03-12T17:00:00.078Z"),
+    "endTime": new Date("2026-03-13T13:00:00.078Z"),
+    "userId": "c027fd82-5cca-4431-aa13-b413f420b57f",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-13T08:20:15.446Z"),
+    "createdBy": null
+  },
+  {
+    "id": "10273c6a-551c-42cb-bae6-3e97dc3ec672",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-13T00:00:00.000Z"),
+    "startTime": new Date("2026-03-12T17:00:00.078Z"),
+    "endTime": new Date("2026-03-13T13:00:00.078Z"),
+    "userId": "391a0415-cfdd-40a8-b189-745d163d40cb",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-13T08:20:15.446Z"),
+    "createdBy": null
+  },
+  {
+    "id": "d09b61d2-923e-4585-892d-c6725a5db3ac",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-13T00:00:00.000Z"),
+    "startTime": new Date("2026-03-12T17:00:00.078Z"),
+    "endTime": new Date("2026-03-13T13:00:00.078Z"),
+    "userId": "8c5038ff-365e-448a-8176-0dc164b10d9b",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-13T08:20:15.446Z"),
+    "createdBy": null
+  },
+  {
+    "id": "246fdb1c-6eda-4aeb-830b-5db1750e81fb",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-13T00:00:00.000Z"),
+    "startTime": new Date("2026-03-12T17:00:00.078Z"),
+    "endTime": new Date("2026-03-13T13:00:00.078Z"),
+    "userId": "040845c3-87b2-4c3a-b71f-ac4ee3ec9537",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-13T08:20:15.446Z"),
+    "createdBy": null
+  },
+  {
+    "id": "e3399c27-17cc-4e99-91de-3d293a0cbb52",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-13T00:00:00.000Z"),
+    "startTime": new Date("2026-03-12T17:00:00.078Z"),
+    "endTime": new Date("2026-03-13T13:00:00.078Z"),
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-13T08:20:15.446Z"),
+    "createdBy": null
+  },
+  {
+    "id": "734e3de6-3acb-4490-867c-323c6cb40683",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-13T00:00:00.000Z"),
+    "startTime": new Date("2026-03-12T17:00:00.078Z"),
+    "endTime": new Date("2026-03-13T13:00:00.078Z"),
+    "userId": "ce4c8300-5a57-4144-b720-ba44ccea04b9",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-13T08:20:15.446Z"),
+    "createdBy": null
+  },
+  {
+    "id": "643794dd-56d7-45dc-a278-2b77be66130e",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-13T00:00:00.000Z"),
+    "startTime": new Date("2026-03-12T17:00:00.078Z"),
+    "endTime": new Date("2026-03-13T13:00:00.078Z"),
+    "userId": "9f90f6c9-7dca-4a7e-852c-08bc783b3c7e",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-13T08:20:15.446Z"),
+    "createdBy": null
+  },
+  {
+    "id": "c5dc186f-5704-467d-9da3-d205e205a244",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-18T00:00:00.000Z"),
+    "startTime": new Date("2026-03-17T17:00:00.713Z"),
+    "endTime": new Date("2026-03-18T13:00:00.713Z"),
+    "userId": "21dda778-aa98-4419-a318-0c8951641162",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-18T09:27:07.068Z"),
+    "createdBy": null
+  },
+  {
+    "id": "0bc59290-7bee-4757-a99b-eaa3bc11385d",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-18T00:00:00.000Z"),
+    "startTime": new Date("2026-03-17T17:00:00.713Z"),
+    "endTime": new Date("2026-03-18T13:00:00.713Z"),
+    "userId": "1372f6fc-65eb-419f-a060-301153d459f4",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-18T09:27:07.068Z"),
+    "createdBy": null
+  },
+  {
+    "id": "ea1d0335-ab11-4a7d-bfc5-60c25014e7e0",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-18T00:00:00.000Z"),
+    "startTime": new Date("2026-03-17T17:00:00.713Z"),
+    "endTime": new Date("2026-03-18T13:00:00.713Z"),
+    "userId": "2d658f11-34cb-4c94-b7b2-88eb34209297",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-18T09:27:07.068Z"),
+    "createdBy": null
+  },
+  {
+    "id": "3649f09d-0cf5-46d6-aa37-b7f1d83b2e7e",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-18T00:00:00.000Z"),
+    "startTime": new Date("2026-03-17T17:00:00.713Z"),
+    "endTime": new Date("2026-03-18T13:00:00.713Z"),
+    "userId": "7c50486b-2880-4c06-9b5f-d9e5dbcbbf35",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-18T09:27:07.068Z"),
+    "createdBy": null
+  },
+  {
+    "id": "c059ac11-085f-4656-a690-6e366332a5ee",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-18T00:00:00.000Z"),
+    "startTime": new Date("2026-03-17T17:00:00.713Z"),
+    "endTime": new Date("2026-03-18T13:00:00.713Z"),
+    "userId": "576bd29e-4ef4-4fa3-a1de-63a4b29aeb2f",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-18T09:27:07.068Z"),
+    "createdBy": null
+  },
+  {
+    "id": "b869b897-de8c-4a15-b944-3ad9b6cd5c35",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-18T00:00:00.000Z"),
+    "startTime": new Date("2026-03-17T17:00:00.713Z"),
+    "endTime": new Date("2026-03-18T13:00:00.713Z"),
+    "userId": "9155b909-63c8-45aa-a5b6-badf2815f247",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-18T09:27:07.068Z"),
+    "createdBy": null
+  },
+  {
+    "id": "653a8951-1576-4afc-9ddb-96f1f158dbf8",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-18T00:00:00.000Z"),
+    "startTime": new Date("2026-03-17T17:00:00.713Z"),
+    "endTime": new Date("2026-03-18T13:00:00.713Z"),
+    "userId": "f74693ea-076a-4904-978f-693ba2dd7866",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-18T09:27:07.068Z"),
+    "createdBy": null
+  },
+  {
+    "id": "71afabed-8d6a-4e70-aefb-b1aaf0974421",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-18T00:00:00.000Z"),
+    "startTime": new Date("2026-03-17T17:00:00.713Z"),
+    "endTime": new Date("2026-03-18T13:00:00.713Z"),
+    "userId": "c1aa06b9-352e-486e-a82b-2ac1336517b9",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-18T09:27:07.068Z"),
+    "createdBy": null
+  },
+  {
+    "id": "334fcba1-cb47-4111-99b4-78e8ab60c16e",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-18T00:00:00.000Z"),
+    "startTime": new Date("2026-03-17T17:00:00.713Z"),
+    "endTime": new Date("2026-03-18T13:00:00.713Z"),
+    "userId": "6500e16c-1379-45be-8925-f5a71256e3ed",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-18T09:27:07.068Z"),
+    "createdBy": null
+  },
+  {
+    "id": "5e809dd9-e12d-4cce-ab15-39e7b6cd7208",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-18T00:00:00.000Z"),
+    "startTime": new Date("2026-03-17T17:00:00.713Z"),
+    "endTime": new Date("2026-03-18T13:00:00.713Z"),
+    "userId": "9cefc08a-a43f-4401-be9d-ccdf22d7009b",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-18T09:27:07.068Z"),
+    "createdBy": null
+  },
+  {
+    "id": "bc1e032e-48ad-443b-93c3-c8330f9b665e",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-18T00:00:00.000Z"),
+    "startTime": new Date("2026-03-17T17:00:00.713Z"),
+    "endTime": new Date("2026-03-18T13:00:00.713Z"),
+    "userId": "2e991ce8-030d-4925-a113-f24674d8cb59",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-18T09:27:07.068Z"),
+    "createdBy": null
+  },
+  {
+    "id": "535783e1-6739-4102-b483-63e847f5134b",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-18T00:00:00.000Z"),
+    "startTime": new Date("2026-03-17T17:00:00.713Z"),
+    "endTime": new Date("2026-03-18T13:00:00.713Z"),
+    "userId": "ecdcb42e-6255-42da-8a78-523bc33a3e36",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-18T09:27:07.068Z"),
+    "createdBy": null
+  },
+  {
+    "id": "f1e59010-6021-4fd3-8650-c5a9b6883c9d",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-18T00:00:00.000Z"),
+    "startTime": new Date("2026-03-17T17:00:00.713Z"),
+    "endTime": new Date("2026-03-18T13:00:00.713Z"),
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-18T09:27:07.068Z"),
+    "createdBy": null
+  },
+  {
+    "id": "62e4bbfc-0fab-4546-891b-5f5817daed0a",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-18T00:00:00.000Z"),
+    "startTime": new Date("2026-03-17T17:00:00.713Z"),
+    "endTime": new Date("2026-03-18T13:00:00.713Z"),
+    "userId": "b2988236-8de1-4ce3-bced-39943483f203",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-18T09:27:07.068Z"),
+    "createdBy": null
+  },
+  {
+    "id": "27f1d107-edba-464e-a1f5-5ecfa0877fda",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-18T00:00:00.000Z"),
+    "startTime": new Date("2026-03-17T17:00:00.713Z"),
+    "endTime": new Date("2026-03-18T13:00:00.713Z"),
+    "userId": "11193aec-ff66-441a-8ace-03f3e3a3ac9b",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-18T09:27:07.068Z"),
+    "createdBy": null
+  },
+  {
+    "id": "034f8f47-dc7d-429b-b4a0-aba695661848",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-18T00:00:00.000Z"),
+    "startTime": new Date("2026-03-17T17:00:00.713Z"),
+    "endTime": new Date("2026-03-18T13:00:00.713Z"),
+    "userId": "e5c7d7ec-2028-481a-9a9b-1ab7b6dfe160",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-18T09:27:07.068Z"),
+    "createdBy": null
+  },
+  {
+    "id": "02fee657-f0e2-4bef-94cb-c12399074180",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-18T00:00:00.000Z"),
+    "startTime": new Date("2026-03-17T17:00:00.713Z"),
+    "endTime": new Date("2026-03-18T13:00:00.713Z"),
+    "userId": "393fb8e0-7b96-48e0-8602-a98337e522d0",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-18T09:27:07.068Z"),
+    "createdBy": null
+  },
+  {
+    "id": "4c76f6f6-2456-4025-806d-8a67d26936fa",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-18T00:00:00.000Z"),
+    "startTime": new Date("2026-03-17T17:00:00.713Z"),
+    "endTime": new Date("2026-03-18T13:00:00.713Z"),
+    "userId": "ce7c3b8a-3b61-4ea4-822a-5403160ad267",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-18T09:27:07.068Z"),
+    "createdBy": null
+  },
+  {
+    "id": "b4dbf286-026e-4f73-a694-cd871e0c6c8a",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-18T00:00:00.000Z"),
+    "startTime": new Date("2026-03-17T17:00:00.713Z"),
+    "endTime": new Date("2026-03-18T13:00:00.713Z"),
+    "userId": "b1157ae6-657f-46d9-877a-ca9e9bd08cc1",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-18T09:27:07.068Z"),
+    "createdBy": null
+  },
+  {
+    "id": "c0c8e0a2-4b9b-48a4-9ec6-58d1115122d9",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-18T00:00:00.000Z"),
+    "startTime": new Date("2026-03-17T17:00:00.713Z"),
+    "endTime": new Date("2026-03-18T13:00:00.713Z"),
+    "userId": "c027fd82-5cca-4431-aa13-b413f420b57f",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-18T09:27:07.068Z"),
+    "createdBy": null
+  },
+  {
+    "id": "6d0b9d36-f02d-49c8-9877-157a3b8a9be1",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-18T00:00:00.000Z"),
+    "startTime": new Date("2026-03-17T17:00:00.713Z"),
+    "endTime": new Date("2026-03-18T13:00:00.713Z"),
+    "userId": "391a0415-cfdd-40a8-b189-745d163d40cb",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-18T09:27:07.068Z"),
+    "createdBy": null
+  },
+  {
+    "id": "c9bbac2d-55cd-4dbf-8c4c-2060afcec810",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-18T00:00:00.000Z"),
+    "startTime": new Date("2026-03-17T17:00:00.713Z"),
+    "endTime": new Date("2026-03-18T13:00:00.713Z"),
+    "userId": "8c5038ff-365e-448a-8176-0dc164b10d9b",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-18T09:27:07.068Z"),
+    "createdBy": null
+  },
+  {
+    "id": "ef302c80-964c-44b4-b54b-69ae3d43758a",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-18T00:00:00.000Z"),
+    "startTime": new Date("2026-03-17T17:00:00.713Z"),
+    "endTime": new Date("2026-03-18T13:00:00.713Z"),
+    "userId": "040845c3-87b2-4c3a-b71f-ac4ee3ec9537",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-18T09:27:07.068Z"),
+    "createdBy": null
+  },
+  {
+    "id": "6a405436-8865-4e14-a0d5-e7a63d885722",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-18T00:00:00.000Z"),
+    "startTime": new Date("2026-03-17T17:00:00.713Z"),
+    "endTime": new Date("2026-03-18T13:00:00.713Z"),
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-18T09:27:07.068Z"),
+    "createdBy": null
+  },
+  {
+    "id": "1c846b98-ab32-4737-9228-bec32fe66885",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-18T00:00:00.000Z"),
+    "startTime": new Date("2026-03-17T17:00:00.713Z"),
+    "endTime": new Date("2026-03-18T13:00:00.713Z"),
+    "userId": "ce4c8300-5a57-4144-b720-ba44ccea04b9",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-18T09:27:07.068Z"),
+    "createdBy": null
+  },
+  {
+    "id": "3744e0e9-abb2-4283-b89d-1ffdb5a310b7",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-18T00:00:00.000Z"),
+    "startTime": new Date("2026-03-17T17:00:00.713Z"),
+    "endTime": new Date("2026-03-18T13:00:00.713Z"),
+    "userId": "9f90f6c9-7dca-4a7e-852c-08bc783b3c7e",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-18T09:27:07.068Z"),
+    "createdBy": null
+  },
+  {
+    "id": "def76998-67d1-4980-9ae6-a4d4de54a363",
+    "roomCode": "52-205",
+    "date": new Date("2026-03-26T00:00:00.000Z"),
+    "startTime": new Date("2026-03-25T17:00:00.391Z"),
+    "endTime": new Date("2026-03-26T13:00:00.391Z"),
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "source": "MANUAL",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-26T09:41:46.270Z"),
+    "createdBy": "HARDWARE_MOVE"
+  },
+  {
+    "id": "ea7b8bf9-b8b0-4052-83e7-8ed732d66af4",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-26T00:00:00.000Z"),
+    "startTime": new Date("2026-03-26T10:00:00.677Z"),
+    "endTime": new Date("2026-03-26T12:00:00.677Z"),
+    "userId": "13635691-70ac-4e4e-b095-c05d02e90e8d",
+    "source": "SCHEDULE",
+    "scheduleId": "de4d0bc5-208d-4828-9855-973c858e120d",
+    "subjectId": "9c807e3d-7e19-46f1-961c-a1f3181430ca",
+    "createdAt": new Date("2026-03-26T10:44:00.077Z"),
+    "createdBy": null
+  },
+  {
+    "id": "f45d87f4-c4e8-434a-a9e9-5930d109924d",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-26T00:00:00.000Z"),
+    "startTime": new Date("2026-03-26T10:00:00.677Z"),
+    "endTime": new Date("2026-03-26T12:00:00.677Z"),
+    "userId": "e4cc76e4-aaa4-4917-b37e-0b7808c3ac2c",
+    "source": "SCHEDULE",
+    "scheduleId": "de4d0bc5-208d-4828-9855-973c858e120d",
+    "subjectId": "9c807e3d-7e19-46f1-961c-a1f3181430ca",
+    "createdAt": new Date("2026-03-26T10:44:00.077Z"),
+    "createdBy": null
+  },
+  {
+    "id": "609114f0-b657-4649-8543-86eb1f21ca93",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-26T00:00:00.000Z"),
+    "startTime": new Date("2026-03-26T10:00:00.677Z"),
+    "endTime": new Date("2026-03-26T12:00:00.677Z"),
+    "userId": "c07d8bf3-03db-4057-a6fe-aaec5106144e",
+    "source": "SCHEDULE",
+    "scheduleId": "de4d0bc5-208d-4828-9855-973c858e120d",
+    "subjectId": "9c807e3d-7e19-46f1-961c-a1f3181430ca",
+    "createdAt": new Date("2026-03-26T10:44:00.077Z"),
+    "createdBy": null
+  },
+  {
+    "id": "23b09842-1466-444d-8faa-74ea8b147963",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-26T00:00:00.000Z"),
+    "startTime": new Date("2026-03-26T10:00:00.677Z"),
+    "endTime": new Date("2026-03-26T12:00:00.677Z"),
+    "userId": "4b75f40d-e156-4aec-8a22-7c2a7008b566",
+    "source": "SCHEDULE",
+    "scheduleId": "de4d0bc5-208d-4828-9855-973c858e120d",
+    "subjectId": "9c807e3d-7e19-46f1-961c-a1f3181430ca",
+    "createdAt": new Date("2026-03-26T10:44:00.077Z"),
+    "createdBy": null
+  },
+  {
+    "id": "ba584fac-6301-4d8d-bc03-9ee13a1c83cc",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-26T00:00:00.000Z"),
+    "startTime": new Date("2026-03-26T10:00:00.677Z"),
+    "endTime": new Date("2026-03-26T12:00:00.677Z"),
+    "userId": "b2988236-8de1-4ce3-bced-39943483f203",
+    "source": "SCHEDULE",
+    "scheduleId": "de4d0bc5-208d-4828-9855-973c858e120d",
+    "subjectId": "9c807e3d-7e19-46f1-961c-a1f3181430ca",
+    "createdAt": new Date("2026-03-26T10:44:00.077Z"),
+    "createdBy": null
+  },
+  {
+    "id": "8852dd74-79cc-48f6-90eb-82c14b676874",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-26T00:00:00.000Z"),
+    "startTime": new Date("2026-03-26T10:00:00.677Z"),
+    "endTime": new Date("2026-03-26T12:00:00.677Z"),
+    "userId": "7955bd30-fb2a-4f82-a9b9-4615764acd40",
+    "source": "SCHEDULE",
+    "scheduleId": "de4d0bc5-208d-4828-9855-973c858e120d",
+    "subjectId": "9c807e3d-7e19-46f1-961c-a1f3181430ca",
+    "createdAt": new Date("2026-03-26T10:44:00.077Z"),
+    "createdBy": null
+  },
+  {
+    "id": "fdab4678-6348-4dca-94d1-b9d81bcad0f6",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-26T00:00:00.000Z"),
+    "startTime": new Date("2026-03-26T10:00:00.677Z"),
+    "endTime": new Date("2026-03-26T12:00:00.677Z"),
+    "userId": "3baaba62-f128-4319-aaac-b2ad957b38d1",
+    "source": "SCHEDULE",
+    "scheduleId": "de4d0bc5-208d-4828-9855-973c858e120d",
+    "subjectId": "9c807e3d-7e19-46f1-961c-a1f3181430ca",
+    "createdAt": new Date("2026-03-26T10:44:00.077Z"),
+    "createdBy": null
+  },
+  {
+    "id": "4283eac7-c810-4131-a974-a5d3ec0758e2",
+    "roomCode": "52-205",
+    "date": new Date("2026-04-07T00:00:00.000Z"),
+    "startTime": new Date("2026-04-07T08:00:00.472Z"),
+    "endTime": new Date("2026-04-07T12:00:00.472Z"),
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "source": "MANUAL",
+    "scheduleId": "de4d0bc5-208d-4828-9855-973c858e120d",
+    "subjectId": "9c807e3d-7e19-46f1-961c-a1f3181430ca",
+    "createdAt": new Date("2026-04-07T08:17:26.260Z"),
+    "createdBy": "HARDWARE_SWAP"
+  },
+  {
+    "id": "b896b886-3d50-448d-9d2d-83784ae9aef8",
+    "roomCode": "52-701",
+    "date": new Date("2026-04-08T00:00:00.000Z"),
+    "startTime": new Date("2026-03-25T06:00:00.916Z"),
+    "endTime": new Date("2026-03-25T07:30:00.916Z"),
+    "userId": "8f692844-ce1c-4d62-bd0c-90abc6595d3a",
+    "source": "SCHEDULE",
+    "scheduleId": "ccf0aac2-b3ad-4de1-9d70-85c95120abcf",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-04-08T06:10:19.719Z"),
+    "createdBy": null
+  },
+  {
+    "id": "5398b6be-47c2-4fd0-bc88-8c3667024462",
+    "roomCode": "52-701",
+    "date": new Date("2026-04-08T00:00:00.000Z"),
+    "startTime": new Date("2026-03-25T06:00:00.916Z"),
+    "endTime": new Date("2026-03-25T07:30:00.916Z"),
+    "userId": "be0bc3f7-d394-464a-a0bc-8387f7d22c90",
+    "source": "SCHEDULE",
+    "scheduleId": "ccf0aac2-b3ad-4de1-9d70-85c95120abcf",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-04-08T06:10:19.719Z"),
+    "createdBy": null
+  },
+  {
+    "id": "6c4e47e1-a535-4883-aae1-a38ebc7eebd6",
+    "roomCode": "52-701",
+    "date": new Date("2026-04-08T00:00:00.000Z"),
+    "startTime": new Date("2026-03-25T06:00:00.916Z"),
+    "endTime": new Date("2026-03-25T07:30:00.916Z"),
+    "userId": "558f2da6-76ca-4382-8a33-35050393d4be",
+    "source": "SCHEDULE",
+    "scheduleId": "ccf0aac2-b3ad-4de1-9d70-85c95120abcf",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-04-08T06:10:19.719Z"),
+    "createdBy": null
+  },
+  {
+    "id": "0faac4cb-68fc-4489-9949-d65110884f8a",
+    "roomCode": "52-701",
+    "date": new Date("2026-04-08T00:00:00.000Z"),
+    "startTime": new Date("2026-03-25T06:00:00.916Z"),
+    "endTime": new Date("2026-03-25T07:30:00.916Z"),
+    "userId": "4c8dd6bd-bd2c-46f9-b330-8e1a3bd17122",
+    "source": "SCHEDULE",
+    "scheduleId": "ccf0aac2-b3ad-4de1-9d70-85c95120abcf",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-04-08T06:10:19.719Z"),
+    "createdBy": null
+  },
+  {
+    "id": "6db1439b-dc6a-4d0c-ae24-5976a513aee4",
+    "roomCode": "52-701",
+    "date": new Date("2026-04-08T00:00:00.000Z"),
+    "startTime": new Date("2026-03-25T06:00:00.916Z"),
+    "endTime": new Date("2026-03-25T07:30:00.916Z"),
+    "userId": "f8b47fdf-76d7-45f4-a5ae-0f55e151d877",
+    "source": "SCHEDULE",
+    "scheduleId": "ccf0aac2-b3ad-4de1-9d70-85c95120abcf",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-04-08T06:10:19.719Z"),
+    "createdBy": null
+  },
+  {
+    "id": "b28e9c3e-b312-40a6-bf94-624ebcf9d337",
+    "roomCode": "52-701",
+    "date": new Date("2026-04-08T00:00:00.000Z"),
+    "startTime": new Date("2026-03-25T06:00:00.916Z"),
+    "endTime": new Date("2026-03-25T07:30:00.916Z"),
+    "userId": "0cb593f5-5365-4694-b86d-51c3e8d5f762",
+    "source": "SCHEDULE",
+    "scheduleId": "ccf0aac2-b3ad-4de1-9d70-85c95120abcf",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-04-08T06:10:19.719Z"),
+    "createdBy": null
+  },
+  {
+    "id": "13889beb-b0c6-46c7-8c80-81a7fc587955",
+    "roomCode": "52-701",
+    "date": new Date("2026-04-08T00:00:00.000Z"),
+    "startTime": new Date("2026-03-25T06:00:00.916Z"),
+    "endTime": new Date("2026-03-25T07:30:00.916Z"),
+    "userId": "0fae1523-cd5e-4667-bf71-d7fd603db23e",
+    "source": "SCHEDULE",
+    "scheduleId": "ccf0aac2-b3ad-4de1-9d70-85c95120abcf",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-04-08T06:10:19.719Z"),
+    "createdBy": null
+  },
+  {
+    "id": "a3e6f2c4-a9b5-4ad2-a175-40bfcb2b70a2",
+    "roomCode": "52-701",
+    "date": new Date("2026-04-08T00:00:00.000Z"),
+    "startTime": new Date("2026-03-25T06:00:00.916Z"),
+    "endTime": new Date("2026-03-25T07:30:00.916Z"),
+    "userId": "68529f70-0cbd-4554-b118-ee9952268dbe",
+    "source": "SCHEDULE",
+    "scheduleId": "ccf0aac2-b3ad-4de1-9d70-85c95120abcf",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-04-08T06:10:19.719Z"),
+    "createdBy": null
+  },
+  {
+    "id": "54719205-511b-4f7a-ac78-582add7bcd3d",
+    "roomCode": "52-701",
+    "date": new Date("2026-04-08T00:00:00.000Z"),
+    "startTime": new Date("2026-03-25T06:00:00.916Z"),
+    "endTime": new Date("2026-03-25T07:30:00.916Z"),
+    "userId": "180f1ea8-70ce-44e3-bcae-4edd23ad1607",
+    "source": "SCHEDULE",
+    "scheduleId": "ccf0aac2-b3ad-4de1-9d70-85c95120abcf",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-04-08T06:10:19.719Z"),
+    "createdBy": null
+  },
+  {
+    "id": "e260df2e-7393-4355-8469-01395e152911",
+    "roomCode": "52-701",
+    "date": new Date("2026-04-08T00:00:00.000Z"),
+    "startTime": new Date("2026-03-25T06:00:00.916Z"),
+    "endTime": new Date("2026-03-25T07:30:00.916Z"),
+    "userId": "59b39fb6-6444-47af-8600-61633b7cd398",
+    "source": "SCHEDULE",
+    "scheduleId": "ccf0aac2-b3ad-4de1-9d70-85c95120abcf",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-04-08T06:10:19.719Z"),
+    "createdBy": null
+  },
+  {
+    "id": "15950624-36f5-49ea-bed0-6f37a9527d07",
+    "roomCode": "52-701",
+    "date": new Date("2026-04-08T00:00:00.000Z"),
+    "startTime": new Date("2026-03-25T06:00:00.916Z"),
+    "endTime": new Date("2026-03-25T07:30:00.916Z"),
+    "userId": "f67eca98-2ba9-4322-bfbb-d1c9317b9d79",
+    "source": "SCHEDULE",
+    "scheduleId": "ccf0aac2-b3ad-4de1-9d70-85c95120abcf",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-04-08T06:10:19.719Z"),
+    "createdBy": null
+  },
+  {
+    "id": "62a13a1c-0a81-4b5b-b188-55afd94fd0ec",
+    "roomCode": "52-701",
+    "date": new Date("2026-04-08T00:00:00.000Z"),
+    "startTime": new Date("2026-03-25T06:00:00.916Z"),
+    "endTime": new Date("2026-03-25T07:30:00.916Z"),
+    "userId": "5ac6609d-e691-4cf4-b5b2-c7566f99edb7",
+    "source": "SCHEDULE",
+    "scheduleId": "ccf0aac2-b3ad-4de1-9d70-85c95120abcf",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-04-08T06:10:19.719Z"),
+    "createdBy": null
+  },
+  {
+    "id": "52e6b1f3-673e-4dba-911a-5adaab767d0c",
+    "roomCode": "52-701",
+    "date": new Date("2026-04-08T00:00:00.000Z"),
+    "startTime": new Date("2026-03-25T06:00:00.916Z"),
+    "endTime": new Date("2026-03-25T07:30:00.916Z"),
+    "userId": "47fc0493-dcfe-4de4-84fb-226fec80b931",
+    "source": "SCHEDULE",
+    "scheduleId": "ccf0aac2-b3ad-4de1-9d70-85c95120abcf",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-04-08T06:10:19.719Z"),
+    "createdBy": null
+  },
+  {
+    "id": "e0ce600f-3da7-4a63-9051-88df254854a2",
+    "roomCode": "52-701",
+    "date": new Date("2026-04-08T00:00:00.000Z"),
+    "startTime": new Date("2026-03-25T06:00:00.916Z"),
+    "endTime": new Date("2026-03-25T07:30:00.916Z"),
+    "userId": "f1de1ffb-1822-45d3-b8f7-e2afc87a0bcf",
+    "source": "SCHEDULE",
+    "scheduleId": "ccf0aac2-b3ad-4de1-9d70-85c95120abcf",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-04-08T06:10:19.719Z"),
+    "createdBy": null
+  },
+  {
+    "id": "c67d5cd7-1b63-47ad-b724-6116a69ba7cf",
+    "roomCode": "52-701",
+    "date": new Date("2026-04-08T00:00:00.000Z"),
+    "startTime": new Date("2026-03-25T06:00:00.916Z"),
+    "endTime": new Date("2026-03-25T07:30:00.916Z"),
+    "userId": "99d96c3e-bb46-4dfc-95da-180180c3d919",
+    "source": "SCHEDULE",
+    "scheduleId": "ccf0aac2-b3ad-4de1-9d70-85c95120abcf",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-04-08T06:10:19.719Z"),
+    "createdBy": null
+  },
+  {
+    "id": "4a4f54bb-f75d-43cf-b5c7-452a03c802fe",
+    "roomCode": "52-701",
+    "date": new Date("2026-04-08T00:00:00.000Z"),
+    "startTime": new Date("2026-03-25T06:00:00.916Z"),
+    "endTime": new Date("2026-03-25T07:30:00.916Z"),
+    "userId": "8e436af5-839d-490c-911e-8138669196f8",
+    "source": "SCHEDULE",
+    "scheduleId": "ccf0aac2-b3ad-4de1-9d70-85c95120abcf",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-04-08T06:10:19.719Z"),
+    "createdBy": null
+  },
+  {
+    "id": "e5d064b9-9cc4-41fd-9d87-7e82dd601d53",
+    "roomCode": "52-701",
+    "date": new Date("2026-04-08T00:00:00.000Z"),
+    "startTime": new Date("2026-03-25T06:00:00.916Z"),
+    "endTime": new Date("2026-03-25T07:30:00.916Z"),
+    "userId": "7955bd30-fb2a-4f82-a9b9-4615764acd40",
+    "source": "SCHEDULE",
+    "scheduleId": "ccf0aac2-b3ad-4de1-9d70-85c95120abcf",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-04-08T06:10:19.719Z"),
+    "createdBy": null
+  },
+  {
+    "id": "751e8fdf-7714-43b3-bc01-96af8fa17ba1",
+    "roomCode": "52-701",
+    "date": new Date("2026-04-08T00:00:00.000Z"),
+    "startTime": new Date("2026-03-25T06:00:00.916Z"),
+    "endTime": new Date("2026-03-25T07:30:00.916Z"),
+    "userId": "3baaba62-f128-4319-aaac-b2ad957b38d1",
+    "source": "SCHEDULE",
+    "scheduleId": "ccf0aac2-b3ad-4de1-9d70-85c95120abcf",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-04-08T06:10:19.719Z"),
+    "createdBy": null
+  },
+  {
+    "id": "c00ae8ac-e99e-48ce-a4ce-b8798bc0a3dd",
+    "roomCode": "52-211",
+    "date": new Date("2026-03-27T00:00:00.000Z"),
+    "startTime": new Date("2024-01-01T01:00:00.000Z"),
+    "endTime": new Date("2024-01-01T03:00:00.000Z"),
+    "userId": "3c0ecff4-601d-472b-920c-b3997330a6a2",
+    "source": "SCHEDULE",
+    "scheduleId": "dbc02d05-aadb-4b32-9857-849e8b8cf761",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "createdAt": new Date("2026-03-27T13:01:16.027Z"),
+    "createdBy": null
+  },
+  {
+    "id": "197e01e3-9531-441b-b0f1-85070a429503",
+    "roomCode": "52-211",
+    "date": new Date("2026-03-27T00:00:00.000Z"),
+    "startTime": new Date("2024-01-01T01:00:00.000Z"),
+    "endTime": new Date("2024-01-01T03:00:00.000Z"),
+    "userId": "f34da8dd-83ff-4034-87a2-988e943498e9",
+    "source": "SCHEDULE",
+    "scheduleId": "dbc02d05-aadb-4b32-9857-849e8b8cf761",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "createdAt": new Date("2026-03-27T13:01:16.027Z"),
+    "createdBy": null
+  },
+  {
+    "id": "1d2c8f4f-6ed3-4aea-9f88-ea5474fa9610",
+    "roomCode": "52-211",
+    "date": new Date("2026-03-27T00:00:00.000Z"),
+    "startTime": new Date("2024-01-01T01:00:00.000Z"),
+    "endTime": new Date("2024-01-01T03:00:00.000Z"),
+    "userId": "012236b8-c48f-4d1a-93be-89a24f477034",
+    "source": "SCHEDULE",
+    "scheduleId": "dbc02d05-aadb-4b32-9857-849e8b8cf761",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "createdAt": new Date("2026-03-27T13:01:16.027Z"),
+    "createdBy": null
+  },
+  {
+    "id": "6264720f-dc9e-4c14-95bd-ffbb9fd2150d",
+    "roomCode": "52-211",
+    "date": new Date("2026-03-27T00:00:00.000Z"),
+    "startTime": new Date("2024-01-01T01:00:00.000Z"),
+    "endTime": new Date("2024-01-01T03:00:00.000Z"),
+    "userId": "849b7363-e9b4-4b2d-ac7f-5930deba07ed",
+    "source": "SCHEDULE",
+    "scheduleId": "dbc02d05-aadb-4b32-9857-849e8b8cf761",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "createdAt": new Date("2026-03-27T13:01:16.027Z"),
+    "createdBy": null
+  },
+  {
+    "id": "c61756ec-463f-4a4d-ae67-56ddeeb53687",
+    "roomCode": "52-211",
+    "date": new Date("2026-03-27T00:00:00.000Z"),
+    "startTime": new Date("2024-01-01T01:00:00.000Z"),
+    "endTime": new Date("2024-01-01T03:00:00.000Z"),
+    "userId": "dccfc0d3-e3e4-45cd-a3d6-eb0a1a2b3c9d",
+    "source": "SCHEDULE",
+    "scheduleId": "dbc02d05-aadb-4b32-9857-849e8b8cf761",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "createdAt": new Date("2026-03-27T13:01:16.027Z"),
+    "createdBy": null
+  },
+  {
+    "id": "f16f96d9-44e6-4ca2-aedb-291f157b205f",
+    "roomCode": "52-211",
+    "date": new Date("2026-03-27T00:00:00.000Z"),
+    "startTime": new Date("2024-01-01T01:00:00.000Z"),
+    "endTime": new Date("2024-01-01T03:00:00.000Z"),
+    "userId": "9dc5bcc2-a8b1-419a-a5c7-4a864ecdc3d5",
+    "source": "SCHEDULE",
+    "scheduleId": "dbc02d05-aadb-4b32-9857-849e8b8cf761",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "createdAt": new Date("2026-03-27T13:01:16.027Z"),
+    "createdBy": null
+  },
+  {
+    "id": "54750455-522a-4f63-b4e0-34bdaf952789",
+    "roomCode": "52-211",
+    "date": new Date("2026-03-27T00:00:00.000Z"),
+    "startTime": new Date("2024-01-01T01:00:00.000Z"),
+    "endTime": new Date("2024-01-01T03:00:00.000Z"),
+    "userId": "632848de-036a-420e-8ffe-2a0c4ba449dd",
+    "source": "SCHEDULE",
+    "scheduleId": "dbc02d05-aadb-4b32-9857-849e8b8cf761",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "createdAt": new Date("2026-03-27T13:01:16.027Z"),
+    "createdBy": null
+  },
+  {
+    "id": "3abbe927-e365-4914-88d4-966b3cd7ed66",
+    "roomCode": "52-211",
+    "date": new Date("2026-03-27T00:00:00.000Z"),
+    "startTime": new Date("2024-01-01T01:00:00.000Z"),
+    "endTime": new Date("2024-01-01T03:00:00.000Z"),
+    "userId": "d75482bf-41dc-43f0-b3c8-7f1f34677dae",
+    "source": "SCHEDULE",
+    "scheduleId": "dbc02d05-aadb-4b32-9857-849e8b8cf761",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "createdAt": new Date("2026-03-27T13:01:16.027Z"),
+    "createdBy": null
+  },
+  {
+    "id": "44ed3c7b-6a48-4c2e-a67a-051a69a3020a",
+    "roomCode": "52-211",
+    "date": new Date("2026-03-27T00:00:00.000Z"),
+    "startTime": new Date("2024-01-01T01:00:00.000Z"),
+    "endTime": new Date("2024-01-01T03:00:00.000Z"),
+    "userId": "13f2aa7f-a7f3-4d8c-9b68-bc57fef631bc",
+    "source": "SCHEDULE",
+    "scheduleId": "dbc02d05-aadb-4b32-9857-849e8b8cf761",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "createdAt": new Date("2026-03-27T13:01:16.027Z"),
+    "createdBy": null
+  },
+  {
+    "id": "ea212d34-5700-4abe-8778-a7f37ece30c5",
+    "roomCode": "52-211",
+    "date": new Date("2026-03-27T00:00:00.000Z"),
+    "startTime": new Date("2024-01-01T01:00:00.000Z"),
+    "endTime": new Date("2024-01-01T03:00:00.000Z"),
+    "userId": "6bf1b99a-ef44-4300-994c-3df77f87d481",
+    "source": "SCHEDULE",
+    "scheduleId": "dbc02d05-aadb-4b32-9857-849e8b8cf761",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "createdAt": new Date("2026-03-27T13:01:16.027Z"),
+    "createdBy": null
+  },
+  {
+    "id": "fae6fb1c-c2fb-41d1-9f43-07c38c5cefbc",
+    "roomCode": "52-211",
+    "date": new Date("2026-03-27T00:00:00.000Z"),
+    "startTime": new Date("2024-01-01T01:00:00.000Z"),
+    "endTime": new Date("2024-01-01T03:00:00.000Z"),
+    "userId": "9bd7942a-2467-4b6a-97e9-0eddf4b96f03",
+    "source": "SCHEDULE",
+    "scheduleId": "dbc02d05-aadb-4b32-9857-849e8b8cf761",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "createdAt": new Date("2026-03-27T13:01:16.027Z"),
+    "createdBy": null
+  },
+  {
+    "id": "bca1c3ff-f3c6-4565-a278-e1f2c0a09b41",
+    "roomCode": "52-211",
+    "date": new Date("2026-03-27T00:00:00.000Z"),
+    "startTime": new Date("2024-01-01T01:00:00.000Z"),
+    "endTime": new Date("2024-01-01T03:00:00.000Z"),
+    "userId": "2d712c69-29d5-478c-a811-516e91a91f83",
+    "source": "SCHEDULE",
+    "scheduleId": "dbc02d05-aadb-4b32-9857-849e8b8cf761",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "createdAt": new Date("2026-03-27T13:01:16.027Z"),
+    "createdBy": null
+  },
+  {
+    "id": "b50ddd48-7f0b-4d3a-a3ce-16a3db455269",
+    "roomCode": "52-211",
+    "date": new Date("2026-03-27T00:00:00.000Z"),
+    "startTime": new Date("2024-01-01T01:00:00.000Z"),
+    "endTime": new Date("2024-01-01T03:00:00.000Z"),
+    "userId": "fe4bf6b9-fdcf-43df-ac34-4ec958a3f612",
+    "source": "SCHEDULE",
+    "scheduleId": "dbc02d05-aadb-4b32-9857-849e8b8cf761",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "createdAt": new Date("2026-03-27T13:01:16.027Z"),
+    "createdBy": null
+  },
+  {
+    "id": "06ba8f03-8f6c-430e-9436-380b47144a59",
+    "roomCode": "52-211",
+    "date": new Date("2026-03-27T00:00:00.000Z"),
+    "startTime": new Date("2024-01-01T01:00:00.000Z"),
+    "endTime": new Date("2024-01-01T03:00:00.000Z"),
+    "userId": "fbaffc02-5266-4fcb-8644-ac395d5ecb71",
+    "source": "SCHEDULE",
+    "scheduleId": "dbc02d05-aadb-4b32-9857-849e8b8cf761",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "createdAt": new Date("2026-03-27T13:01:16.027Z"),
+    "createdBy": null
+  },
+  {
+    "id": "9221ac8a-7aad-4506-85c5-b10b48139329",
+    "roomCode": "52-211",
+    "date": new Date("2026-03-27T00:00:00.000Z"),
+    "startTime": new Date("2024-01-01T01:00:00.000Z"),
+    "endTime": new Date("2024-01-01T03:00:00.000Z"),
+    "userId": "fbae6123-d812-489e-a779-68ca3ded836c",
+    "source": "SCHEDULE",
+    "scheduleId": "dbc02d05-aadb-4b32-9857-849e8b8cf761",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "createdAt": new Date("2026-03-27T13:01:16.027Z"),
+    "createdBy": null
+  },
+  {
+    "id": "70157e3f-2296-4f71-9ea9-94d5f91faa8f",
+    "roomCode": "52-211",
+    "date": new Date("2026-03-27T00:00:00.000Z"),
+    "startTime": new Date("2024-01-01T01:00:00.000Z"),
+    "endTime": new Date("2024-01-01T03:00:00.000Z"),
+    "userId": "a7e2ecd8-dedd-48b2-9513-f36a23b19125",
+    "source": "SCHEDULE",
+    "scheduleId": "dbc02d05-aadb-4b32-9857-849e8b8cf761",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "createdAt": new Date("2026-03-27T13:01:16.027Z"),
+    "createdBy": null
+  },
+  {
+    "id": "4aa1515e-e3ad-49e8-9818-c08365837ca6",
+    "roomCode": "52-211",
+    "date": new Date("2026-03-27T00:00:00.000Z"),
+    "startTime": new Date("2024-01-01T01:00:00.000Z"),
+    "endTime": new Date("2024-01-01T03:00:00.000Z"),
+    "userId": "2959696f-91f4-4aa1-b68d-fb543edad42d",
+    "source": "SCHEDULE",
+    "scheduleId": "dbc02d05-aadb-4b32-9857-849e8b8cf761",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "createdAt": new Date("2026-03-27T13:01:16.027Z"),
+    "createdBy": null
+  },
+  {
+    "id": "f830fb88-bae6-413d-b865-7335d26a1417",
+    "roomCode": "52-211",
+    "date": new Date("2026-03-27T00:00:00.000Z"),
+    "startTime": new Date("2024-01-01T01:00:00.000Z"),
+    "endTime": new Date("2024-01-01T03:00:00.000Z"),
+    "userId": "9f7071e7-12a8-42c5-8ee0-dc018c827a03",
+    "source": "SCHEDULE",
+    "scheduleId": "dbc02d05-aadb-4b32-9857-849e8b8cf761",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "createdAt": new Date("2026-03-27T13:01:16.027Z"),
+    "createdBy": null
+  },
+  {
+    "id": "caf91bed-f102-412f-ab9c-67bc6a34cfc1",
+    "roomCode": "52-211",
+    "date": new Date("2026-03-27T00:00:00.000Z"),
+    "startTime": new Date("2024-01-01T01:00:00.000Z"),
+    "endTime": new Date("2024-01-01T03:00:00.000Z"),
+    "userId": "b39cef64-8666-475c-8028-08e0428e3652",
+    "source": "SCHEDULE",
+    "scheduleId": "dbc02d05-aadb-4b32-9857-849e8b8cf761",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "createdAt": new Date("2026-03-27T13:01:16.027Z"),
+    "createdBy": null
+  },
+  {
+    "id": "17beaab5-61f9-4e97-92ee-879a22d450ad",
+    "roomCode": "52-211",
+    "date": new Date("2026-03-27T00:00:00.000Z"),
+    "startTime": new Date("2024-01-01T01:00:00.000Z"),
+    "endTime": new Date("2024-01-01T03:00:00.000Z"),
+    "userId": "b3cec1bf-6b7b-46f4-9122-9a6c83ba384d",
+    "source": "SCHEDULE",
+    "scheduleId": "dbc02d05-aadb-4b32-9857-849e8b8cf761",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "createdAt": new Date("2026-03-27T13:01:16.027Z"),
+    "createdBy": null
+  },
+  {
+    "id": "7fbc4991-42bc-4632-9fa2-212b6ec1da88",
+    "roomCode": "52-211",
+    "date": new Date("2026-03-27T00:00:00.000Z"),
+    "startTime": new Date("2024-01-01T01:00:00.000Z"),
+    "endTime": new Date("2024-01-01T03:00:00.000Z"),
+    "userId": "fea305d4-df25-4f46-99ab-29cda37a8742",
+    "source": "SCHEDULE",
+    "scheduleId": "dbc02d05-aadb-4b32-9857-849e8b8cf761",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "createdAt": new Date("2026-03-27T13:01:16.027Z"),
+    "createdBy": null
+  },
+  {
+    "id": "bf8f1175-be25-4645-bc0b-ee769ea21bad",
+    "roomCode": "52-211",
+    "date": new Date("2026-03-27T00:00:00.000Z"),
+    "startTime": new Date("2024-01-01T01:00:00.000Z"),
+    "endTime": new Date("2024-01-01T03:00:00.000Z"),
+    "userId": "bf0bf017-26ec-47d0-ac46-b355f3acf7a1",
+    "source": "SCHEDULE",
+    "scheduleId": "dbc02d05-aadb-4b32-9857-849e8b8cf761",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "createdAt": new Date("2026-03-27T13:01:16.027Z"),
+    "createdBy": null
+  },
+  {
+    "id": "609297ff-8fcc-4c0d-a9a3-2a7c809ffcd4",
+    "roomCode": "52-211",
+    "date": new Date("2026-03-27T00:00:00.000Z"),
+    "startTime": new Date("2024-01-01T01:00:00.000Z"),
+    "endTime": new Date("2024-01-01T03:00:00.000Z"),
+    "userId": "f4a72527-3009-4739-9e0d-05c547f8b54c",
+    "source": "SCHEDULE",
+    "scheduleId": "dbc02d05-aadb-4b32-9857-849e8b8cf761",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "createdAt": new Date("2026-03-27T13:01:16.027Z"),
+    "createdBy": null
+  },
+  {
+    "id": "83fcf72b-cc4e-4bab-aaec-cc6f44c1a0bd",
+    "roomCode": "52-211",
+    "date": new Date("2026-03-27T00:00:00.000Z"),
+    "startTime": new Date("2024-01-01T01:00:00.000Z"),
+    "endTime": new Date("2024-01-01T03:00:00.000Z"),
+    "userId": "82cddcc3-93fd-4766-8c67-e8313cc7aa02",
+    "source": "SCHEDULE",
+    "scheduleId": "dbc02d05-aadb-4b32-9857-849e8b8cf761",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "createdAt": new Date("2026-03-27T13:01:16.027Z"),
+    "createdBy": null
+  },
+  {
+    "id": "37dd7e45-b7b4-4e3b-84fc-99d546c87726",
+    "roomCode": "52-211",
+    "date": new Date("2026-03-27T00:00:00.000Z"),
+    "startTime": new Date("2024-01-01T01:00:00.000Z"),
+    "endTime": new Date("2024-01-01T03:00:00.000Z"),
+    "userId": "4b5687b2-f3cd-439f-8387-8758c44cf82d",
+    "source": "SCHEDULE",
+    "scheduleId": "dbc02d05-aadb-4b32-9857-849e8b8cf761",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "createdAt": new Date("2026-03-27T13:01:16.027Z"),
+    "createdBy": null
+  },
+  {
+    "id": "ee9d5f73-e553-45cd-a8f6-384a830eea96",
+    "roomCode": "52-211",
+    "date": new Date("2026-03-27T00:00:00.000Z"),
+    "startTime": new Date("2024-01-01T01:00:00.000Z"),
+    "endTime": new Date("2024-01-01T03:00:00.000Z"),
+    "userId": "35f13030-01f1-448d-84e9-b44c1b44bb66",
+    "source": "SCHEDULE",
+    "scheduleId": "dbc02d05-aadb-4b32-9857-849e8b8cf761",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "createdAt": new Date("2026-03-27T13:01:16.027Z"),
+    "createdBy": null
+  },
+  {
+    "id": "10114b1b-58a1-4d46-bfff-607efe9d464f",
+    "roomCode": "52-211",
+    "date": new Date("2026-03-27T00:00:00.000Z"),
+    "startTime": new Date("2024-01-01T01:00:00.000Z"),
+    "endTime": new Date("2024-01-01T03:00:00.000Z"),
+    "userId": "3f1be364-e740-470e-a4ea-bdd98ab4e021",
+    "source": "SCHEDULE",
+    "scheduleId": "dbc02d05-aadb-4b32-9857-849e8b8cf761",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "createdAt": new Date("2026-03-27T13:01:16.027Z"),
+    "createdBy": null
+  },
+  {
+    "id": "c9a17887-6baa-48a0-88fc-3600f6055a9b",
+    "roomCode": "52-211",
+    "date": new Date("2026-03-27T00:00:00.000Z"),
+    "startTime": new Date("2024-01-01T01:00:00.000Z"),
+    "endTime": new Date("2024-01-01T03:00:00.000Z"),
+    "userId": "e1f92cae-988a-44f0-bead-ffff59456565",
+    "source": "SCHEDULE",
+    "scheduleId": "dbc02d05-aadb-4b32-9857-849e8b8cf761",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "createdAt": new Date("2026-03-27T13:01:16.027Z"),
+    "createdBy": null
+  },
+  {
+    "id": "294ec280-0239-45ac-a158-4c654929efe9",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-26T00:00:00.000Z"),
+    "startTime": new Date("2026-03-25T17:00:00.166Z"),
+    "endTime": new Date("2026-03-26T13:00:00.166Z"),
+    "userId": "21dda778-aa98-4419-a318-0c8951641162",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-26T10:44:00.077Z"),
+    "createdBy": null
+  },
+  {
+    "id": "96a53c24-d3cd-4f70-b30e-c0744538a35c",
+    "roomCode": "52-205",
+    "date": new Date("2026-03-25T00:00:00.000Z"),
+    "startTime": new Date("2024-01-01T06:00:00.000Z"),
+    "endTime": new Date("2024-01-01T08:00:00.000Z"),
+    "userId": "dd3f502b-be69-4c1e-a186-f49f5b37a32d",
+    "source": "SCHEDULE",
+    "scheduleId": "69a3e7a8-9b21-472e-b0a7-9013a614da73",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "createdAt": new Date("2026-03-25T08:27:14.271Z"),
+    "createdBy": null
+  },
+  {
+    "id": "07e79a7f-64c4-4b3b-a04a-5b367036139c",
+    "roomCode": "52-205",
+    "date": new Date("2026-03-25T00:00:00.000Z"),
+    "startTime": new Date("2024-01-01T06:00:00.000Z"),
+    "endTime": new Date("2024-01-01T08:00:00.000Z"),
+    "userId": "2cac2ba6-3b5f-42a2-be05-96c453fa0471",
+    "source": "SCHEDULE",
+    "scheduleId": "69a3e7a8-9b21-472e-b0a7-9013a614da73",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "createdAt": new Date("2026-03-25T08:27:14.271Z"),
+    "createdBy": null
+  },
+  {
+    "id": "821d8100-435c-4322-a679-8e10219c1a23",
+    "roomCode": "52-205",
+    "date": new Date("2026-03-25T00:00:00.000Z"),
+    "startTime": new Date("2024-01-01T06:00:00.000Z"),
+    "endTime": new Date("2024-01-01T08:00:00.000Z"),
+    "userId": "6b5e4811-188d-473e-b949-65b3476c6537",
+    "source": "SCHEDULE",
+    "scheduleId": "69a3e7a8-9b21-472e-b0a7-9013a614da73",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "createdAt": new Date("2026-03-25T08:27:14.271Z"),
+    "createdBy": null
+  },
+  {
+    "id": "6c91425b-c8b0-4811-9077-0dada4c4324b",
+    "roomCode": "52-205",
+    "date": new Date("2026-03-25T00:00:00.000Z"),
+    "startTime": new Date("2024-01-01T06:00:00.000Z"),
+    "endTime": new Date("2024-01-01T08:00:00.000Z"),
+    "userId": "d91fb9a3-a7d4-4389-96cf-5248da9815d9",
+    "source": "SCHEDULE",
+    "scheduleId": "69a3e7a8-9b21-472e-b0a7-9013a614da73",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "createdAt": new Date("2026-03-25T08:27:14.271Z"),
+    "createdBy": null
+  },
+  {
+    "id": "4adbe951-1a73-4ad2-9ecc-257d5262cd21",
+    "roomCode": "52-205",
+    "date": new Date("2026-03-25T00:00:00.000Z"),
+    "startTime": new Date("2024-01-01T06:00:00.000Z"),
+    "endTime": new Date("2024-01-01T08:00:00.000Z"),
+    "userId": "fe3a33fa-0743-441d-85af-efbebd1c08b5",
+    "source": "SCHEDULE",
+    "scheduleId": "69a3e7a8-9b21-472e-b0a7-9013a614da73",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "createdAt": new Date("2026-03-25T08:27:14.271Z"),
+    "createdBy": null
+  },
+  {
+    "id": "626b5fb4-4543-46d9-bd85-e7866adad324",
+    "roomCode": "52-205",
+    "date": new Date("2026-03-25T00:00:00.000Z"),
+    "startTime": new Date("2024-01-01T06:00:00.000Z"),
+    "endTime": new Date("2024-01-01T08:00:00.000Z"),
+    "userId": "e006e44c-6800-4d84-a531-297cd852e64e",
+    "source": "SCHEDULE",
+    "scheduleId": "69a3e7a8-9b21-472e-b0a7-9013a614da73",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "createdAt": new Date("2026-03-25T08:27:14.271Z"),
+    "createdBy": null
+  },
+  {
+    "id": "a4204e17-9de2-4c93-a317-63d6847825cc",
+    "roomCode": "52-205",
+    "date": new Date("2026-03-25T00:00:00.000Z"),
+    "startTime": new Date("2024-01-01T06:00:00.000Z"),
+    "endTime": new Date("2024-01-01T08:00:00.000Z"),
+    "userId": "c7f8ee2b-a1f0-422e-890c-0f2507fc7ea2",
+    "source": "SCHEDULE",
+    "scheduleId": "69a3e7a8-9b21-472e-b0a7-9013a614da73",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "createdAt": new Date("2026-03-25T08:27:14.271Z"),
+    "createdBy": null
+  },
+  {
+    "id": "2f6458e7-4887-4de2-b785-483862882ee0",
+    "roomCode": "52-205",
+    "date": new Date("2026-03-25T00:00:00.000Z"),
+    "startTime": new Date("2024-01-01T06:00:00.000Z"),
+    "endTime": new Date("2024-01-01T08:00:00.000Z"),
+    "userId": "4ebcf511-4aa4-4810-9a53-65f8cae6f0d5",
+    "source": "SCHEDULE",
+    "scheduleId": "69a3e7a8-9b21-472e-b0a7-9013a614da73",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "createdAt": new Date("2026-03-25T08:27:14.271Z"),
+    "createdBy": null
+  },
+  {
+    "id": "a64c4bb8-cfc9-4cd2-8a54-737ac3f12a3c",
+    "roomCode": "52-205",
+    "date": new Date("2026-03-25T00:00:00.000Z"),
+    "startTime": new Date("2024-01-01T06:00:00.000Z"),
+    "endTime": new Date("2024-01-01T08:00:00.000Z"),
+    "userId": "1e7e3502-695b-4c4a-bd52-fba33535ebd3",
+    "source": "SCHEDULE",
+    "scheduleId": "69a3e7a8-9b21-472e-b0a7-9013a614da73",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "createdAt": new Date("2026-03-25T08:27:14.271Z"),
+    "createdBy": null
+  },
+  {
+    "id": "bc48197b-3d72-4eec-9b07-d150857b6853",
+    "roomCode": "52-205",
+    "date": new Date("2026-03-25T00:00:00.000Z"),
+    "startTime": new Date("2024-01-01T06:00:00.000Z"),
+    "endTime": new Date("2024-01-01T08:00:00.000Z"),
+    "userId": "e2aaa1a3-92af-4874-bb41-e5b65b939016",
+    "source": "SCHEDULE",
+    "scheduleId": "69a3e7a8-9b21-472e-b0a7-9013a614da73",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "createdAt": new Date("2026-03-25T08:27:14.271Z"),
+    "createdBy": null
+  },
+  {
+    "id": "262166ec-5a14-4323-961d-3930878b885c",
+    "roomCode": "52-205",
+    "date": new Date("2026-03-25T00:00:00.000Z"),
+    "startTime": new Date("2024-01-01T06:00:00.000Z"),
+    "endTime": new Date("2024-01-01T08:00:00.000Z"),
+    "userId": "ddc35cbe-e04d-482f-a3cf-23bdbb6b7f2c",
+    "source": "SCHEDULE",
+    "scheduleId": "69a3e7a8-9b21-472e-b0a7-9013a614da73",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "createdAt": new Date("2026-03-25T08:27:14.271Z"),
+    "createdBy": null
+  },
+  {
+    "id": "c85a8eec-cf01-43a0-8843-d5a02b7722d1",
+    "roomCode": "52-205",
+    "date": new Date("2026-03-25T00:00:00.000Z"),
+    "startTime": new Date("2024-01-01T06:00:00.000Z"),
+    "endTime": new Date("2024-01-01T08:00:00.000Z"),
+    "userId": "21cede3f-4cf9-4f6e-b97e-e2c52aa79caa",
+    "source": "SCHEDULE",
+    "scheduleId": "69a3e7a8-9b21-472e-b0a7-9013a614da73",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "createdAt": new Date("2026-03-25T08:27:14.271Z"),
+    "createdBy": null
+  },
+  {
+    "id": "1c01892f-8b86-4e4c-beec-4ff493f4b4fa",
+    "roomCode": "52-205",
+    "date": new Date("2026-03-25T00:00:00.000Z"),
+    "startTime": new Date("2024-01-01T06:00:00.000Z"),
+    "endTime": new Date("2024-01-01T08:00:00.000Z"),
+    "userId": "014fcabf-39a6-41f2-b4e5-e157ad6ae153",
+    "source": "SCHEDULE",
+    "scheduleId": "69a3e7a8-9b21-472e-b0a7-9013a614da73",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "createdAt": new Date("2026-03-25T08:27:14.271Z"),
+    "createdBy": null
+  },
+  {
+    "id": "4ba83e2b-8826-4452-9aff-38dfd099fa22",
+    "roomCode": "52-205",
+    "date": new Date("2026-03-25T00:00:00.000Z"),
+    "startTime": new Date("2024-01-01T06:00:00.000Z"),
+    "endTime": new Date("2024-01-01T08:00:00.000Z"),
+    "userId": "8ec50e92-c928-4272-a49d-630419edab47",
+    "source": "SCHEDULE",
+    "scheduleId": "69a3e7a8-9b21-472e-b0a7-9013a614da73",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "createdAt": new Date("2026-03-25T08:27:14.271Z"),
+    "createdBy": null
+  },
+  {
+    "id": "5a61057d-00aa-4dc8-86b4-f532ac432eb5",
+    "roomCode": "52-205",
+    "date": new Date("2026-03-25T00:00:00.000Z"),
+    "startTime": new Date("2024-01-01T06:00:00.000Z"),
+    "endTime": new Date("2024-01-01T08:00:00.000Z"),
+    "userId": "e1b1fe72-6046-4ef8-aa1e-ef3b1f88a8bc",
+    "source": "SCHEDULE",
+    "scheduleId": "69a3e7a8-9b21-472e-b0a7-9013a614da73",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "createdAt": new Date("2026-03-25T08:27:14.271Z"),
+    "createdBy": null
+  },
+  {
+    "id": "56a9c1bc-50ff-4a9f-aaaf-deb8a350d91e",
+    "roomCode": "52-205",
+    "date": new Date("2026-03-25T00:00:00.000Z"),
+    "startTime": new Date("2024-01-01T06:00:00.000Z"),
+    "endTime": new Date("2024-01-01T08:00:00.000Z"),
+    "userId": "8a089fcf-8ea3-4915-9903-b74db9e85932",
+    "source": "SCHEDULE",
+    "scheduleId": "69a3e7a8-9b21-472e-b0a7-9013a614da73",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "createdAt": new Date("2026-03-25T08:27:14.271Z"),
+    "createdBy": null
+  },
+  {
+    "id": "74f27adf-5594-4bd3-ad72-82fa5e100c37",
+    "roomCode": "52-205",
+    "date": new Date("2026-03-25T00:00:00.000Z"),
+    "startTime": new Date("2024-01-01T06:00:00.000Z"),
+    "endTime": new Date("2024-01-01T08:00:00.000Z"),
+    "userId": "f3aa48b8-21b4-4ac2-be2c-3c04f21b3ee4",
+    "source": "SCHEDULE",
+    "scheduleId": "69a3e7a8-9b21-472e-b0a7-9013a614da73",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "createdAt": new Date("2026-03-25T08:27:14.271Z"),
+    "createdBy": null
+  },
+  {
+    "id": "41098475-3d56-44f1-b363-39d21dd389d3",
+    "roomCode": "52-205",
+    "date": new Date("2026-03-25T00:00:00.000Z"),
+    "startTime": new Date("2024-01-01T06:00:00.000Z"),
+    "endTime": new Date("2024-01-01T08:00:00.000Z"),
+    "userId": "44bfbe0a-2369-48f5-9bd3-9c0611e55dff",
+    "source": "SCHEDULE",
+    "scheduleId": "69a3e7a8-9b21-472e-b0a7-9013a614da73",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "createdAt": new Date("2026-03-25T08:27:14.271Z"),
+    "createdBy": null
+  },
+  {
+    "id": "2da39e28-4d75-40f5-8593-6f6d6284ea1a",
+    "roomCode": "52-205",
+    "date": new Date("2026-03-25T00:00:00.000Z"),
+    "startTime": new Date("2024-01-01T06:00:00.000Z"),
+    "endTime": new Date("2024-01-01T08:00:00.000Z"),
+    "userId": "9f1b82b0-bf70-4c92-96bc-27749df93436",
+    "source": "SCHEDULE",
+    "scheduleId": "69a3e7a8-9b21-472e-b0a7-9013a614da73",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "createdAt": new Date("2026-03-25T08:27:14.271Z"),
+    "createdBy": null
+  },
+  {
+    "id": "96f0507e-0096-47ef-a653-59920d951623",
+    "roomCode": "52-205",
+    "date": new Date("2026-03-25T00:00:00.000Z"),
+    "startTime": new Date("2024-01-01T06:00:00.000Z"),
+    "endTime": new Date("2024-01-01T08:00:00.000Z"),
+    "userId": "b8765ab4-e12e-4333-b886-ba67cb3ffcfa",
+    "source": "SCHEDULE",
+    "scheduleId": "69a3e7a8-9b21-472e-b0a7-9013a614da73",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "createdAt": new Date("2026-03-25T08:27:14.271Z"),
+    "createdBy": null
+  },
+  {
+    "id": "adb93c46-56f1-4e79-bcb8-d97496ad51cc",
+    "roomCode": "52-205",
+    "date": new Date("2026-03-25T00:00:00.000Z"),
+    "startTime": new Date("2024-01-01T06:00:00.000Z"),
+    "endTime": new Date("2024-01-01T08:00:00.000Z"),
+    "userId": "12d8dd0a-3ac9-4cf2-bc40-9fc23744aa6c",
+    "source": "SCHEDULE",
+    "scheduleId": "69a3e7a8-9b21-472e-b0a7-9013a614da73",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "createdAt": new Date("2026-03-25T08:27:14.271Z"),
+    "createdBy": null
+  },
+  {
+    "id": "368c2b94-be21-4af1-9adb-a04dbc84f372",
+    "roomCode": "52-205",
+    "date": new Date("2026-03-25T00:00:00.000Z"),
+    "startTime": new Date("2024-01-01T06:00:00.000Z"),
+    "endTime": new Date("2024-01-01T08:00:00.000Z"),
+    "userId": "1d89c663-fd09-4d8d-b857-9dcc456b0f6f",
+    "source": "SCHEDULE",
+    "scheduleId": "69a3e7a8-9b21-472e-b0a7-9013a614da73",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "createdAt": new Date("2026-03-25T08:27:14.271Z"),
+    "createdBy": null
+  },
+  {
+    "id": "2c2c058d-a397-4071-8c50-97ec75a21bbb",
+    "roomCode": "52-205",
+    "date": new Date("2026-03-25T00:00:00.000Z"),
+    "startTime": new Date("2024-01-01T06:00:00.000Z"),
+    "endTime": new Date("2024-01-01T08:00:00.000Z"),
+    "userId": "96134339-fc53-4238-8324-604d3c866c3b",
+    "source": "SCHEDULE",
+    "scheduleId": "69a3e7a8-9b21-472e-b0a7-9013a614da73",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "createdAt": new Date("2026-03-25T08:27:14.271Z"),
+    "createdBy": null
+  },
+  {
+    "id": "b3ac4b5c-88bc-4be7-ac51-707acdcb3ae9",
+    "roomCode": "52-205",
+    "date": new Date("2026-03-25T00:00:00.000Z"),
+    "startTime": new Date("2024-01-01T06:00:00.000Z"),
+    "endTime": new Date("2024-01-01T08:00:00.000Z"),
+    "userId": "d0f1f839-0866-4619-9841-841974dee770",
+    "source": "SCHEDULE",
+    "scheduleId": "69a3e7a8-9b21-472e-b0a7-9013a614da73",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "createdAt": new Date("2026-03-25T08:27:14.271Z"),
+    "createdBy": null
+  },
+  {
+    "id": "31dffa63-c655-47de-bbc5-22fae43213aa",
+    "roomCode": "52-205",
+    "date": new Date("2026-03-25T00:00:00.000Z"),
+    "startTime": new Date("2024-01-01T06:00:00.000Z"),
+    "endTime": new Date("2024-01-01T08:00:00.000Z"),
+    "userId": "dec42ecd-c2db-4b60-8d27-c582cf17997e",
+    "source": "SCHEDULE",
+    "scheduleId": "69a3e7a8-9b21-472e-b0a7-9013a614da73",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "createdAt": new Date("2026-03-25T08:27:14.271Z"),
+    "createdBy": null
+  },
+  {
+    "id": "a637f520-c481-418e-9f71-dfae886fc5e5",
+    "roomCode": "52-205",
+    "date": new Date("2026-03-25T00:00:00.000Z"),
+    "startTime": new Date("2024-01-01T06:00:00.000Z"),
+    "endTime": new Date("2024-01-01T08:00:00.000Z"),
+    "userId": "20c19274-79ab-48f4-8a51-679f083b3c2e",
+    "source": "SCHEDULE",
+    "scheduleId": "69a3e7a8-9b21-472e-b0a7-9013a614da73",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "createdAt": new Date("2026-03-25T08:27:14.271Z"),
+    "createdBy": null
+  },
+  {
+    "id": "5e324660-b36d-4953-af1e-9ae87d82b0b6",
+    "roomCode": "52-205",
+    "date": new Date("2026-03-25T00:00:00.000Z"),
+    "startTime": new Date("2024-01-01T06:00:00.000Z"),
+    "endTime": new Date("2024-01-01T08:00:00.000Z"),
+    "userId": "d2b784cd-33a2-41c6-8f1f-a6c13d6dfc4e",
+    "source": "SCHEDULE",
+    "scheduleId": "69a3e7a8-9b21-472e-b0a7-9013a614da73",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "createdAt": new Date("2026-03-25T08:27:14.271Z"),
+    "createdBy": null
+  },
+  {
+    "id": "c5ff695b-66d9-4020-8a29-333fb337ff22",
+    "roomCode": "52-205",
+    "date": new Date("2026-03-25T00:00:00.000Z"),
+    "startTime": new Date("2024-01-01T06:00:00.000Z"),
+    "endTime": new Date("2024-01-01T08:00:00.000Z"),
+    "userId": "ef81421d-47f6-48cd-80c1-11b1e6e033e7",
+    "source": "SCHEDULE",
+    "scheduleId": "69a3e7a8-9b21-472e-b0a7-9013a614da73",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "createdAt": new Date("2026-03-25T08:27:14.271Z"),
+    "createdBy": null
+  },
+  {
+    "id": "7e3cda09-f2ed-40cd-ab1a-a1e4f77ebb97",
+    "roomCode": "52-205",
+    "date": new Date("2026-03-25T00:00:00.000Z"),
+    "startTime": new Date("2024-01-01T06:00:00.000Z"),
+    "endTime": new Date("2024-01-01T08:00:00.000Z"),
+    "userId": "5e3f99b0-78b4-4836-ba91-c873004314db",
+    "source": "SCHEDULE",
+    "scheduleId": "69a3e7a8-9b21-472e-b0a7-9013a614da73",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "createdAt": new Date("2026-03-25T08:27:14.271Z"),
+    "createdBy": null
+  },
+  {
+    "id": "6ce6c462-676e-44e9-8d40-ee034da1ebd4",
+    "roomCode": "52-205",
+    "date": new Date("2026-03-25T00:00:00.000Z"),
+    "startTime": new Date("2024-01-01T06:00:00.000Z"),
+    "endTime": new Date("2024-01-01T08:00:00.000Z"),
+    "userId": "348437bb-e158-4970-80fc-6b9038cf1486",
+    "source": "SCHEDULE",
+    "scheduleId": "69a3e7a8-9b21-472e-b0a7-9013a614da73",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "createdAt": new Date("2026-03-25T08:27:14.271Z"),
+    "createdBy": null
+  },
+  {
+    "id": "61c1b322-37a8-4638-a6f1-7a8cb6931d87",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-25T00:00:00.000Z"),
+    "startTime": new Date("2026-03-24T17:00:00.897Z"),
+    "endTime": new Date("2026-03-25T13:00:00.897Z"),
+    "userId": "21dda778-aa98-4419-a318-0c8951641162",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-25T08:27:14.271Z"),
+    "createdBy": null
+  },
+  {
+    "id": "a28647bb-ec38-45fd-954d-57eea3cb683d",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-25T00:00:00.000Z"),
+    "startTime": new Date("2026-03-24T17:00:00.897Z"),
+    "endTime": new Date("2026-03-25T13:00:00.897Z"),
+    "userId": "1372f6fc-65eb-419f-a060-301153d459f4",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-25T08:27:14.271Z"),
+    "createdBy": null
+  },
+  {
+    "id": "37195204-7057-49f4-8a16-007d176a31da",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-25T00:00:00.000Z"),
+    "startTime": new Date("2026-03-24T17:00:00.897Z"),
+    "endTime": new Date("2026-03-25T13:00:00.897Z"),
+    "userId": "ce4c8300-5a57-4144-b720-ba44ccea04b9",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-25T08:27:14.271Z"),
+    "createdBy": null
+  },
+  {
+    "id": "3297b730-94c0-434c-a2f0-378583ccefed",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-25T00:00:00.000Z"),
+    "startTime": new Date("2026-03-24T17:00:00.897Z"),
+    "endTime": new Date("2026-03-25T13:00:00.897Z"),
+    "userId": "7c50486b-2880-4c06-9b5f-d9e5dbcbbf35",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-25T08:27:14.271Z"),
+    "createdBy": null
+  },
+  {
+    "id": "09196831-c866-4847-8f75-8a881994e219",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-25T00:00:00.000Z"),
+    "startTime": new Date("2026-03-24T17:00:00.897Z"),
+    "endTime": new Date("2026-03-25T13:00:00.897Z"),
+    "userId": "576bd29e-4ef4-4fa3-a1de-63a4b29aeb2f",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-25T08:27:14.271Z"),
+    "createdBy": null
+  },
+  {
+    "id": "e04ee1f7-c3f0-4559-bd6b-3fc0a3749c4b",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-25T00:00:00.000Z"),
+    "startTime": new Date("2026-03-24T17:00:00.897Z"),
+    "endTime": new Date("2026-03-25T13:00:00.897Z"),
+    "userId": "9155b909-63c8-45aa-a5b6-badf2815f247",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-25T08:27:14.271Z"),
+    "createdBy": null
+  },
+  {
+    "id": "b00fbe6a-477c-42aa-aa34-66d4c50dc5b8",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-25T00:00:00.000Z"),
+    "startTime": new Date("2026-03-24T17:00:00.897Z"),
+    "endTime": new Date("2026-03-25T13:00:00.897Z"),
+    "userId": "f74693ea-076a-4904-978f-693ba2dd7866",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-25T08:27:14.271Z"),
+    "createdBy": null
+  },
+  {
+    "id": "4df88ce9-cc65-4771-be81-a71970770187",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-25T00:00:00.000Z"),
+    "startTime": new Date("2026-03-24T17:00:00.897Z"),
+    "endTime": new Date("2026-03-25T13:00:00.897Z"),
+    "userId": "c1aa06b9-352e-486e-a82b-2ac1336517b9",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-25T08:27:14.271Z"),
+    "createdBy": null
+  },
+  {
+    "id": "66257309-b2f0-4901-b245-620827ee4249",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-25T00:00:00.000Z"),
+    "startTime": new Date("2026-03-24T17:00:00.897Z"),
+    "endTime": new Date("2026-03-25T13:00:00.897Z"),
+    "userId": "6500e16c-1379-45be-8925-f5a71256e3ed",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-25T08:27:14.271Z"),
+    "createdBy": null
+  },
+  {
+    "id": "f04a4131-dd2b-4d8b-b68a-c4fed3af0cf4",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-25T00:00:00.000Z"),
+    "startTime": new Date("2026-03-24T17:00:00.897Z"),
+    "endTime": new Date("2026-03-25T13:00:00.897Z"),
+    "userId": "9cefc08a-a43f-4401-be9d-ccdf22d7009b",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-25T08:27:14.271Z"),
+    "createdBy": null
+  },
+  {
+    "id": "32d696f2-4b64-4a58-93a6-c65ffb9c191e",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-25T00:00:00.000Z"),
+    "startTime": new Date("2026-03-24T17:00:00.897Z"),
+    "endTime": new Date("2026-03-25T13:00:00.897Z"),
+    "userId": "2e991ce8-030d-4925-a113-f24674d8cb59",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-25T08:27:14.271Z"),
+    "createdBy": null
+  },
+  {
+    "id": "581de2f8-b0ca-4e6f-b42c-366d0f6152d6",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-25T00:00:00.000Z"),
+    "startTime": new Date("2026-03-24T17:00:00.897Z"),
+    "endTime": new Date("2026-03-25T13:00:00.897Z"),
+    "userId": "ecdcb42e-6255-42da-8a78-523bc33a3e36",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-25T08:27:14.271Z"),
+    "createdBy": null
+  },
+  {
+    "id": "8efa447c-bcf0-443b-8f3d-46bf34c56592",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-25T00:00:00.000Z"),
+    "startTime": new Date("2026-03-24T17:00:00.897Z"),
+    "endTime": new Date("2026-03-25T13:00:00.897Z"),
+    "userId": "2d658f11-34cb-4c94-b7b2-88eb34209297",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-25T08:27:14.271Z"),
+    "createdBy": null
+  },
+  {
+    "id": "37bdfe11-7811-4dbc-975f-a1bb26ca4ee4",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-25T00:00:00.000Z"),
+    "startTime": new Date("2026-03-24T17:00:00.897Z"),
+    "endTime": new Date("2026-03-25T13:00:00.897Z"),
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-25T08:27:14.271Z"),
+    "createdBy": null
+  },
+  {
+    "id": "b9b45f70-954f-4ca9-9d89-863d7cbda8e6",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-25T00:00:00.000Z"),
+    "startTime": new Date("2026-03-24T17:00:00.897Z"),
+    "endTime": new Date("2026-03-25T13:00:00.897Z"),
+    "userId": "11193aec-ff66-441a-8ace-03f3e3a3ac9b",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-25T08:27:14.271Z"),
+    "createdBy": null
+  },
+  {
+    "id": "044e343a-2077-4921-92c8-44b3caf1bcfe",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-25T00:00:00.000Z"),
+    "startTime": new Date("2026-03-24T17:00:00.897Z"),
+    "endTime": new Date("2026-03-25T13:00:00.897Z"),
+    "userId": "e5c7d7ec-2028-481a-9a9b-1ab7b6dfe160",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-25T08:27:14.271Z"),
+    "createdBy": null
+  },
+  {
+    "id": "2f4b4199-15ad-4229-8e31-029b2bac154f",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-25T00:00:00.000Z"),
+    "startTime": new Date("2026-03-24T17:00:00.897Z"),
+    "endTime": new Date("2026-03-25T13:00:00.897Z"),
+    "userId": "393fb8e0-7b96-48e0-8602-a98337e522d0",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-25T08:27:14.271Z"),
+    "createdBy": null
+  },
+  {
+    "id": "979c00d9-cf1f-4476-bab5-e837062ec298",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-25T00:00:00.000Z"),
+    "startTime": new Date("2026-03-24T17:00:00.897Z"),
+    "endTime": new Date("2026-03-25T13:00:00.897Z"),
+    "userId": "ce7c3b8a-3b61-4ea4-822a-5403160ad267",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-25T08:27:14.271Z"),
+    "createdBy": null
+  },
+  {
+    "id": "c8fe7eb3-38c2-4884-af2d-04fab61a2daf",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-25T00:00:00.000Z"),
+    "startTime": new Date("2026-03-24T17:00:00.897Z"),
+    "endTime": new Date("2026-03-25T13:00:00.897Z"),
+    "userId": "b1157ae6-657f-46d9-877a-ca9e9bd08cc1",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-25T08:27:14.271Z"),
+    "createdBy": null
+  },
+  {
+    "id": "d2bea166-c276-40c8-b79c-e627f3054ef1",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-25T00:00:00.000Z"),
+    "startTime": new Date("2026-03-24T17:00:00.897Z"),
+    "endTime": new Date("2026-03-25T13:00:00.897Z"),
+    "userId": "c027fd82-5cca-4431-aa13-b413f420b57f",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-25T08:27:14.271Z"),
+    "createdBy": null
+  },
+  {
+    "id": "e98cd8ec-a053-4f3c-b3af-19a4d2ef5e02",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-25T00:00:00.000Z"),
+    "startTime": new Date("2026-03-24T17:00:00.897Z"),
+    "endTime": new Date("2026-03-25T13:00:00.897Z"),
+    "userId": "391a0415-cfdd-40a8-b189-745d163d40cb",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-25T08:27:14.271Z"),
+    "createdBy": null
+  },
+  {
+    "id": "bf4233ba-dfc3-41cc-bb8d-6ef75c43e082",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-25T00:00:00.000Z"),
+    "startTime": new Date("2026-03-24T17:00:00.897Z"),
+    "endTime": new Date("2026-03-25T13:00:00.897Z"),
+    "userId": "8c5038ff-365e-448a-8176-0dc164b10d9b",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-25T08:27:14.271Z"),
+    "createdBy": null
+  },
+  {
+    "id": "84a65796-473a-4a24-81c1-bcfc923aeb80",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-25T00:00:00.000Z"),
+    "startTime": new Date("2026-03-24T17:00:00.897Z"),
+    "endTime": new Date("2026-03-25T13:00:00.897Z"),
+    "userId": "040845c3-87b2-4c3a-b71f-ac4ee3ec9537",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-25T08:27:14.271Z"),
+    "createdBy": null
+  },
+  {
+    "id": "5136f6f8-8e10-47d4-bdd9-e59e7da561da",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-25T00:00:00.000Z"),
+    "startTime": new Date("2026-03-24T17:00:00.897Z"),
+    "endTime": new Date("2026-03-25T13:00:00.897Z"),
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-25T08:27:14.271Z"),
+    "createdBy": null
+  },
+  {
+    "id": "57d5c253-f4e2-4e63-bba4-c04113cd7617",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-25T00:00:00.000Z"),
+    "startTime": new Date("2026-03-24T17:00:00.897Z"),
+    "endTime": new Date("2026-03-25T13:00:00.897Z"),
+    "userId": "9f90f6c9-7dca-4a7e-852c-08bc783b3c7e",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-25T08:27:14.271Z"),
+    "createdBy": null
+  },
+  {
+    "id": "dd818cc6-14b8-4327-83df-db8690594629",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-25T00:00:00.000Z"),
+    "startTime": new Date("2026-03-24T17:00:00.897Z"),
+    "endTime": new Date("2026-03-25T13:00:00.897Z"),
+    "userId": "b2988236-8de1-4ce3-bced-39943483f203",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-25T08:27:14.271Z"),
+    "createdBy": null
+  },
+  {
+    "id": "79d5badd-30fa-4f49-a8d0-2e53a28779ab",
+    "roomCode": "52-701",
+    "date": new Date("2026-03-25T00:00:00.000Z"),
+    "startTime": new Date("2026-03-25T06:00:00.916Z"),
+    "endTime": new Date("2026-03-25T07:30:00.916Z"),
+    "userId": "9e0fef1e-909f-4c25-ba4c-b716122d658a",
+    "source": "SCHEDULE",
+    "scheduleId": "ccf0aac2-b3ad-4de1-9d70-85c95120abcf",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-25T08:27:14.271Z"),
+    "createdBy": null
+  },
+  {
+    "id": "9d04d549-c746-47ac-90b2-497041f7f9cf",
+    "roomCode": "52-701",
+    "date": new Date("2026-03-25T00:00:00.000Z"),
+    "startTime": new Date("2026-03-25T06:00:00.916Z"),
+    "endTime": new Date("2026-03-25T07:30:00.916Z"),
+    "userId": "85135fc8-24b8-4f5f-b11d-5ac89830db7b",
+    "source": "SCHEDULE",
+    "scheduleId": "ccf0aac2-b3ad-4de1-9d70-85c95120abcf",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-25T08:27:14.271Z"),
+    "createdBy": null
+  },
+  {
+    "id": "caf727aa-1476-49cf-ad7a-c0a5f0f2e772",
+    "roomCode": "52-701",
+    "date": new Date("2026-03-25T00:00:00.000Z"),
+    "startTime": new Date("2026-03-25T06:00:00.916Z"),
+    "endTime": new Date("2026-03-25T07:30:00.916Z"),
+    "userId": "1458ade2-bb6e-40b8-91c6-9cc5822c5447",
+    "source": "SCHEDULE",
+    "scheduleId": "ccf0aac2-b3ad-4de1-9d70-85c95120abcf",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-25T08:27:14.271Z"),
+    "createdBy": null
+  },
+  {
+    "id": "964fb04d-00c2-4c34-92b1-86678d0479d1",
+    "roomCode": "52-701",
+    "date": new Date("2026-03-25T00:00:00.000Z"),
+    "startTime": new Date("2026-03-25T06:00:00.916Z"),
+    "endTime": new Date("2026-03-25T07:30:00.916Z"),
+    "userId": "dd8ed91c-1b01-4fe5-b0a2-ae69dd8cdcd2",
+    "source": "SCHEDULE",
+    "scheduleId": "ccf0aac2-b3ad-4de1-9d70-85c95120abcf",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-25T08:27:14.271Z"),
+    "createdBy": null
+  },
+  {
+    "id": "d9500f26-e6c7-4f5f-af8c-16577992c849",
+    "roomCode": "52-701",
+    "date": new Date("2026-03-25T00:00:00.000Z"),
+    "startTime": new Date("2026-03-25T06:00:00.916Z"),
+    "endTime": new Date("2026-03-25T07:30:00.916Z"),
+    "userId": "fcb8564b-bd4b-41a9-bdeb-7d3e0182942d",
+    "source": "SCHEDULE",
+    "scheduleId": "ccf0aac2-b3ad-4de1-9d70-85c95120abcf",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-25T08:27:14.271Z"),
+    "createdBy": null
+  },
+  {
+    "id": "bc13a06c-5cc6-48b8-aa9a-e6f974abf42d",
+    "roomCode": "52-701",
+    "date": new Date("2026-03-25T00:00:00.000Z"),
+    "startTime": new Date("2026-03-25T06:00:00.916Z"),
+    "endTime": new Date("2026-03-25T07:30:00.916Z"),
+    "userId": "ba4182d5-1e2e-4589-bba8-afef6da8705d",
+    "source": "SCHEDULE",
+    "scheduleId": "ccf0aac2-b3ad-4de1-9d70-85c95120abcf",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-25T08:27:14.271Z"),
+    "createdBy": null
+  },
+  {
+    "id": "3920c20c-8479-44e9-aa28-7b576ec2aaaf",
+    "roomCode": "52-701",
+    "date": new Date("2026-03-25T00:00:00.000Z"),
+    "startTime": new Date("2026-03-25T06:00:00.916Z"),
+    "endTime": new Date("2026-03-25T07:30:00.916Z"),
+    "userId": "f5dfd7e8-1e1f-4278-b82f-cd7825b2da13",
+    "source": "SCHEDULE",
+    "scheduleId": "ccf0aac2-b3ad-4de1-9d70-85c95120abcf",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-25T08:27:14.271Z"),
+    "createdBy": null
+  },
+  {
+    "id": "fed37a59-fe04-4bfc-9f25-c3d172c48c5e",
+    "roomCode": "52-701",
+    "date": new Date("2026-03-25T00:00:00.000Z"),
+    "startTime": new Date("2026-03-25T06:00:00.916Z"),
+    "endTime": new Date("2026-03-25T07:30:00.916Z"),
+    "userId": "8f692844-ce1c-4d62-bd0c-90abc6595d3a",
+    "source": "SCHEDULE",
+    "scheduleId": "ccf0aac2-b3ad-4de1-9d70-85c95120abcf",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-25T08:27:14.271Z"),
+    "createdBy": null
+  },
+  {
+    "id": "2e46f460-f8bc-48f7-9bc0-374047b40e66",
+    "roomCode": "52-701",
+    "date": new Date("2026-03-25T00:00:00.000Z"),
+    "startTime": new Date("2026-03-25T06:00:00.916Z"),
+    "endTime": new Date("2026-03-25T07:30:00.916Z"),
+    "userId": "be0bc3f7-d394-464a-a0bc-8387f7d22c90",
+    "source": "SCHEDULE",
+    "scheduleId": "ccf0aac2-b3ad-4de1-9d70-85c95120abcf",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-25T08:27:14.271Z"),
+    "createdBy": null
+  },
+  {
+    "id": "73f81a8e-5674-479e-af9f-d2d1bd74e34d",
+    "roomCode": "52-701",
+    "date": new Date("2026-03-25T00:00:00.000Z"),
+    "startTime": new Date("2026-03-25T06:00:00.916Z"),
+    "endTime": new Date("2026-03-25T07:30:00.916Z"),
+    "userId": "558f2da6-76ca-4382-8a33-35050393d4be",
+    "source": "SCHEDULE",
+    "scheduleId": "ccf0aac2-b3ad-4de1-9d70-85c95120abcf",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-25T08:27:14.271Z"),
+    "createdBy": null
+  },
+  {
+    "id": "1e3a31ed-4d11-406f-972c-daa13945a46a",
+    "roomCode": "52-701",
+    "date": new Date("2026-03-25T00:00:00.000Z"),
+    "startTime": new Date("2026-03-25T06:00:00.916Z"),
+    "endTime": new Date("2026-03-25T07:30:00.916Z"),
+    "userId": "4c8dd6bd-bd2c-46f9-b330-8e1a3bd17122",
+    "source": "SCHEDULE",
+    "scheduleId": "ccf0aac2-b3ad-4de1-9d70-85c95120abcf",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-25T08:27:14.271Z"),
+    "createdBy": null
+  },
+  {
+    "id": "0120fe6a-0ac8-46d9-b094-4efd3d2546ae",
+    "roomCode": "52-701",
+    "date": new Date("2026-03-25T00:00:00.000Z"),
+    "startTime": new Date("2026-03-25T06:00:00.916Z"),
+    "endTime": new Date("2026-03-25T07:30:00.916Z"),
+    "userId": "f8b47fdf-76d7-45f4-a5ae-0f55e151d877",
+    "source": "SCHEDULE",
+    "scheduleId": "ccf0aac2-b3ad-4de1-9d70-85c95120abcf",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-25T08:27:14.271Z"),
+    "createdBy": null
+  },
+  {
+    "id": "0e02b2e6-a459-41b9-b679-0bb1d91e9457",
+    "roomCode": "52-701",
+    "date": new Date("2026-03-25T00:00:00.000Z"),
+    "startTime": new Date("2026-03-25T06:00:00.916Z"),
+    "endTime": new Date("2026-03-25T07:30:00.916Z"),
+    "userId": "0cb593f5-5365-4694-b86d-51c3e8d5f762",
+    "source": "SCHEDULE",
+    "scheduleId": "ccf0aac2-b3ad-4de1-9d70-85c95120abcf",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-25T08:27:14.271Z"),
+    "createdBy": null
+  },
+  {
+    "id": "7972e6a7-8e10-4c8f-8eed-cbb3a8f8a383",
+    "roomCode": "52-701",
+    "date": new Date("2026-03-25T00:00:00.000Z"),
+    "startTime": new Date("2026-03-25T06:00:00.916Z"),
+    "endTime": new Date("2026-03-25T07:30:00.916Z"),
+    "userId": "0fae1523-cd5e-4667-bf71-d7fd603db23e",
+    "source": "SCHEDULE",
+    "scheduleId": "ccf0aac2-b3ad-4de1-9d70-85c95120abcf",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-25T08:27:14.271Z"),
+    "createdBy": null
+  },
+  {
+    "id": "ff0907cb-853e-4f80-9e9a-762d2e7f459c",
+    "roomCode": "52-701",
+    "date": new Date("2026-03-25T00:00:00.000Z"),
+    "startTime": new Date("2026-03-25T06:00:00.916Z"),
+    "endTime": new Date("2026-03-25T07:30:00.916Z"),
+    "userId": "68529f70-0cbd-4554-b118-ee9952268dbe",
+    "source": "SCHEDULE",
+    "scheduleId": "ccf0aac2-b3ad-4de1-9d70-85c95120abcf",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-25T08:27:14.271Z"),
+    "createdBy": null
+  },
+  {
+    "id": "71072b84-92ab-4316-9d7e-390886970990",
+    "roomCode": "52-701",
+    "date": new Date("2026-03-25T00:00:00.000Z"),
+    "startTime": new Date("2026-03-25T06:00:00.916Z"),
+    "endTime": new Date("2026-03-25T07:30:00.916Z"),
+    "userId": "180f1ea8-70ce-44e3-bcae-4edd23ad1607",
+    "source": "SCHEDULE",
+    "scheduleId": "ccf0aac2-b3ad-4de1-9d70-85c95120abcf",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-25T08:27:14.271Z"),
+    "createdBy": null
+  },
+  {
+    "id": "199d05ea-3b66-4bbe-9855-aa7b1e443f4c",
+    "roomCode": "52-701",
+    "date": new Date("2026-03-25T00:00:00.000Z"),
+    "startTime": new Date("2026-03-25T06:00:00.916Z"),
+    "endTime": new Date("2026-03-25T07:30:00.916Z"),
+    "userId": "59b39fb6-6444-47af-8600-61633b7cd398",
+    "source": "SCHEDULE",
+    "scheduleId": "ccf0aac2-b3ad-4de1-9d70-85c95120abcf",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-25T08:27:14.271Z"),
+    "createdBy": null
+  },
+  {
+    "id": "36e1987a-c35a-409a-a7c0-1527123d3767",
+    "roomCode": "52-701",
+    "date": new Date("2026-03-25T00:00:00.000Z"),
+    "startTime": new Date("2026-03-25T06:00:00.916Z"),
+    "endTime": new Date("2026-03-25T07:30:00.916Z"),
+    "userId": "f67eca98-2ba9-4322-bfbb-d1c9317b9d79",
+    "source": "SCHEDULE",
+    "scheduleId": "ccf0aac2-b3ad-4de1-9d70-85c95120abcf",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-25T08:27:14.271Z"),
+    "createdBy": null
+  },
+  {
+    "id": "32568380-d399-41b0-ba93-6abd740f085f",
+    "roomCode": "52-701",
+    "date": new Date("2026-03-25T00:00:00.000Z"),
+    "startTime": new Date("2026-03-25T06:00:00.916Z"),
+    "endTime": new Date("2026-03-25T07:30:00.916Z"),
+    "userId": "5ac6609d-e691-4cf4-b5b2-c7566f99edb7",
+    "source": "SCHEDULE",
+    "scheduleId": "ccf0aac2-b3ad-4de1-9d70-85c95120abcf",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-25T08:27:14.271Z"),
+    "createdBy": null
+  },
+  {
+    "id": "e6914051-933f-422e-8b5f-4bd85c86178f",
+    "roomCode": "52-701",
+    "date": new Date("2026-03-25T00:00:00.000Z"),
+    "startTime": new Date("2026-03-25T06:00:00.916Z"),
+    "endTime": new Date("2026-03-25T07:30:00.916Z"),
+    "userId": "47fc0493-dcfe-4de4-84fb-226fec80b931",
+    "source": "SCHEDULE",
+    "scheduleId": "ccf0aac2-b3ad-4de1-9d70-85c95120abcf",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-25T08:27:14.271Z"),
+    "createdBy": null
+  },
+  {
+    "id": "6e30a54c-0e5b-4112-a818-1c48b0ec9ba5",
+    "roomCode": "52-701",
+    "date": new Date("2026-03-25T00:00:00.000Z"),
+    "startTime": new Date("2026-03-25T06:00:00.916Z"),
+    "endTime": new Date("2026-03-25T07:30:00.916Z"),
+    "userId": "f1de1ffb-1822-45d3-b8f7-e2afc87a0bcf",
+    "source": "SCHEDULE",
+    "scheduleId": "ccf0aac2-b3ad-4de1-9d70-85c95120abcf",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-25T08:27:14.271Z"),
+    "createdBy": null
+  },
+  {
+    "id": "6a95642d-b6e1-403d-a4a5-9f334cfc8258",
+    "roomCode": "52-701",
+    "date": new Date("2026-03-25T00:00:00.000Z"),
+    "startTime": new Date("2026-03-25T06:00:00.916Z"),
+    "endTime": new Date("2026-03-25T07:30:00.916Z"),
+    "userId": "99d96c3e-bb46-4dfc-95da-180180c3d919",
+    "source": "SCHEDULE",
+    "scheduleId": "ccf0aac2-b3ad-4de1-9d70-85c95120abcf",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-25T08:27:14.271Z"),
+    "createdBy": null
+  },
+  {
+    "id": "1673bc1e-cfc6-4285-8ccd-846a81699afb",
+    "roomCode": "52-701",
+    "date": new Date("2026-03-25T00:00:00.000Z"),
+    "startTime": new Date("2026-03-25T06:00:00.916Z"),
+    "endTime": new Date("2026-03-25T07:30:00.916Z"),
+    "userId": "8e436af5-839d-490c-911e-8138669196f8",
+    "source": "SCHEDULE",
+    "scheduleId": "ccf0aac2-b3ad-4de1-9d70-85c95120abcf",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-25T08:27:14.271Z"),
+    "createdBy": null
+  },
+  {
+    "id": "1ea51b45-5193-4344-b0bb-04bad551bee2",
+    "roomCode": "52-701",
+    "date": new Date("2026-03-25T00:00:00.000Z"),
+    "startTime": new Date("2026-03-25T06:00:00.916Z"),
+    "endTime": new Date("2026-03-25T07:30:00.916Z"),
+    "userId": "7955bd30-fb2a-4f82-a9b9-4615764acd40",
+    "source": "SCHEDULE",
+    "scheduleId": "ccf0aac2-b3ad-4de1-9d70-85c95120abcf",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-25T08:27:14.271Z"),
+    "createdBy": null
+  },
+  {
+    "id": "8a9f48cb-8719-4832-a28f-0ca7f2ac6816",
+    "roomCode": "52-701",
+    "date": new Date("2026-03-25T00:00:00.000Z"),
+    "startTime": new Date("2026-03-25T06:00:00.916Z"),
+    "endTime": new Date("2026-03-25T07:30:00.916Z"),
+    "userId": "3baaba62-f128-4319-aaac-b2ad957b38d1",
+    "source": "SCHEDULE",
+    "scheduleId": "ccf0aac2-b3ad-4de1-9d70-85c95120abcf",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-25T08:27:14.271Z"),
+    "createdBy": null
+  },
+  {
+    "id": "0273ad7f-3078-4f04-ba67-3f5b01a68b42",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-26T00:00:00.000Z"),
+    "startTime": new Date("2026-03-25T17:00:00.166Z"),
+    "endTime": new Date("2026-03-26T13:00:00.166Z"),
+    "userId": "1372f6fc-65eb-419f-a060-301153d459f4",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-26T10:44:00.077Z"),
+    "createdBy": null
+  },
+  {
+    "id": "f11fbe2d-d53d-4808-8b12-75f809c5745a",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-26T00:00:00.000Z"),
+    "startTime": new Date("2026-03-25T17:00:00.166Z"),
+    "endTime": new Date("2026-03-26T13:00:00.166Z"),
+    "userId": "ce4c8300-5a57-4144-b720-ba44ccea04b9",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-26T10:44:00.077Z"),
+    "createdBy": null
+  },
+  {
+    "id": "97a71bb0-5e5e-4ebe-b49b-538c7ccc4847",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-26T00:00:00.000Z"),
+    "startTime": new Date("2026-03-25T17:00:00.166Z"),
+    "endTime": new Date("2026-03-26T13:00:00.166Z"),
+    "userId": "7c50486b-2880-4c06-9b5f-d9e5dbcbbf35",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-26T10:44:00.077Z"),
+    "createdBy": null
+  },
+  {
+    "id": "6c6716cd-8aa5-48fe-ad82-2b17230dcc6a",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-26T00:00:00.000Z"),
+    "startTime": new Date("2026-03-25T17:00:00.166Z"),
+    "endTime": new Date("2026-03-26T13:00:00.166Z"),
+    "userId": "576bd29e-4ef4-4fa3-a1de-63a4b29aeb2f",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-26T10:44:00.077Z"),
+    "createdBy": null
+  },
+  {
+    "id": "48f97ab8-38f6-4ace-a076-b16ff2d7d5e7",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-26T00:00:00.000Z"),
+    "startTime": new Date("2026-03-25T17:00:00.166Z"),
+    "endTime": new Date("2026-03-26T13:00:00.166Z"),
+    "userId": "9155b909-63c8-45aa-a5b6-badf2815f247",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-26T10:44:00.077Z"),
+    "createdBy": null
+  },
+  {
+    "id": "2a33836a-77ba-4565-8ef0-9ab8e476d19a",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-26T00:00:00.000Z"),
+    "startTime": new Date("2026-03-25T17:00:00.166Z"),
+    "endTime": new Date("2026-03-26T13:00:00.166Z"),
+    "userId": "f74693ea-076a-4904-978f-693ba2dd7866",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-26T10:44:00.077Z"),
+    "createdBy": null
+  },
+  {
+    "id": "e9594d34-cc9f-49de-842f-e9a5a89603b9",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-26T00:00:00.000Z"),
+    "startTime": new Date("2026-03-25T17:00:00.166Z"),
+    "endTime": new Date("2026-03-26T13:00:00.166Z"),
+    "userId": "c1aa06b9-352e-486e-a82b-2ac1336517b9",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-26T10:44:00.077Z"),
+    "createdBy": null
+  },
+  {
+    "id": "775e8839-2d92-459d-a219-d6abf7a813da",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-26T00:00:00.000Z"),
+    "startTime": new Date("2026-03-25T17:00:00.166Z"),
+    "endTime": new Date("2026-03-26T13:00:00.166Z"),
+    "userId": "6500e16c-1379-45be-8925-f5a71256e3ed",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-26T10:44:00.077Z"),
+    "createdBy": null
+  },
+  {
+    "id": "6022e884-206b-45c2-aab1-b13505380195",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-26T00:00:00.000Z"),
+    "startTime": new Date("2026-03-25T17:00:00.166Z"),
+    "endTime": new Date("2026-03-26T13:00:00.166Z"),
+    "userId": "9cefc08a-a43f-4401-be9d-ccdf22d7009b",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-26T10:44:00.077Z"),
+    "createdBy": null
+  },
+  {
+    "id": "ec8aa652-c341-4249-a97c-c098e6b24f46",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-26T00:00:00.000Z"),
+    "startTime": new Date("2026-03-25T17:00:00.166Z"),
+    "endTime": new Date("2026-03-26T13:00:00.166Z"),
+    "userId": "2e991ce8-030d-4925-a113-f24674d8cb59",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-26T10:44:00.077Z"),
+    "createdBy": null
+  },
+  {
+    "id": "c726b7a0-668a-452d-9e15-53f3b5f908d4",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-26T00:00:00.000Z"),
+    "startTime": new Date("2026-03-25T17:00:00.166Z"),
+    "endTime": new Date("2026-03-26T13:00:00.166Z"),
+    "userId": "ecdcb42e-6255-42da-8a78-523bc33a3e36",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-26T10:44:00.077Z"),
+    "createdBy": null
+  },
+  {
+    "id": "e74bd24f-0944-4d9d-a893-630a734a3010",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-26T00:00:00.000Z"),
+    "startTime": new Date("2026-03-25T17:00:00.166Z"),
+    "endTime": new Date("2026-03-26T13:00:00.166Z"),
+    "userId": "2d658f11-34cb-4c94-b7b2-88eb34209297",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-26T10:44:00.077Z"),
+    "createdBy": null
+  },
+  {
+    "id": "45fcfe04-74fd-46ae-8330-835a48fb06a9",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-26T00:00:00.000Z"),
+    "startTime": new Date("2026-03-25T17:00:00.166Z"),
+    "endTime": new Date("2026-03-26T13:00:00.166Z"),
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-26T10:44:00.077Z"),
+    "createdBy": null
+  },
+  {
+    "id": "9ad14c42-acc7-4f8c-ab44-645a2d801abb",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-26T00:00:00.000Z"),
+    "startTime": new Date("2026-03-25T17:00:00.166Z"),
+    "endTime": new Date("2026-03-26T13:00:00.166Z"),
+    "userId": "11193aec-ff66-441a-8ace-03f3e3a3ac9b",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-26T10:44:00.077Z"),
+    "createdBy": null
+  },
+  {
+    "id": "c611edfb-4151-4e30-95e0-91e983c28c07",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-26T00:00:00.000Z"),
+    "startTime": new Date("2026-03-25T17:00:00.166Z"),
+    "endTime": new Date("2026-03-26T13:00:00.166Z"),
+    "userId": "e5c7d7ec-2028-481a-9a9b-1ab7b6dfe160",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-26T10:44:00.077Z"),
+    "createdBy": null
+  },
+  {
+    "id": "1a4e9b8e-1f76-4171-84ef-9185ee921166",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-26T00:00:00.000Z"),
+    "startTime": new Date("2026-03-25T17:00:00.166Z"),
+    "endTime": new Date("2026-03-26T13:00:00.166Z"),
+    "userId": "393fb8e0-7b96-48e0-8602-a98337e522d0",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-26T10:44:00.077Z"),
+    "createdBy": null
+  },
+  {
+    "id": "ea6e146c-866f-4d5d-a8ff-6127b7cbdd19",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-26T00:00:00.000Z"),
+    "startTime": new Date("2026-03-25T17:00:00.166Z"),
+    "endTime": new Date("2026-03-26T13:00:00.166Z"),
+    "userId": "ce7c3b8a-3b61-4ea4-822a-5403160ad267",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-26T10:44:00.077Z"),
+    "createdBy": null
+  },
+  {
+    "id": "4e2b1b41-d9c7-4bf3-8023-da54bc689811",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-26T00:00:00.000Z"),
+    "startTime": new Date("2026-03-25T17:00:00.166Z"),
+    "endTime": new Date("2026-03-26T13:00:00.166Z"),
+    "userId": "b1157ae6-657f-46d9-877a-ca9e9bd08cc1",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-26T10:44:00.077Z"),
+    "createdBy": null
+  },
+  {
+    "id": "b3bf3300-9611-44de-ba5e-d894f8e0bfaf",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-26T00:00:00.000Z"),
+    "startTime": new Date("2026-03-25T17:00:00.166Z"),
+    "endTime": new Date("2026-03-26T13:00:00.166Z"),
+    "userId": "c027fd82-5cca-4431-aa13-b413f420b57f",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-26T10:44:00.077Z"),
+    "createdBy": null
+  },
+  {
+    "id": "0f222e6e-3eb1-488a-a2da-264fcf9f16e3",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-26T00:00:00.000Z"),
+    "startTime": new Date("2026-03-25T17:00:00.166Z"),
+    "endTime": new Date("2026-03-26T13:00:00.166Z"),
+    "userId": "391a0415-cfdd-40a8-b189-745d163d40cb",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-26T10:44:00.077Z"),
+    "createdBy": null
+  },
+  {
+    "id": "4d45f561-230b-4882-948f-00e4b20990a1",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-26T00:00:00.000Z"),
+    "startTime": new Date("2026-03-25T17:00:00.166Z"),
+    "endTime": new Date("2026-03-26T13:00:00.166Z"),
+    "userId": "8c5038ff-365e-448a-8176-0dc164b10d9b",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-26T10:44:00.077Z"),
+    "createdBy": null
+  },
+  {
+    "id": "ea1e270b-b538-446d-b915-17e14190b1de",
+    "roomCode": "52-211",
+    "date": new Date("2026-03-27T00:00:00.000Z"),
+    "startTime": new Date("2024-01-01T01:00:00.000Z"),
+    "endTime": new Date("2024-01-01T03:00:00.000Z"),
+    "userId": "d6fbb71d-06d9-4d8f-9ff5-880bcb2ee0fe",
+    "source": "SCHEDULE",
+    "scheduleId": "dbc02d05-aadb-4b32-9857-849e8b8cf761",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "createdAt": new Date("2026-03-27T13:01:16.027Z"),
+    "createdBy": null
+  },
+  {
+    "id": "d79ed86e-2f4c-471f-9a0a-73942b024d69",
+    "roomCode": "52-211",
+    "date": new Date("2026-03-27T00:00:00.000Z"),
+    "startTime": new Date("2024-01-01T01:00:00.000Z"),
+    "endTime": new Date("2024-01-01T03:00:00.000Z"),
+    "userId": "915db16f-1f1d-461d-906f-d85eb1fa14ed",
+    "source": "SCHEDULE",
+    "scheduleId": "dbc02d05-aadb-4b32-9857-849e8b8cf761",
+    "subjectId": "7b07ff8e-b540-4b99-8888-141574fbd41d",
+    "createdAt": new Date("2026-03-27T13:01:16.027Z"),
+    "createdBy": null
+  },
+  {
+    "id": "21077d4f-8d00-4f97-9388-838fb21475c8",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-27T00:00:00.000Z"),
+    "startTime": new Date("2026-03-26T17:00:00.782Z"),
+    "endTime": new Date("2026-03-27T16:00:00.782Z"),
+    "userId": "21dda778-aa98-4419-a318-0c8951641162",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-27T13:01:16.027Z"),
+    "createdBy": null
+  },
+  {
+    "id": "b454d3f1-342c-4ac4-a64d-0eabc52871e5",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-27T00:00:00.000Z"),
+    "startTime": new Date("2026-03-26T17:00:00.782Z"),
+    "endTime": new Date("2026-03-27T16:00:00.782Z"),
+    "userId": "1372f6fc-65eb-419f-a060-301153d459f4",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-27T13:01:16.027Z"),
+    "createdBy": null
+  },
+  {
+    "id": "74f3ab60-f0df-44b7-841e-4cf12fc0da11",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-27T00:00:00.000Z"),
+    "startTime": new Date("2026-03-26T17:00:00.782Z"),
+    "endTime": new Date("2026-03-27T16:00:00.782Z"),
+    "userId": "ce4c8300-5a57-4144-b720-ba44ccea04b9",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-27T13:01:16.027Z"),
+    "createdBy": null
+  },
+  {
+    "id": "3a1dbd04-1d6b-4820-828f-43625b555c93",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-27T00:00:00.000Z"),
+    "startTime": new Date("2026-03-26T17:00:00.782Z"),
+    "endTime": new Date("2026-03-27T16:00:00.782Z"),
+    "userId": "7c50486b-2880-4c06-9b5f-d9e5dbcbbf35",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-27T13:01:16.027Z"),
+    "createdBy": null
+  },
+  {
+    "id": "96dd369b-142c-46f5-96ee-873b4e9872ba",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-27T00:00:00.000Z"),
+    "startTime": new Date("2026-03-26T17:00:00.782Z"),
+    "endTime": new Date("2026-03-27T16:00:00.782Z"),
+    "userId": "576bd29e-4ef4-4fa3-a1de-63a4b29aeb2f",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-27T13:01:16.027Z"),
+    "createdBy": null
+  },
+  {
+    "id": "2abdf303-82fd-4aa7-9db8-20bb3226c43f",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-27T00:00:00.000Z"),
+    "startTime": new Date("2026-03-26T17:00:00.782Z"),
+    "endTime": new Date("2026-03-27T16:00:00.782Z"),
+    "userId": "9155b909-63c8-45aa-a5b6-badf2815f247",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-27T13:01:16.027Z"),
+    "createdBy": null
+  },
+  {
+    "id": "589f9338-e01d-415c-91e4-4a028d03dc1c",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-27T00:00:00.000Z"),
+    "startTime": new Date("2026-03-26T17:00:00.782Z"),
+    "endTime": new Date("2026-03-27T16:00:00.782Z"),
+    "userId": "f74693ea-076a-4904-978f-693ba2dd7866",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-27T13:01:16.027Z"),
+    "createdBy": null
+  },
+  {
+    "id": "aa02e8af-45c7-454f-a7e2-45f56947d564",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-27T00:00:00.000Z"),
+    "startTime": new Date("2026-03-26T17:00:00.782Z"),
+    "endTime": new Date("2026-03-27T16:00:00.782Z"),
+    "userId": "c1aa06b9-352e-486e-a82b-2ac1336517b9",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-27T13:01:16.027Z"),
+    "createdBy": null
+  },
+  {
+    "id": "023e434a-72f9-48a5-a701-4116ef9052da",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-27T00:00:00.000Z"),
+    "startTime": new Date("2026-03-26T17:00:00.782Z"),
+    "endTime": new Date("2026-03-27T16:00:00.782Z"),
+    "userId": "6500e16c-1379-45be-8925-f5a71256e3ed",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-27T13:01:16.027Z"),
+    "createdBy": null
+  },
+  {
+    "id": "20c015d8-06fa-44ff-8ccf-4bfbb18a0913",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-27T00:00:00.000Z"),
+    "startTime": new Date("2026-03-26T17:00:00.782Z"),
+    "endTime": new Date("2026-03-27T16:00:00.782Z"),
+    "userId": "9cefc08a-a43f-4401-be9d-ccdf22d7009b",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-27T13:01:16.027Z"),
+    "createdBy": null
+  },
+  {
+    "id": "0dc7c4ee-7ec4-4e04-b4cf-15f914fcc385",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-27T00:00:00.000Z"),
+    "startTime": new Date("2026-03-26T17:00:00.782Z"),
+    "endTime": new Date("2026-03-27T16:00:00.782Z"),
+    "userId": "2e991ce8-030d-4925-a113-f24674d8cb59",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-27T13:01:16.027Z"),
+    "createdBy": null
+  },
+  {
+    "id": "fb268ba1-9689-41f8-b7a7-52809e7708ee",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-27T00:00:00.000Z"),
+    "startTime": new Date("2026-03-26T17:00:00.782Z"),
+    "endTime": new Date("2026-03-27T16:00:00.782Z"),
+    "userId": "ecdcb42e-6255-42da-8a78-523bc33a3e36",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-27T13:01:16.027Z"),
+    "createdBy": null
+  },
+  {
+    "id": "d892d91c-e1ba-4125-a1ba-a11d386545c5",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-27T00:00:00.000Z"),
+    "startTime": new Date("2026-03-26T17:00:00.782Z"),
+    "endTime": new Date("2026-03-27T16:00:00.782Z"),
+    "userId": "2d658f11-34cb-4c94-b7b2-88eb34209297",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-27T13:01:16.027Z"),
+    "createdBy": null
+  },
+  {
+    "id": "7d02a08b-0458-4a14-a894-7eb26b8eaaa5",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-27T00:00:00.000Z"),
+    "startTime": new Date("2026-03-26T17:00:00.782Z"),
+    "endTime": new Date("2026-03-27T16:00:00.782Z"),
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-27T13:01:16.027Z"),
+    "createdBy": null
+  },
+  {
+    "id": "d6ed8a66-6f86-4485-a5e4-71c6762b6e60",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-27T00:00:00.000Z"),
+    "startTime": new Date("2026-03-26T17:00:00.782Z"),
+    "endTime": new Date("2026-03-27T16:00:00.782Z"),
+    "userId": "11193aec-ff66-441a-8ace-03f3e3a3ac9b",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-27T13:01:16.027Z"),
+    "createdBy": null
+  },
+  {
+    "id": "c30f990c-5e2c-4e9c-9f88-1a2538e93a80",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-27T00:00:00.000Z"),
+    "startTime": new Date("2026-03-26T17:00:00.782Z"),
+    "endTime": new Date("2026-03-27T16:00:00.782Z"),
+    "userId": "e5c7d7ec-2028-481a-9a9b-1ab7b6dfe160",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-27T13:01:16.027Z"),
+    "createdBy": null
+  },
+  {
+    "id": "9ddf0cbb-fccb-4e66-8115-ade743b4437f",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-27T00:00:00.000Z"),
+    "startTime": new Date("2026-03-26T17:00:00.782Z"),
+    "endTime": new Date("2026-03-27T16:00:00.782Z"),
+    "userId": "393fb8e0-7b96-48e0-8602-a98337e522d0",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-27T13:01:16.027Z"),
+    "createdBy": null
+  },
+  {
+    "id": "89168214-1065-4a6f-b4c5-ac623fa4efca",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-27T00:00:00.000Z"),
+    "startTime": new Date("2026-03-26T17:00:00.782Z"),
+    "endTime": new Date("2026-03-27T16:00:00.782Z"),
+    "userId": "ce7c3b8a-3b61-4ea4-822a-5403160ad267",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-27T13:01:16.027Z"),
+    "createdBy": null
+  },
+  {
+    "id": "d77d0542-9782-47a9-8354-0056d4260198",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-27T00:00:00.000Z"),
+    "startTime": new Date("2026-03-26T17:00:00.782Z"),
+    "endTime": new Date("2026-03-27T16:00:00.782Z"),
+    "userId": "b1157ae6-657f-46d9-877a-ca9e9bd08cc1",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-27T13:01:16.027Z"),
+    "createdBy": null
+  },
+  {
+    "id": "ae21eb1d-aeb4-4e7b-8038-6eb97bf4d2ef",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-27T00:00:00.000Z"),
+    "startTime": new Date("2026-03-26T17:00:00.782Z"),
+    "endTime": new Date("2026-03-27T16:00:00.782Z"),
+    "userId": "c027fd82-5cca-4431-aa13-b413f420b57f",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-27T13:01:16.027Z"),
+    "createdBy": null
+  },
+  {
+    "id": "fe9206a0-d166-4179-b663-1ba1537ad132",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-27T00:00:00.000Z"),
+    "startTime": new Date("2026-03-26T17:00:00.782Z"),
+    "endTime": new Date("2026-03-27T16:00:00.782Z"),
+    "userId": "391a0415-cfdd-40a8-b189-745d163d40cb",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-27T13:01:16.027Z"),
+    "createdBy": null
+  },
+  {
+    "id": "bda37d2c-8594-46c6-bda2-2eff67f95d70",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-27T00:00:00.000Z"),
+    "startTime": new Date("2026-03-26T17:00:00.782Z"),
+    "endTime": new Date("2026-03-27T16:00:00.782Z"),
+    "userId": "8c5038ff-365e-448a-8176-0dc164b10d9b",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-27T13:01:16.027Z"),
+    "createdBy": null
+  },
+  {
+    "id": "51bebf24-7d44-40b3-9e9a-042b8e1133cb",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-27T00:00:00.000Z"),
+    "startTime": new Date("2026-03-26T17:00:00.782Z"),
+    "endTime": new Date("2026-03-27T16:00:00.782Z"),
+    "userId": "040845c3-87b2-4c3a-b71f-ac4ee3ec9537",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-27T13:01:16.027Z"),
+    "createdBy": null
+  },
+  {
+    "id": "62c53d4b-3770-4c89-906b-02efa5eab415",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-27T00:00:00.000Z"),
+    "startTime": new Date("2026-03-26T17:00:00.782Z"),
+    "endTime": new Date("2026-03-27T16:00:00.782Z"),
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-27T13:01:16.027Z"),
+    "createdBy": null
+  },
+  {
+    "id": "3af9f973-2c65-4a94-a8a7-7e68596fd174",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-27T00:00:00.000Z"),
+    "startTime": new Date("2026-03-26T17:00:00.782Z"),
+    "endTime": new Date("2026-03-27T16:00:00.782Z"),
+    "userId": "9f90f6c9-7dca-4a7e-852c-08bc783b3c7e",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-27T13:01:16.027Z"),
+    "createdBy": null
+  },
+  {
+    "id": "170623ae-f928-404a-851a-5a24ba215e53",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-27T00:00:00.000Z"),
+    "startTime": new Date("2026-03-26T17:00:00.782Z"),
+    "endTime": new Date("2026-03-27T16:00:00.782Z"),
+    "userId": "b2988236-8de1-4ce3-bced-39943483f203",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-27T13:01:16.027Z"),
+    "createdBy": null
+  },
+  {
+    "id": "dff8a25f-bf49-4f14-b4d5-2f16aafa5c4c",
+    "roomCode": "52-205",
+    "date": new Date("2026-03-31T00:00:00.000Z"),
+    "startTime": new Date("2026-03-31T09:00:00.132Z"),
+    "endTime": new Date("2026-03-31T12:00:00.132Z"),
+    "userId": "ce4c8300-5a57-4144-b720-ba44ccea04b9",
+    "source": "SCHEDULE",
+    "scheduleId": "de4d0bc5-208d-4828-9855-973c858e120d",
+    "subjectId": "9c807e3d-7e19-46f1-961c-a1f3181430ca",
+    "createdAt": new Date("2026-03-31T10:57:04.376Z"),
+    "createdBy": null
+  },
+  {
+    "id": "3b177286-7031-4549-98a8-ac12130a0cff",
+    "roomCode": "52-205",
+    "date": new Date("2026-03-31T00:00:00.000Z"),
+    "startTime": new Date("2026-03-31T09:00:00.132Z"),
+    "endTime": new Date("2026-03-31T12:00:00.132Z"),
+    "userId": "2d658f11-34cb-4c94-b7b2-88eb34209297",
+    "source": "SCHEDULE",
+    "scheduleId": "de4d0bc5-208d-4828-9855-973c858e120d",
+    "subjectId": "9c807e3d-7e19-46f1-961c-a1f3181430ca",
+    "createdAt": new Date("2026-03-31T10:57:04.376Z"),
+    "createdBy": null
+  },
+  {
+    "id": "9e1c808c-9e55-4bfe-8379-b67dd21d6ebf",
+    "roomCode": "52-205",
+    "date": new Date("2026-03-31T00:00:00.000Z"),
+    "startTime": new Date("2026-03-31T09:00:00.132Z"),
+    "endTime": new Date("2026-03-31T12:00:00.132Z"),
+    "userId": "f5dfd7e8-1e1f-4278-b82f-cd7825b2da13",
+    "source": "SCHEDULE",
+    "scheduleId": "de4d0bc5-208d-4828-9855-973c858e120d",
+    "subjectId": "9c807e3d-7e19-46f1-961c-a1f3181430ca",
+    "createdAt": new Date("2026-03-31T10:57:04.376Z"),
+    "createdBy": null
+  },
+  {
+    "id": "2ca2d5fa-ca6d-4e89-bf66-d033bc2bce8e",
+    "roomCode": "52-205",
+    "date": new Date("2026-03-31T00:00:00.000Z"),
+    "startTime": new Date("2026-03-31T09:00:00.132Z"),
+    "endTime": new Date("2026-03-31T12:00:00.132Z"),
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "source": "SCHEDULE",
+    "scheduleId": "de4d0bc5-208d-4828-9855-973c858e120d",
+    "subjectId": "9c807e3d-7e19-46f1-961c-a1f3181430ca",
+    "createdAt": new Date("2026-03-31T10:57:04.376Z"),
+    "createdBy": null
+  },
+  {
+    "id": "3181ae4c-0675-47a3-8054-958e174e746c",
+    "roomCode": "52-205",
+    "date": new Date("2026-03-31T00:00:00.000Z"),
+    "startTime": new Date("2026-03-31T09:00:00.132Z"),
+    "endTime": new Date("2026-03-31T12:00:00.132Z"),
+    "userId": "13635691-70ac-4e4e-b095-c05d02e90e8d",
+    "source": "SCHEDULE",
+    "scheduleId": "de4d0bc5-208d-4828-9855-973c858e120d",
+    "subjectId": "9c807e3d-7e19-46f1-961c-a1f3181430ca",
+    "createdAt": new Date("2026-03-31T10:57:04.376Z"),
+    "createdBy": null
+  },
+  {
+    "id": "da69a137-83ee-4ece-b57f-fe9e79ab4382",
+    "roomCode": "52-205",
+    "date": new Date("2026-03-31T00:00:00.000Z"),
+    "startTime": new Date("2026-03-31T09:00:00.132Z"),
+    "endTime": new Date("2026-03-31T12:00:00.132Z"),
+    "userId": "e4cc76e4-aaa4-4917-b37e-0b7808c3ac2c",
+    "source": "SCHEDULE",
+    "scheduleId": "de4d0bc5-208d-4828-9855-973c858e120d",
+    "subjectId": "9c807e3d-7e19-46f1-961c-a1f3181430ca",
+    "createdAt": new Date("2026-03-31T10:57:04.376Z"),
+    "createdBy": null
+  },
+  {
+    "id": "5e78a082-2c9c-461e-be18-059729799603",
+    "roomCode": "52-205",
+    "date": new Date("2026-03-31T00:00:00.000Z"),
+    "startTime": new Date("2026-03-31T09:00:00.132Z"),
+    "endTime": new Date("2026-03-31T12:00:00.132Z"),
+    "userId": "c07d8bf3-03db-4057-a6fe-aaec5106144e",
+    "source": "SCHEDULE",
+    "scheduleId": "de4d0bc5-208d-4828-9855-973c858e120d",
+    "subjectId": "9c807e3d-7e19-46f1-961c-a1f3181430ca",
+    "createdAt": new Date("2026-03-31T10:57:04.376Z"),
+    "createdBy": null
+  },
+  {
+    "id": "fca77b1e-e779-4cb7-afb9-b8b3105f1c13",
+    "roomCode": "52-205",
+    "date": new Date("2026-03-31T00:00:00.000Z"),
+    "startTime": new Date("2026-03-31T09:00:00.132Z"),
+    "endTime": new Date("2026-03-31T12:00:00.132Z"),
+    "userId": "4b75f40d-e156-4aec-8a22-7c2a7008b566",
+    "source": "SCHEDULE",
+    "scheduleId": "de4d0bc5-208d-4828-9855-973c858e120d",
+    "subjectId": "9c807e3d-7e19-46f1-961c-a1f3181430ca",
+    "createdAt": new Date("2026-03-31T10:57:04.376Z"),
+    "createdBy": null
+  },
+  {
+    "id": "13732625-eb39-4819-ab93-9af56d7c9db5",
+    "roomCode": "52-205",
+    "date": new Date("2026-03-31T00:00:00.000Z"),
+    "startTime": new Date("2026-03-31T09:00:00.132Z"),
+    "endTime": new Date("2026-03-31T12:00:00.132Z"),
+    "userId": "b2988236-8de1-4ce3-bced-39943483f203",
+    "source": "SCHEDULE",
+    "scheduleId": "de4d0bc5-208d-4828-9855-973c858e120d",
+    "subjectId": "9c807e3d-7e19-46f1-961c-a1f3181430ca",
+    "createdAt": new Date("2026-03-31T10:57:04.376Z"),
+    "createdBy": null
+  },
+  {
+    "id": "d32c8d29-199f-4d66-9247-8a84c6d4669d",
+    "roomCode": "52-205",
+    "date": new Date("2026-03-31T00:00:00.000Z"),
+    "startTime": new Date("2026-03-31T09:00:00.132Z"),
+    "endTime": new Date("2026-03-31T12:00:00.132Z"),
+    "userId": "7955bd30-fb2a-4f82-a9b9-4615764acd40",
+    "source": "SCHEDULE",
+    "scheduleId": "de4d0bc5-208d-4828-9855-973c858e120d",
+    "subjectId": "9c807e3d-7e19-46f1-961c-a1f3181430ca",
+    "createdAt": new Date("2026-03-31T10:57:04.376Z"),
+    "createdBy": null
+  },
+  {
+    "id": "0727af92-19a5-46dc-aef2-87ce0d543cf0",
+    "roomCode": "52-205",
+    "date": new Date("2026-03-31T00:00:00.000Z"),
+    "startTime": new Date("2026-03-31T09:00:00.132Z"),
+    "endTime": new Date("2026-03-31T12:00:00.132Z"),
+    "userId": "3baaba62-f128-4319-aaac-b2ad957b38d1",
+    "source": "SCHEDULE",
+    "scheduleId": "de4d0bc5-208d-4828-9855-973c858e120d",
+    "subjectId": "9c807e3d-7e19-46f1-961c-a1f3181430ca",
+    "createdAt": new Date("2026-03-31T10:57:04.376Z"),
+    "createdBy": null
+  },
+  {
+    "id": "9a2cf097-69ca-4af2-8070-396b34e4e3d1",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-31T00:00:00.000Z"),
+    "startTime": new Date("2026-03-31T13:00:00.077Z"),
+    "endTime": new Date("2026-03-31T16:00:00.077Z"),
+    "userId": "21dda778-aa98-4419-a318-0c8951641162",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-31T10:57:04.376Z"),
+    "createdBy": null
+  },
+  {
+    "id": "cbb090b2-3b76-4425-af6a-1fbcb3bccf49",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-31T00:00:00.000Z"),
+    "startTime": new Date("2026-03-31T13:00:00.077Z"),
+    "endTime": new Date("2026-03-31T16:00:00.077Z"),
+    "userId": "1372f6fc-65eb-419f-a060-301153d459f4",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-31T10:57:04.376Z"),
+    "createdBy": null
+  },
+  {
+    "id": "0ea1ea9d-b0c1-473f-b47a-8faa027d7b5a",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-31T00:00:00.000Z"),
+    "startTime": new Date("2026-03-31T13:00:00.077Z"),
+    "endTime": new Date("2026-03-31T16:00:00.077Z"),
+    "userId": "ce4c8300-5a57-4144-b720-ba44ccea04b9",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-31T10:57:04.376Z"),
+    "createdBy": null
+  },
+  {
+    "id": "cee49cc6-bf12-4dc1-a1ea-754fd315bade",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-31T00:00:00.000Z"),
+    "startTime": new Date("2026-03-31T13:00:00.077Z"),
+    "endTime": new Date("2026-03-31T16:00:00.077Z"),
+    "userId": "7c50486b-2880-4c06-9b5f-d9e5dbcbbf35",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-31T10:57:04.376Z"),
+    "createdBy": null
+  },
+  {
+    "id": "617b4b9a-346e-488b-95e2-065b550a9d7f",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-31T00:00:00.000Z"),
+    "startTime": new Date("2026-03-31T13:00:00.077Z"),
+    "endTime": new Date("2026-03-31T16:00:00.077Z"),
+    "userId": "576bd29e-4ef4-4fa3-a1de-63a4b29aeb2f",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-31T10:57:04.376Z"),
+    "createdBy": null
+  },
+  {
+    "id": "3eec6a60-19e8-44ce-b823-cccc9e6817a4",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-31T00:00:00.000Z"),
+    "startTime": new Date("2026-03-31T13:00:00.077Z"),
+    "endTime": new Date("2026-03-31T16:00:00.077Z"),
+    "userId": "9155b909-63c8-45aa-a5b6-badf2815f247",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-31T10:57:04.376Z"),
+    "createdBy": null
+  },
+  {
+    "id": "1d232442-3a00-4b6a-9ece-557c2de9377d",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-31T00:00:00.000Z"),
+    "startTime": new Date("2026-03-31T13:00:00.077Z"),
+    "endTime": new Date("2026-03-31T16:00:00.077Z"),
+    "userId": "f74693ea-076a-4904-978f-693ba2dd7866",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-31T10:57:04.376Z"),
+    "createdBy": null
+  },
+  {
+    "id": "83cea2db-617c-45d8-8b0c-398a3c54f524",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-31T00:00:00.000Z"),
+    "startTime": new Date("2026-03-31T13:00:00.077Z"),
+    "endTime": new Date("2026-03-31T16:00:00.077Z"),
+    "userId": "c1aa06b9-352e-486e-a82b-2ac1336517b9",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-31T10:57:04.376Z"),
+    "createdBy": null
+  },
+  {
+    "id": "04f79b2e-c24d-44e4-88a2-24ef091d7486",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-28T00:00:00.000Z"),
+    "startTime": new Date("2026-03-28T08:00:00.846Z"),
+    "endTime": new Date("2026-03-28T16:00:00.846Z"),
+    "userId": "21dda778-aa98-4419-a318-0c8951641162",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-28T05:54:47.933Z"),
+    "createdBy": null
+  },
+  {
+    "id": "c24d3ba5-c35a-40f1-99a9-ba90725aa40d",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-28T00:00:00.000Z"),
+    "startTime": new Date("2026-03-28T08:00:00.846Z"),
+    "endTime": new Date("2026-03-28T16:00:00.846Z"),
+    "userId": "1372f6fc-65eb-419f-a060-301153d459f4",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-28T05:54:47.933Z"),
+    "createdBy": null
+  },
+  {
+    "id": "62855615-e312-47e0-9e1a-61f553377eeb",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-28T00:00:00.000Z"),
+    "startTime": new Date("2026-03-28T08:00:00.846Z"),
+    "endTime": new Date("2026-03-28T16:00:00.846Z"),
+    "userId": "ce4c8300-5a57-4144-b720-ba44ccea04b9",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-28T05:54:47.933Z"),
+    "createdBy": null
+  },
+  {
+    "id": "9557fbe8-616b-467d-a6c3-e9a4fd68c45d",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-28T00:00:00.000Z"),
+    "startTime": new Date("2026-03-28T08:00:00.846Z"),
+    "endTime": new Date("2026-03-28T16:00:00.846Z"),
+    "userId": "7c50486b-2880-4c06-9b5f-d9e5dbcbbf35",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-28T05:54:47.933Z"),
+    "createdBy": null
+  },
+  {
+    "id": "82550c79-6118-47cc-a0e5-c75331777453",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-28T00:00:00.000Z"),
+    "startTime": new Date("2026-03-28T08:00:00.846Z"),
+    "endTime": new Date("2026-03-28T16:00:00.846Z"),
+    "userId": "576bd29e-4ef4-4fa3-a1de-63a4b29aeb2f",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-28T05:54:47.933Z"),
+    "createdBy": null
+  },
+  {
+    "id": "856bba56-f029-471b-bd39-9d927bd50a9a",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-28T00:00:00.000Z"),
+    "startTime": new Date("2026-03-28T08:00:00.846Z"),
+    "endTime": new Date("2026-03-28T16:00:00.846Z"),
+    "userId": "9155b909-63c8-45aa-a5b6-badf2815f247",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-28T05:54:47.933Z"),
+    "createdBy": null
+  },
+  {
+    "id": "80b58d94-22fb-418c-8d0d-36f0b1801161",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-28T00:00:00.000Z"),
+    "startTime": new Date("2026-03-28T08:00:00.846Z"),
+    "endTime": new Date("2026-03-28T16:00:00.846Z"),
+    "userId": "f74693ea-076a-4904-978f-693ba2dd7866",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-28T05:54:47.933Z"),
+    "createdBy": null
+  },
+  {
+    "id": "282030db-564c-468b-bc15-e26e52a782eb",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-28T00:00:00.000Z"),
+    "startTime": new Date("2026-03-28T08:00:00.846Z"),
+    "endTime": new Date("2026-03-28T16:00:00.846Z"),
+    "userId": "c1aa06b9-352e-486e-a82b-2ac1336517b9",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-28T05:54:47.933Z"),
+    "createdBy": null
+  },
+  {
+    "id": "c06438a2-1f2f-4247-9739-24c17f84c99f",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-28T00:00:00.000Z"),
+    "startTime": new Date("2026-03-28T08:00:00.846Z"),
+    "endTime": new Date("2026-03-28T16:00:00.846Z"),
+    "userId": "6500e16c-1379-45be-8925-f5a71256e3ed",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-28T05:54:47.933Z"),
+    "createdBy": null
+  },
+  {
+    "id": "6672fd46-1591-451c-9c61-447a8bbda0f4",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-28T00:00:00.000Z"),
+    "startTime": new Date("2026-03-28T08:00:00.846Z"),
+    "endTime": new Date("2026-03-28T16:00:00.846Z"),
+    "userId": "9cefc08a-a43f-4401-be9d-ccdf22d7009b",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-28T05:54:47.933Z"),
+    "createdBy": null
+  },
+  {
+    "id": "d7713be8-ee79-45bf-9f4c-b86d3fbd8597",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-28T00:00:00.000Z"),
+    "startTime": new Date("2026-03-28T08:00:00.846Z"),
+    "endTime": new Date("2026-03-28T16:00:00.846Z"),
+    "userId": "2e991ce8-030d-4925-a113-f24674d8cb59",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-28T05:54:47.933Z"),
+    "createdBy": null
+  },
+  {
+    "id": "73f3ad35-5bfe-46df-9908-f2a3f44cca44",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-28T00:00:00.000Z"),
+    "startTime": new Date("2026-03-28T08:00:00.846Z"),
+    "endTime": new Date("2026-03-28T16:00:00.846Z"),
+    "userId": "ecdcb42e-6255-42da-8a78-523bc33a3e36",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-28T05:54:47.933Z"),
+    "createdBy": null
+  },
+  {
+    "id": "0b9d660a-c326-404e-b921-0e9e9b6e093e",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-28T00:00:00.000Z"),
+    "startTime": new Date("2026-03-28T08:00:00.846Z"),
+    "endTime": new Date("2026-03-28T16:00:00.846Z"),
+    "userId": "2d658f11-34cb-4c94-b7b2-88eb34209297",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-28T05:54:47.933Z"),
+    "createdBy": null
+  },
+  {
+    "id": "ec168624-b7f9-43ff-bb3d-c501c1c99481",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-28T00:00:00.000Z"),
+    "startTime": new Date("2026-03-28T08:00:00.846Z"),
+    "endTime": new Date("2026-03-28T16:00:00.846Z"),
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-28T05:54:47.933Z"),
+    "createdBy": null
+  },
+  {
+    "id": "81bc5b32-546f-4fee-8a19-33f7c9934abf",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-28T00:00:00.000Z"),
+    "startTime": new Date("2026-03-28T08:00:00.846Z"),
+    "endTime": new Date("2026-03-28T16:00:00.846Z"),
+    "userId": "11193aec-ff66-441a-8ace-03f3e3a3ac9b",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-28T05:54:47.933Z"),
+    "createdBy": null
+  },
+  {
+    "id": "dd46265b-350d-40e7-b9ee-8dee27d50155",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-28T00:00:00.000Z"),
+    "startTime": new Date("2026-03-28T08:00:00.846Z"),
+    "endTime": new Date("2026-03-28T16:00:00.846Z"),
+    "userId": "e5c7d7ec-2028-481a-9a9b-1ab7b6dfe160",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-28T05:54:47.933Z"),
+    "createdBy": null
+  },
+  {
+    "id": "744741c6-2440-4c7b-b689-689ff684789b",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-28T00:00:00.000Z"),
+    "startTime": new Date("2026-03-28T08:00:00.846Z"),
+    "endTime": new Date("2026-03-28T16:00:00.846Z"),
+    "userId": "393fb8e0-7b96-48e0-8602-a98337e522d0",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-28T05:54:47.933Z"),
+    "createdBy": null
+  },
+  {
+    "id": "d4ac9f95-d792-4b4e-8ddb-5a88ed7ddeff",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-28T00:00:00.000Z"),
+    "startTime": new Date("2026-03-28T08:00:00.846Z"),
+    "endTime": new Date("2026-03-28T16:00:00.846Z"),
+    "userId": "ce7c3b8a-3b61-4ea4-822a-5403160ad267",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-28T05:54:47.933Z"),
+    "createdBy": null
+  },
+  {
+    "id": "9053e83a-3d78-4966-b4e5-5e9731d76285",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-28T00:00:00.000Z"),
+    "startTime": new Date("2026-03-28T08:00:00.846Z"),
+    "endTime": new Date("2026-03-28T16:00:00.846Z"),
+    "userId": "b1157ae6-657f-46d9-877a-ca9e9bd08cc1",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-28T05:54:47.933Z"),
+    "createdBy": null
+  },
+  {
+    "id": "8f714e8a-bea5-4792-a464-2186559364bd",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-28T00:00:00.000Z"),
+    "startTime": new Date("2026-03-28T08:00:00.846Z"),
+    "endTime": new Date("2026-03-28T16:00:00.846Z"),
+    "userId": "c027fd82-5cca-4431-aa13-b413f420b57f",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-28T05:54:47.933Z"),
+    "createdBy": null
+  },
+  {
+    "id": "745b196d-0bdb-47b3-9e6e-6a45cb719255",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-28T00:00:00.000Z"),
+    "startTime": new Date("2026-03-28T08:00:00.846Z"),
+    "endTime": new Date("2026-03-28T16:00:00.846Z"),
+    "userId": "391a0415-cfdd-40a8-b189-745d163d40cb",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-28T05:54:47.933Z"),
+    "createdBy": null
+  },
+  {
+    "id": "e2be9b53-7e21-4d6d-93b8-f0010c989323",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-28T00:00:00.000Z"),
+    "startTime": new Date("2026-03-28T08:00:00.846Z"),
+    "endTime": new Date("2026-03-28T16:00:00.846Z"),
+    "userId": "8c5038ff-365e-448a-8176-0dc164b10d9b",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-28T05:54:47.933Z"),
+    "createdBy": null
+  },
+  {
+    "id": "c6e1a897-1ac5-421e-9250-c83650f3e1eb",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-28T00:00:00.000Z"),
+    "startTime": new Date("2026-03-28T08:00:00.846Z"),
+    "endTime": new Date("2026-03-28T16:00:00.846Z"),
+    "userId": "040845c3-87b2-4c3a-b71f-ac4ee3ec9537",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-28T05:54:47.933Z"),
+    "createdBy": null
+  },
+  {
+    "id": "07fcc2c8-8a1c-4a09-8096-7e7da7fe9d57",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-28T00:00:00.000Z"),
+    "startTime": new Date("2026-03-28T08:00:00.846Z"),
+    "endTime": new Date("2026-03-28T16:00:00.846Z"),
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-28T05:54:47.933Z"),
+    "createdBy": null
+  },
+  {
+    "id": "77a03265-c978-4a13-987a-da8899cd11f4",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-28T00:00:00.000Z"),
+    "startTime": new Date("2026-03-28T08:00:00.846Z"),
+    "endTime": new Date("2026-03-28T16:00:00.846Z"),
+    "userId": "9f90f6c9-7dca-4a7e-852c-08bc783b3c7e",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-28T05:54:47.933Z"),
+    "createdBy": null
+  },
+  {
+    "id": "7a03ebc9-7ef6-4538-b2c7-2a429226a140",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-28T00:00:00.000Z"),
+    "startTime": new Date("2026-03-28T08:00:00.846Z"),
+    "endTime": new Date("2026-03-28T16:00:00.846Z"),
+    "userId": "b2988236-8de1-4ce3-bced-39943483f203",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-28T05:54:47.933Z"),
+    "createdBy": null
+  },
+  {
+    "id": "917416d3-d672-48f2-ac8d-a611dc9ab877",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-30T00:00:00.000Z"),
+    "startTime": new Date("2026-03-30T08:00:00.917Z"),
+    "endTime": new Date("2026-03-30T16:00:00.917Z"),
+    "userId": "21dda778-aa98-4419-a318-0c8951641162",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-30T08:07:17.428Z"),
+    "createdBy": null
+  },
+  {
+    "id": "c22b6bd9-38d8-48b1-83f6-d7758756c8fc",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-30T00:00:00.000Z"),
+    "startTime": new Date("2026-03-30T08:00:00.917Z"),
+    "endTime": new Date("2026-03-30T16:00:00.917Z"),
+    "userId": "1372f6fc-65eb-419f-a060-301153d459f4",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-30T08:07:17.428Z"),
+    "createdBy": null
+  },
+  {
+    "id": "7c9d2efd-06f0-41ba-9a86-6c2056c6d594",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-30T00:00:00.000Z"),
+    "startTime": new Date("2026-03-30T08:00:00.917Z"),
+    "endTime": new Date("2026-03-30T16:00:00.917Z"),
+    "userId": "ce4c8300-5a57-4144-b720-ba44ccea04b9",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-30T08:07:17.428Z"),
+    "createdBy": null
+  },
+  {
+    "id": "55d5591a-5818-4571-a2fd-37f3752664a2",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-30T00:00:00.000Z"),
+    "startTime": new Date("2026-03-30T08:00:00.917Z"),
+    "endTime": new Date("2026-03-30T16:00:00.917Z"),
+    "userId": "7c50486b-2880-4c06-9b5f-d9e5dbcbbf35",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-30T08:07:17.428Z"),
+    "createdBy": null
+  },
+  {
+    "id": "d50938e1-e9b2-4981-8b0e-91659e18f28b",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-30T00:00:00.000Z"),
+    "startTime": new Date("2026-03-30T08:00:00.917Z"),
+    "endTime": new Date("2026-03-30T16:00:00.917Z"),
+    "userId": "576bd29e-4ef4-4fa3-a1de-63a4b29aeb2f",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-30T08:07:17.428Z"),
+    "createdBy": null
+  },
+  {
+    "id": "397189bc-f979-4790-9c77-fe4788173e6e",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-30T00:00:00.000Z"),
+    "startTime": new Date("2026-03-30T08:00:00.917Z"),
+    "endTime": new Date("2026-03-30T16:00:00.917Z"),
+    "userId": "9155b909-63c8-45aa-a5b6-badf2815f247",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-30T08:07:17.428Z"),
+    "createdBy": null
+  },
+  {
+    "id": "124622b4-cb9a-4547-a7b1-109948abbe97",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-30T00:00:00.000Z"),
+    "startTime": new Date("2026-03-30T08:00:00.917Z"),
+    "endTime": new Date("2026-03-30T16:00:00.917Z"),
+    "userId": "f74693ea-076a-4904-978f-693ba2dd7866",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-30T08:07:17.428Z"),
+    "createdBy": null
+  },
+  {
+    "id": "3ce95d33-2b1c-43ad-ab85-2789cebde1d2",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-30T00:00:00.000Z"),
+    "startTime": new Date("2026-03-30T08:00:00.917Z"),
+    "endTime": new Date("2026-03-30T16:00:00.917Z"),
+    "userId": "c1aa06b9-352e-486e-a82b-2ac1336517b9",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-30T08:07:17.428Z"),
+    "createdBy": null
+  },
+  {
+    "id": "443805f0-4c3b-4973-adf5-c2463163d14d",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-30T00:00:00.000Z"),
+    "startTime": new Date("2026-03-30T08:00:00.917Z"),
+    "endTime": new Date("2026-03-30T16:00:00.917Z"),
+    "userId": "6500e16c-1379-45be-8925-f5a71256e3ed",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-30T08:07:17.428Z"),
+    "createdBy": null
+  },
+  {
+    "id": "8c21df07-7b9f-4abb-bb37-038be0afe20a",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-30T00:00:00.000Z"),
+    "startTime": new Date("2026-03-30T08:00:00.917Z"),
+    "endTime": new Date("2026-03-30T16:00:00.917Z"),
+    "userId": "9cefc08a-a43f-4401-be9d-ccdf22d7009b",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-30T08:07:17.428Z"),
+    "createdBy": null
+  },
+  {
+    "id": "69ae318e-0b2e-4645-ab15-429cda74dd46",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-30T00:00:00.000Z"),
+    "startTime": new Date("2026-03-30T08:00:00.917Z"),
+    "endTime": new Date("2026-03-30T16:00:00.917Z"),
+    "userId": "2e991ce8-030d-4925-a113-f24674d8cb59",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-30T08:07:17.428Z"),
+    "createdBy": null
+  },
+  {
+    "id": "d6cc06f2-180c-4b7b-bac8-f6518688c808",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-30T00:00:00.000Z"),
+    "startTime": new Date("2026-03-30T08:00:00.917Z"),
+    "endTime": new Date("2026-03-30T16:00:00.917Z"),
+    "userId": "ecdcb42e-6255-42da-8a78-523bc33a3e36",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-30T08:07:17.428Z"),
+    "createdBy": null
+  },
+  {
+    "id": "1d35602e-6df4-4e67-8554-f97cae390db6",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-30T00:00:00.000Z"),
+    "startTime": new Date("2026-03-30T08:00:00.917Z"),
+    "endTime": new Date("2026-03-30T16:00:00.917Z"),
+    "userId": "2d658f11-34cb-4c94-b7b2-88eb34209297",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-30T08:07:17.428Z"),
+    "createdBy": null
+  },
+  {
+    "id": "33031cd2-64df-4b66-b4be-c93cd5f1e145",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-30T00:00:00.000Z"),
+    "startTime": new Date("2026-03-30T08:00:00.917Z"),
+    "endTime": new Date("2026-03-30T16:00:00.917Z"),
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-30T08:07:17.428Z"),
+    "createdBy": null
+  },
+  {
+    "id": "d299554a-f355-4d56-9ebc-9cf95bb9e03f",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-30T00:00:00.000Z"),
+    "startTime": new Date("2026-03-30T08:00:00.917Z"),
+    "endTime": new Date("2026-03-30T16:00:00.917Z"),
+    "userId": "11193aec-ff66-441a-8ace-03f3e3a3ac9b",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-30T08:07:17.428Z"),
+    "createdBy": null
+  },
+  {
+    "id": "9250bc13-5b25-4c1e-b877-0d2d8f9ec5a2",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-30T00:00:00.000Z"),
+    "startTime": new Date("2026-03-30T08:00:00.917Z"),
+    "endTime": new Date("2026-03-30T16:00:00.917Z"),
+    "userId": "e5c7d7ec-2028-481a-9a9b-1ab7b6dfe160",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-30T08:07:17.428Z"),
+    "createdBy": null
+  },
+  {
+    "id": "6270bd57-0160-4149-b6e7-bc90ea7c74aa",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-30T00:00:00.000Z"),
+    "startTime": new Date("2026-03-30T08:00:00.917Z"),
+    "endTime": new Date("2026-03-30T16:00:00.917Z"),
+    "userId": "393fb8e0-7b96-48e0-8602-a98337e522d0",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-30T08:07:17.428Z"),
+    "createdBy": null
+  },
+  {
+    "id": "5ba2cfdc-2fac-4787-95cb-796c66dd955e",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-30T00:00:00.000Z"),
+    "startTime": new Date("2026-03-30T08:00:00.917Z"),
+    "endTime": new Date("2026-03-30T16:00:00.917Z"),
+    "userId": "ce7c3b8a-3b61-4ea4-822a-5403160ad267",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-30T08:07:17.428Z"),
+    "createdBy": null
+  },
+  {
+    "id": "ea8be0b7-3a85-45a2-9a06-00dd1ebb475d",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-30T00:00:00.000Z"),
+    "startTime": new Date("2026-03-30T08:00:00.917Z"),
+    "endTime": new Date("2026-03-30T16:00:00.917Z"),
+    "userId": "b1157ae6-657f-46d9-877a-ca9e9bd08cc1",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-30T08:07:17.428Z"),
+    "createdBy": null
+  },
+  {
+    "id": "f398fe9f-7065-4da1-bed9-185ca8ddae12",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-30T00:00:00.000Z"),
+    "startTime": new Date("2026-03-30T08:00:00.917Z"),
+    "endTime": new Date("2026-03-30T16:00:00.917Z"),
+    "userId": "c027fd82-5cca-4431-aa13-b413f420b57f",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-30T08:07:17.428Z"),
+    "createdBy": null
+  },
+  {
+    "id": "d451b3c2-1b2f-47ef-86cd-ff8db7b951d6",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-30T00:00:00.000Z"),
+    "startTime": new Date("2026-03-30T08:00:00.917Z"),
+    "endTime": new Date("2026-03-30T16:00:00.917Z"),
+    "userId": "391a0415-cfdd-40a8-b189-745d163d40cb",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-30T08:07:17.428Z"),
+    "createdBy": null
+  },
+  {
+    "id": "aace15f6-6461-4dee-9b57-9a0e503bccc5",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-30T00:00:00.000Z"),
+    "startTime": new Date("2026-03-30T08:00:00.917Z"),
+    "endTime": new Date("2026-03-30T16:00:00.917Z"),
+    "userId": "8c5038ff-365e-448a-8176-0dc164b10d9b",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-30T08:07:17.428Z"),
+    "createdBy": null
+  },
+  {
+    "id": "a8bad2e5-2f1a-4963-90e5-934f294e282a",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-30T00:00:00.000Z"),
+    "startTime": new Date("2026-03-30T08:00:00.917Z"),
+    "endTime": new Date("2026-03-30T16:00:00.917Z"),
+    "userId": "040845c3-87b2-4c3a-b71f-ac4ee3ec9537",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-30T08:07:17.428Z"),
+    "createdBy": null
+  },
+  {
+    "id": "4aa36633-4d52-456d-8c48-14f4a117e0c2",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-30T00:00:00.000Z"),
+    "startTime": new Date("2026-03-30T08:00:00.917Z"),
+    "endTime": new Date("2026-03-30T16:00:00.917Z"),
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-30T08:07:17.428Z"),
+    "createdBy": null
+  },
+  {
+    "id": "d2333e3c-bf02-485e-86c1-22adec045ef6",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-30T00:00:00.000Z"),
+    "startTime": new Date("2026-03-30T08:00:00.917Z"),
+    "endTime": new Date("2026-03-30T16:00:00.917Z"),
+    "userId": "9f90f6c9-7dca-4a7e-852c-08bc783b3c7e",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-30T08:07:17.428Z"),
+    "createdBy": null
+  },
+  {
+    "id": "f3dd5428-0814-4bd8-8900-12c858fb87f2",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-30T00:00:00.000Z"),
+    "startTime": new Date("2026-03-30T08:00:00.917Z"),
+    "endTime": new Date("2026-03-30T16:00:00.917Z"),
+    "userId": "b2988236-8de1-4ce3-bced-39943483f203",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-30T08:07:17.428Z"),
+    "createdBy": null
+  },
+  {
+    "id": "e1b36822-208a-4965-848d-64de28793474",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-31T00:00:00.000Z"),
+    "startTime": new Date("2026-03-31T13:00:00.077Z"),
+    "endTime": new Date("2026-03-31T16:00:00.077Z"),
+    "userId": "6500e16c-1379-45be-8925-f5a71256e3ed",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-31T10:57:04.376Z"),
+    "createdBy": null
+  },
+  {
+    "id": "40b60d02-82dd-44e1-befa-555d91221cf2",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-31T00:00:00.000Z"),
+    "startTime": new Date("2026-03-31T13:00:00.077Z"),
+    "endTime": new Date("2026-03-31T16:00:00.077Z"),
+    "userId": "9cefc08a-a43f-4401-be9d-ccdf22d7009b",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-31T10:57:04.376Z"),
+    "createdBy": null
+  },
+  {
+    "id": "a9479d2b-2b08-4563-85da-fd81f44143cc",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-31T00:00:00.000Z"),
+    "startTime": new Date("2026-03-31T13:00:00.077Z"),
+    "endTime": new Date("2026-03-31T16:00:00.077Z"),
+    "userId": "2e991ce8-030d-4925-a113-f24674d8cb59",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-31T10:57:04.376Z"),
+    "createdBy": null
+  },
+  {
+    "id": "ed0aaff8-23a3-4144-9cca-83efdfb4b5b3",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-31T00:00:00.000Z"),
+    "startTime": new Date("2026-03-31T13:00:00.077Z"),
+    "endTime": new Date("2026-03-31T16:00:00.077Z"),
+    "userId": "ecdcb42e-6255-42da-8a78-523bc33a3e36",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-31T10:57:04.376Z"),
+    "createdBy": null
+  },
+  {
+    "id": "54b812f1-b84d-47a0-a6de-de167b20bc42",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-31T00:00:00.000Z"),
+    "startTime": new Date("2026-03-31T13:00:00.077Z"),
+    "endTime": new Date("2026-03-31T16:00:00.077Z"),
+    "userId": "2d658f11-34cb-4c94-b7b2-88eb34209297",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-31T10:57:04.376Z"),
+    "createdBy": null
+  },
+  {
+    "id": "86f58f54-1826-4cb3-9a6c-589d550b22d1",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-31T00:00:00.000Z"),
+    "startTime": new Date("2026-03-31T13:00:00.077Z"),
+    "endTime": new Date("2026-03-31T16:00:00.077Z"),
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-31T10:57:04.376Z"),
+    "createdBy": null
+  },
+  {
+    "id": "8abc3dd6-70ea-46d3-a142-5edad9ae3a76",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-31T00:00:00.000Z"),
+    "startTime": new Date("2026-03-31T13:00:00.077Z"),
+    "endTime": new Date("2026-03-31T16:00:00.077Z"),
+    "userId": "11193aec-ff66-441a-8ace-03f3e3a3ac9b",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-31T10:57:04.376Z"),
+    "createdBy": null
+  },
+  {
+    "id": "ed75714c-ac69-4eac-b30e-e17f1c932766",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-31T00:00:00.000Z"),
+    "startTime": new Date("2026-03-31T13:00:00.077Z"),
+    "endTime": new Date("2026-03-31T16:00:00.077Z"),
+    "userId": "e5c7d7ec-2028-481a-9a9b-1ab7b6dfe160",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-31T10:57:04.376Z"),
+    "createdBy": null
+  },
+  {
+    "id": "8a4e01ce-512f-45b6-a12d-5b6ea17bbde0",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-31T00:00:00.000Z"),
+    "startTime": new Date("2026-03-31T13:00:00.077Z"),
+    "endTime": new Date("2026-03-31T16:00:00.077Z"),
+    "userId": "393fb8e0-7b96-48e0-8602-a98337e522d0",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-31T10:57:04.376Z"),
+    "createdBy": null
+  },
+  {
+    "id": "f5a8b337-8de4-4cb0-86ba-87d22b3bc095",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-31T00:00:00.000Z"),
+    "startTime": new Date("2026-03-31T13:00:00.077Z"),
+    "endTime": new Date("2026-03-31T16:00:00.077Z"),
+    "userId": "ce7c3b8a-3b61-4ea4-822a-5403160ad267",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-31T10:57:04.376Z"),
+    "createdBy": null
+  },
+  {
+    "id": "330f9ad4-8ba2-42fb-b1bb-9e1db83dc551",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-31T00:00:00.000Z"),
+    "startTime": new Date("2026-03-31T13:00:00.077Z"),
+    "endTime": new Date("2026-03-31T16:00:00.077Z"),
+    "userId": "b1157ae6-657f-46d9-877a-ca9e9bd08cc1",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-31T10:57:04.376Z"),
+    "createdBy": null
+  },
+  {
+    "id": "a7cba747-2e82-4209-9bab-fe581046e1be",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-31T00:00:00.000Z"),
+    "startTime": new Date("2026-03-31T13:00:00.077Z"),
+    "endTime": new Date("2026-03-31T16:00:00.077Z"),
+    "userId": "c027fd82-5cca-4431-aa13-b413f420b57f",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-31T10:57:04.376Z"),
+    "createdBy": null
+  },
+  {
+    "id": "06b7b28d-b121-4c07-9c87-bb4d345d5fbf",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-31T00:00:00.000Z"),
+    "startTime": new Date("2026-03-31T13:00:00.077Z"),
+    "endTime": new Date("2026-03-31T16:00:00.077Z"),
+    "userId": "391a0415-cfdd-40a8-b189-745d163d40cb",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-31T10:57:04.376Z"),
+    "createdBy": null
+  },
+  {
+    "id": "e8169d97-d5fa-472b-91a5-ffbc373d8607",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-31T00:00:00.000Z"),
+    "startTime": new Date("2026-03-31T13:00:00.077Z"),
+    "endTime": new Date("2026-03-31T16:00:00.077Z"),
+    "userId": "8c5038ff-365e-448a-8176-0dc164b10d9b",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-31T10:57:04.376Z"),
+    "createdBy": null
+  },
+  {
+    "id": "e72d9655-b128-497a-b197-1e9ec36a521d",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-31T00:00:00.000Z"),
+    "startTime": new Date("2026-03-31T13:00:00.077Z"),
+    "endTime": new Date("2026-03-31T16:00:00.077Z"),
+    "userId": "040845c3-87b2-4c3a-b71f-ac4ee3ec9537",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-31T10:57:04.376Z"),
+    "createdBy": null
+  },
+  {
+    "id": "9fbc4913-896a-4de1-a854-fc814e5442c0",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-31T00:00:00.000Z"),
+    "startTime": new Date("2026-03-31T13:00:00.077Z"),
+    "endTime": new Date("2026-03-31T16:00:00.077Z"),
+    "userId": "9f90f6c9-7dca-4a7e-852c-08bc783b3c7e",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-31T10:57:04.376Z"),
+    "createdBy": null
+  },
+  {
+    "id": "2c2468f4-4baa-4589-965b-4b9c0d4dcf4e",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-31T00:00:00.000Z"),
+    "startTime": new Date("2026-03-31T13:00:00.077Z"),
+    "endTime": new Date("2026-03-31T16:00:00.077Z"),
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-31T10:57:04.376Z"),
+    "createdBy": null
+  },
+  {
+    "id": "7cac36b3-1c49-44cc-a992-6512b0a2000c",
+    "roomCode": "52-213",
+    "date": new Date("2026-03-31T00:00:00.000Z"),
+    "startTime": new Date("2026-03-31T13:00:00.077Z"),
+    "endTime": new Date("2026-03-31T16:00:00.077Z"),
+    "userId": "b2988236-8de1-4ce3-bced-39943483f203",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-03-31T10:57:04.376Z"),
+    "createdBy": null
+  },
+  {
+    "id": "d5bb3ed6-e063-471c-8f14-53eb2c104dbf",
+    "roomCode": "52-205",
+    "date": new Date("2026-04-07T00:00:00.000Z"),
+    "startTime": new Date("2026-04-07T08:00:00.472Z"),
+    "endTime": new Date("2026-04-07T12:00:00.472Z"),
+    "userId": "ce4c8300-5a57-4144-b720-ba44ccea04b9",
+    "source": "SCHEDULE",
+    "scheduleId": "de4d0bc5-208d-4828-9855-973c858e120d",
+    "subjectId": "9c807e3d-7e19-46f1-961c-a1f3181430ca",
+    "createdAt": new Date("2026-04-07T10:14:08.948Z"),
+    "createdBy": null
+  },
+  {
+    "id": "91252f14-735b-4955-ab60-bd70bf0583d3",
+    "roomCode": "52-205",
+    "date": new Date("2026-04-07T00:00:00.000Z"),
+    "startTime": new Date("2026-04-07T08:00:00.472Z"),
+    "endTime": new Date("2026-04-07T12:00:00.472Z"),
+    "userId": "2d658f11-34cb-4c94-b7b2-88eb34209297",
+    "source": "SCHEDULE",
+    "scheduleId": "de4d0bc5-208d-4828-9855-973c858e120d",
+    "subjectId": "9c807e3d-7e19-46f1-961c-a1f3181430ca",
+    "createdAt": new Date("2026-04-07T10:14:08.948Z"),
+    "createdBy": null
+  },
+  {
+    "id": "bafd3fa7-9b8c-4210-9836-b4321510613d",
+    "roomCode": "52-205",
+    "date": new Date("2026-04-07T00:00:00.000Z"),
+    "startTime": new Date("2026-04-07T08:00:00.472Z"),
+    "endTime": new Date("2026-04-07T12:00:00.472Z"),
+    "userId": "f5dfd7e8-1e1f-4278-b82f-cd7825b2da13",
+    "source": "SCHEDULE",
+    "scheduleId": "de4d0bc5-208d-4828-9855-973c858e120d",
+    "subjectId": "9c807e3d-7e19-46f1-961c-a1f3181430ca",
+    "createdAt": new Date("2026-04-07T10:14:08.948Z"),
+    "createdBy": null
+  },
+  {
+    "id": "be6321bc-122c-42d6-87ea-0626353bd05e",
+    "roomCode": "52-205",
+    "date": new Date("2026-04-07T00:00:00.000Z"),
+    "startTime": new Date("2026-04-07T08:00:00.472Z"),
+    "endTime": new Date("2026-04-07T12:00:00.472Z"),
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "source": "SCHEDULE",
+    "scheduleId": "de4d0bc5-208d-4828-9855-973c858e120d",
+    "subjectId": "9c807e3d-7e19-46f1-961c-a1f3181430ca",
+    "createdAt": new Date("2026-04-07T10:14:08.948Z"),
+    "createdBy": null
+  },
+  {
+    "id": "82261825-4c02-47ba-bf87-ecd138fdab8c",
+    "roomCode": "52-205",
+    "date": new Date("2026-04-07T00:00:00.000Z"),
+    "startTime": new Date("2026-04-07T08:00:00.472Z"),
+    "endTime": new Date("2026-04-07T12:00:00.472Z"),
+    "userId": "13635691-70ac-4e4e-b095-c05d02e90e8d",
+    "source": "SCHEDULE",
+    "scheduleId": "de4d0bc5-208d-4828-9855-973c858e120d",
+    "subjectId": "9c807e3d-7e19-46f1-961c-a1f3181430ca",
+    "createdAt": new Date("2026-04-07T10:14:08.948Z"),
+    "createdBy": null
+  },
+  {
+    "id": "7bc4bcf0-f1a4-4b09-8c8b-6f07f759a261",
+    "roomCode": "52-205",
+    "date": new Date("2026-04-07T00:00:00.000Z"),
+    "startTime": new Date("2026-04-07T08:00:00.472Z"),
+    "endTime": new Date("2026-04-07T12:00:00.472Z"),
+    "userId": "e4cc76e4-aaa4-4917-b37e-0b7808c3ac2c",
+    "source": "SCHEDULE",
+    "scheduleId": "de4d0bc5-208d-4828-9855-973c858e120d",
+    "subjectId": "9c807e3d-7e19-46f1-961c-a1f3181430ca",
+    "createdAt": new Date("2026-04-07T10:14:08.948Z"),
+    "createdBy": null
+  },
+  {
+    "id": "54c177ae-e584-40bf-bd93-ee85c290f0c9",
+    "roomCode": "52-205",
+    "date": new Date("2026-04-07T00:00:00.000Z"),
+    "startTime": new Date("2026-04-07T08:00:00.472Z"),
+    "endTime": new Date("2026-04-07T12:00:00.472Z"),
+    "userId": "c07d8bf3-03db-4057-a6fe-aaec5106144e",
+    "source": "SCHEDULE",
+    "scheduleId": "de4d0bc5-208d-4828-9855-973c858e120d",
+    "subjectId": "9c807e3d-7e19-46f1-961c-a1f3181430ca",
+    "createdAt": new Date("2026-04-07T10:14:08.948Z"),
+    "createdBy": null
+  },
+  {
+    "id": "d22f9951-14a4-42a8-97e3-f7effb62455f",
+    "roomCode": "52-205",
+    "date": new Date("2026-04-07T00:00:00.000Z"),
+    "startTime": new Date("2026-04-07T08:00:00.472Z"),
+    "endTime": new Date("2026-04-07T12:00:00.472Z"),
+    "userId": "4b75f40d-e156-4aec-8a22-7c2a7008b566",
+    "source": "SCHEDULE",
+    "scheduleId": "de4d0bc5-208d-4828-9855-973c858e120d",
+    "subjectId": "9c807e3d-7e19-46f1-961c-a1f3181430ca",
+    "createdAt": new Date("2026-04-07T10:14:08.948Z"),
+    "createdBy": null
+  },
+  {
+    "id": "3a6173cc-96ca-49ed-8faa-ce57f79094ec",
+    "roomCode": "52-205",
+    "date": new Date("2026-04-07T00:00:00.000Z"),
+    "startTime": new Date("2026-04-07T08:00:00.472Z"),
+    "endTime": new Date("2026-04-07T12:00:00.472Z"),
+    "userId": "b2988236-8de1-4ce3-bced-39943483f203",
+    "source": "SCHEDULE",
+    "scheduleId": "de4d0bc5-208d-4828-9855-973c858e120d",
+    "subjectId": "9c807e3d-7e19-46f1-961c-a1f3181430ca",
+    "createdAt": new Date("2026-04-07T10:14:08.948Z"),
+    "createdBy": null
+  },
+  {
+    "id": "595357bc-8013-4caf-b3d7-132f53512893",
+    "roomCode": "52-205",
+    "date": new Date("2026-04-07T00:00:00.000Z"),
+    "startTime": new Date("2026-04-07T08:00:00.472Z"),
+    "endTime": new Date("2026-04-07T12:00:00.472Z"),
+    "userId": "7955bd30-fb2a-4f82-a9b9-4615764acd40",
+    "source": "SCHEDULE",
+    "scheduleId": "de4d0bc5-208d-4828-9855-973c858e120d",
+    "subjectId": "9c807e3d-7e19-46f1-961c-a1f3181430ca",
+    "createdAt": new Date("2026-04-07T10:14:08.948Z"),
+    "createdBy": null
+  },
+  {
+    "id": "f6bf543e-7062-4656-b30e-dad1b14dd475",
+    "roomCode": "52-205",
+    "date": new Date("2026-04-07T00:00:00.000Z"),
+    "startTime": new Date("2026-04-07T08:00:00.472Z"),
+    "endTime": new Date("2026-04-07T12:00:00.472Z"),
+    "userId": "3baaba62-f128-4319-aaac-b2ad957b38d1",
+    "source": "SCHEDULE",
+    "scheduleId": "de4d0bc5-208d-4828-9855-973c858e120d",
+    "subjectId": "9c807e3d-7e19-46f1-961c-a1f3181430ca",
+    "createdAt": new Date("2026-04-07T10:14:08.948Z"),
+    "createdBy": null
+  },
+  {
+    "id": "933698f2-aa55-4a3f-a0bd-9a93a1f4a3a9",
+    "roomCode": "52-213",
+    "date": new Date("2026-04-07T00:00:00.000Z"),
+    "startTime": new Date("2026-04-07T08:00:00.835Z"),
+    "endTime": new Date("2026-04-07T16:00:00.835Z"),
+    "userId": "21dda778-aa98-4419-a318-0c8951641162",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-04-07T10:14:08.948Z"),
+    "createdBy": null
+  },
+  {
+    "id": "76d2a0ae-dea6-4914-8241-9c0af1a3e7f3",
+    "roomCode": "52-213",
+    "date": new Date("2026-04-07T00:00:00.000Z"),
+    "startTime": new Date("2026-04-07T08:00:00.835Z"),
+    "endTime": new Date("2026-04-07T16:00:00.835Z"),
+    "userId": "1372f6fc-65eb-419f-a060-301153d459f4",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-04-07T10:14:08.948Z"),
+    "createdBy": null
+  },
+  {
+    "id": "fa2562bb-b4c5-4e73-8448-11de148a6862",
+    "roomCode": "52-213",
+    "date": new Date("2026-04-07T00:00:00.000Z"),
+    "startTime": new Date("2026-04-07T08:00:00.835Z"),
+    "endTime": new Date("2026-04-07T16:00:00.835Z"),
+    "userId": "ce4c8300-5a57-4144-b720-ba44ccea04b9",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-04-07T10:14:08.948Z"),
+    "createdBy": null
+  },
+  {
+    "id": "a76185dc-9097-48fa-b4b7-4884de3b8988",
+    "roomCode": "52-213",
+    "date": new Date("2026-04-07T00:00:00.000Z"),
+    "startTime": new Date("2026-04-07T08:00:00.835Z"),
+    "endTime": new Date("2026-04-07T16:00:00.835Z"),
+    "userId": "7c50486b-2880-4c06-9b5f-d9e5dbcbbf35",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-04-07T10:14:08.948Z"),
+    "createdBy": null
+  },
+  {
+    "id": "5f60baed-32bf-48e9-b8f9-542607f4ae8e",
+    "roomCode": "52-213",
+    "date": new Date("2026-04-07T00:00:00.000Z"),
+    "startTime": new Date("2026-04-07T08:00:00.835Z"),
+    "endTime": new Date("2026-04-07T16:00:00.835Z"),
+    "userId": "576bd29e-4ef4-4fa3-a1de-63a4b29aeb2f",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-04-07T10:14:08.948Z"),
+    "createdBy": null
+  },
+  {
+    "id": "c71942c7-448a-40b7-a5d2-f01bd311024d",
+    "roomCode": "52-213",
+    "date": new Date("2026-04-07T00:00:00.000Z"),
+    "startTime": new Date("2026-04-07T08:00:00.835Z"),
+    "endTime": new Date("2026-04-07T16:00:00.835Z"),
+    "userId": "9155b909-63c8-45aa-a5b6-badf2815f247",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-04-07T10:14:08.948Z"),
+    "createdBy": null
+  },
+  {
+    "id": "31fd32ec-594d-4550-9427-61330a626cea",
+    "roomCode": "52-213",
+    "date": new Date("2026-04-07T00:00:00.000Z"),
+    "startTime": new Date("2026-04-07T08:00:00.835Z"),
+    "endTime": new Date("2026-04-07T16:00:00.835Z"),
+    "userId": "f74693ea-076a-4904-978f-693ba2dd7866",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-04-07T10:14:08.948Z"),
+    "createdBy": null
+  },
+  {
+    "id": "077aaaf3-17ee-4017-875d-0725ef2f2a53",
+    "roomCode": "52-213",
+    "date": new Date("2026-04-07T00:00:00.000Z"),
+    "startTime": new Date("2026-04-07T08:00:00.835Z"),
+    "endTime": new Date("2026-04-07T16:00:00.835Z"),
+    "userId": "c1aa06b9-352e-486e-a82b-2ac1336517b9",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-04-07T10:14:08.948Z"),
+    "createdBy": null
+  },
+  {
+    "id": "6f1dd8e5-0898-4fff-a31b-c2271c07c568",
+    "roomCode": "52-213",
+    "date": new Date("2026-04-07T00:00:00.000Z"),
+    "startTime": new Date("2026-04-07T08:00:00.835Z"),
+    "endTime": new Date("2026-04-07T16:00:00.835Z"),
+    "userId": "6500e16c-1379-45be-8925-f5a71256e3ed",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-04-07T10:14:08.948Z"),
+    "createdBy": null
+  },
+  {
+    "id": "03d575fd-b279-419f-8e71-3f7eb0b47350",
+    "roomCode": "52-213",
+    "date": new Date("2026-04-07T00:00:00.000Z"),
+    "startTime": new Date("2026-04-07T08:00:00.835Z"),
+    "endTime": new Date("2026-04-07T16:00:00.835Z"),
+    "userId": "9cefc08a-a43f-4401-be9d-ccdf22d7009b",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-04-07T10:14:08.948Z"),
+    "createdBy": null
+  },
+  {
+    "id": "fb501ea0-c092-4ab5-9eba-0a21e74d7628",
+    "roomCode": "52-213",
+    "date": new Date("2026-04-07T00:00:00.000Z"),
+    "startTime": new Date("2026-04-07T08:00:00.835Z"),
+    "endTime": new Date("2026-04-07T16:00:00.835Z"),
+    "userId": "2e991ce8-030d-4925-a113-f24674d8cb59",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-04-07T10:14:08.948Z"),
+    "createdBy": null
+  },
+  {
+    "id": "18f5510d-a3d8-496f-a5e8-6674963395df",
+    "roomCode": "52-213",
+    "date": new Date("2026-04-07T00:00:00.000Z"),
+    "startTime": new Date("2026-04-07T08:00:00.835Z"),
+    "endTime": new Date("2026-04-07T16:00:00.835Z"),
+    "userId": "ecdcb42e-6255-42da-8a78-523bc33a3e36",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-04-07T10:14:08.948Z"),
+    "createdBy": null
+  },
+  {
+    "id": "e92305e8-c7db-40c7-b9f2-ac147f266d38",
+    "roomCode": "52-213",
+    "date": new Date("2026-04-07T00:00:00.000Z"),
+    "startTime": new Date("2026-04-07T08:00:00.835Z"),
+    "endTime": new Date("2026-04-07T16:00:00.835Z"),
+    "userId": "2d658f11-34cb-4c94-b7b2-88eb34209297",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-04-07T10:14:08.948Z"),
+    "createdBy": null
+  },
+  {
+    "id": "87b274f8-babd-4d96-b4f2-617c87842107",
+    "roomCode": "52-213",
+    "date": new Date("2026-04-07T00:00:00.000Z"),
+    "startTime": new Date("2026-04-07T08:00:00.835Z"),
+    "endTime": new Date("2026-04-07T16:00:00.835Z"),
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-04-07T10:14:08.948Z"),
+    "createdBy": null
+  },
+  {
+    "id": "f6195b48-6455-4332-810a-1aa1df1b8964",
+    "roomCode": "52-213",
+    "date": new Date("2026-04-07T00:00:00.000Z"),
+    "startTime": new Date("2026-04-07T08:00:00.835Z"),
+    "endTime": new Date("2026-04-07T16:00:00.835Z"),
+    "userId": "11193aec-ff66-441a-8ace-03f3e3a3ac9b",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-04-07T10:14:08.948Z"),
+    "createdBy": null
+  },
+  {
+    "id": "dff58f1a-4df7-4072-8e7c-a8b3f2460d5a",
+    "roomCode": "52-213",
+    "date": new Date("2026-04-07T00:00:00.000Z"),
+    "startTime": new Date("2026-04-07T08:00:00.835Z"),
+    "endTime": new Date("2026-04-07T16:00:00.835Z"),
+    "userId": "e5c7d7ec-2028-481a-9a9b-1ab7b6dfe160",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-04-07T10:14:08.948Z"),
+    "createdBy": null
+  },
+  {
+    "id": "90fe80fe-35c7-428e-b4cc-755f11c19948",
+    "roomCode": "52-213",
+    "date": new Date("2026-04-07T00:00:00.000Z"),
+    "startTime": new Date("2026-04-07T08:00:00.835Z"),
+    "endTime": new Date("2026-04-07T16:00:00.835Z"),
+    "userId": "393fb8e0-7b96-48e0-8602-a98337e522d0",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-04-07T10:14:08.948Z"),
+    "createdBy": null
+  },
+  {
+    "id": "97ba4231-77e4-4411-9c20-ccc32389ce5d",
+    "roomCode": "52-213",
+    "date": new Date("2026-04-07T00:00:00.000Z"),
+    "startTime": new Date("2026-04-07T08:00:00.835Z"),
+    "endTime": new Date("2026-04-07T16:00:00.835Z"),
+    "userId": "ce7c3b8a-3b61-4ea4-822a-5403160ad267",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-04-07T10:14:08.948Z"),
+    "createdBy": null
+  },
+  {
+    "id": "a824d23e-207d-4cc4-8b01-3d67826bf9ec",
+    "roomCode": "52-213",
+    "date": new Date("2026-04-07T00:00:00.000Z"),
+    "startTime": new Date("2026-04-07T08:00:00.835Z"),
+    "endTime": new Date("2026-04-07T16:00:00.835Z"),
+    "userId": "b1157ae6-657f-46d9-877a-ca9e9bd08cc1",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-04-07T10:14:08.948Z"),
+    "createdBy": null
+  },
+  {
+    "id": "42d48818-c26d-4630-9861-1869672d1a2f",
+    "roomCode": "52-213",
+    "date": new Date("2026-04-07T00:00:00.000Z"),
+    "startTime": new Date("2026-04-07T08:00:00.835Z"),
+    "endTime": new Date("2026-04-07T16:00:00.835Z"),
+    "userId": "c027fd82-5cca-4431-aa13-b413f420b57f",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-04-07T10:14:08.948Z"),
+    "createdBy": null
+  },
+  {
+    "id": "c595d1d6-530c-43ff-b894-ba25b81ccd8e",
+    "roomCode": "52-213",
+    "date": new Date("2026-04-07T00:00:00.000Z"),
+    "startTime": new Date("2026-04-07T08:00:00.835Z"),
+    "endTime": new Date("2026-04-07T16:00:00.835Z"),
+    "userId": "391a0415-cfdd-40a8-b189-745d163d40cb",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-04-07T10:14:08.948Z"),
+    "createdBy": null
+  },
+  {
+    "id": "42b6ab8d-c941-4b23-b1f6-64a9b0abce87",
+    "roomCode": "52-213",
+    "date": new Date("2026-04-07T00:00:00.000Z"),
+    "startTime": new Date("2026-04-07T08:00:00.835Z"),
+    "endTime": new Date("2026-04-07T16:00:00.835Z"),
+    "userId": "8c5038ff-365e-448a-8176-0dc164b10d9b",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-04-07T10:14:08.948Z"),
+    "createdBy": null
+  },
+  {
+    "id": "260bff9e-d60a-4b5b-8665-c468870ed8a3",
+    "roomCode": "52-213",
+    "date": new Date("2026-04-07T00:00:00.000Z"),
+    "startTime": new Date("2026-04-07T08:00:00.835Z"),
+    "endTime": new Date("2026-04-07T16:00:00.835Z"),
+    "userId": "040845c3-87b2-4c3a-b71f-ac4ee3ec9537",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-04-07T10:14:08.948Z"),
+    "createdBy": null
+  },
+  {
+    "id": "8b4be68e-2c29-4548-ace5-3ecd74931874",
+    "roomCode": "52-213",
+    "date": new Date("2026-04-07T00:00:00.000Z"),
+    "startTime": new Date("2026-04-07T08:00:00.835Z"),
+    "endTime": new Date("2026-04-07T16:00:00.835Z"),
+    "userId": "9f90f6c9-7dca-4a7e-852c-08bc783b3c7e",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-04-07T10:14:08.948Z"),
+    "createdBy": null
+  },
+  {
+    "id": "77425c41-0a64-41d6-ab0e-97dc94c1af73",
+    "roomCode": "52-213",
+    "date": new Date("2026-04-07T00:00:00.000Z"),
+    "startTime": new Date("2026-04-07T08:00:00.835Z"),
+    "endTime": new Date("2026-04-07T16:00:00.835Z"),
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-04-07T10:14:08.948Z"),
+    "createdBy": null
+  },
+  {
+    "id": "acfc5fc5-ab56-4aeb-ba41-a6ec38927f6e",
+    "roomCode": "52-213",
+    "date": new Date("2026-04-07T00:00:00.000Z"),
+    "startTime": new Date("2026-04-07T08:00:00.835Z"),
+    "endTime": new Date("2026-04-07T16:00:00.835Z"),
+    "userId": "b2988236-8de1-4ce3-bced-39943483f203",
+    "source": "SCHEDULE",
+    "scheduleId": "3f1d5dd8-4216-4510-baac-9088466fbd80",
+    "subjectId": "b189f0e7-2901-483e-87f8-8537cca88f82",
+    "createdAt": new Date("2026-04-07T10:14:08.948Z"),
+    "createdBy": null
+  }
+];
+const systemLogs = [
+  {
+    "id": "91845ece-e164-489c-8b45-5b0c1d05efd8",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"9f4cee5a-cfb1-4ad4-8cc1-74f80a8bb0c1\",\"roomCode\":\"44-703\",\"slotNumber\":1,\"dueAt\":\"2026-02-11T18:20:52.184Z\",\"authorizationId\":\"1e22bad7-1508-4a0a-89fd-f147e3fd3eb0\",\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": "172.20.10.3",
+    "createdAt": new Date("2026-02-11T17:22:31.490Z")
+  },
+  {
+    "id": "d705c8a4-fa94-4006-b573-07ce044e0144",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"bf5935f5-423c-4ed7-9413-e90777ab7f51\",\"roomCode\":\"44-703\",\"slotNumber\":1,\"dueAt\":\"2026-02-11T21:39:54.314Z\",\"authorizationId\":\"1e22bad7-1508-4a0a-89fd-f147e3fd3eb0\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": "172.20.10.3",
+    "createdAt": new Date("2026-02-11T17:39:54.328Z")
+  },
+  {
+    "id": "6a89061e-cd5d-4ee9-9315-8d971c487ac5",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"bf5935f5-423c-4ed7-9413-e90777ab7f51\",\"roomCode\":\"44-703\",\"slotNumber\":1,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": "172.20.10.3",
+    "createdAt": new Date("2026-02-11T17:50:22.212Z")
+  },
+  {
+    "id": "0c80d013-ea93-489c-b9a5-f7737ec13d41",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"072a2339-ac2c-48b8-b7fa-165a0710097b\",\"roomCode\":\"44-703\",\"slotNumber\":1,\"dueAt\":\"2026-02-15T16:23:28.485Z\",\"authorizationId\":null,\"reason\":\"ลืมกุญแจ\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": "172.20.10.3",
+    "createdAt": new Date("2026-02-15T12:23:28.508Z")
+  },
+  {
+    "id": "3116791e-2856-4b84-84ac-4e0ca1d9b06e",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"072a2339-ac2c-48b8-b7fa-165a0710097b\",\"roomCode\":\"44-703\",\"slotNumber\":1,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": "172.20.10.3",
+    "createdAt": new Date("2026-02-15T12:29:24.385Z")
+  },
+  {
+    "id": "cefd364d-f441-4702-abd4-f84ec8b5cd97",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"816d5933-6c83-4a02-b281-da9de8bf6911\",\"roomCode\":\"44-703\",\"slotNumber\":1,\"dueAt\":\"2026-02-15T16:40:35.324Z\",\"authorizationId\":null,\"reason\":\"ลืมกุญแจ\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": "172.20.10.3",
+    "createdAt": new Date("2026-02-15T12:40:35.341Z")
+  },
+  {
+    "id": "8f1c7f7f-fe9a-4889-bd99-81c38b5dc6c0",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"816d5933-6c83-4a02-b281-da9de8bf6911\",\"roomCode\":\"44-703\",\"slotNumber\":1,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": "172.20.10.3",
+    "createdAt": new Date("2026-02-15T12:45:50.500Z")
+  },
+  {
+    "id": "dc11a5d5-406c-4fd7-adad-55e3d22dc12d",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"ae9ccc2c-2446-40ae-aa2e-ca12faf4e7b9\",\"roomCode\":\"44-703\",\"slotNumber\":1,\"dueAt\":\"2026-02-15T16:49:49.639Z\",\"authorizationId\":null,\"reason\":\"ลืมกุญแจ\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": "172.20.10.3",
+    "createdAt": new Date("2026-02-15T12:49:49.656Z")
+  },
+  {
+    "id": "bb654f16-5891-4360-a3e8-1eca8286fd8d",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"ae9ccc2c-2446-40ae-aa2e-ca12faf4e7b9\",\"roomCode\":\"44-703\",\"slotNumber\":1,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": "172.20.10.3",
+    "createdAt": new Date("2026-02-15T12:49:57.226Z")
+  },
+  {
+    "id": "28beff93-d297-4eca-a866-7a29f873cfdb",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"d7ca4a3e-9646-4af2-9aac-c446222abf28\",\"roomCode\":\"44-703\",\"slotNumber\":1,\"dueAt\":\"2026-02-15T16:53:13.420Z\",\"authorizationId\":\"a975f404-5cc8-44b2-b589-2de4c121cf94\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": "172.20.10.3",
+    "createdAt": new Date("2026-02-15T12:53:13.441Z")
+  },
+  {
+    "id": "7ed668f4-4644-4e8e-934e-7236017b4930",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"d7ca4a3e-9646-4af2-9aac-c446222abf28\",\"roomCode\":\"44-703\",\"slotNumber\":1,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": "172.20.10.4",
+    "createdAt": new Date("2026-02-15T13:21:59.640Z")
+  },
+  {
+    "id": "26d051aa-3650-42ab-b29e-1474a619911e",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"a1e24272-bb4e-4382-9af5-f613d08322c6\",\"roomCode\":\"44-703\",\"slotNumber\":1,\"dueAt\":\"2026-02-15T17:22:07.813Z\",\"authorizationId\":\"5724284d-450c-4f77-b705-5a811ef393e1\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": "172.20.10.4",
+    "createdAt": new Date("2026-02-15T13:22:07.835Z")
+  },
+  {
+    "id": "d30d648c-f7e5-4067-abb9-af32f9c0d3e9",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"a1e24272-bb4e-4382-9af5-f613d08322c6\",\"roomCode\":\"44-703\",\"slotNumber\":1,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": "172.20.10.4",
+    "createdAt": new Date("2026-02-15T13:23:07.620Z")
+  },
+  {
+    "id": "215dbe7b-ac35-4b76-aa4c-07f85dbd724d",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"d3b10899-732b-445a-9c41-04cc46a1bdf7\",\"roomCode\":\"44-703\",\"slotNumber\":1,\"dueAt\":\"2026-02-15T17:23:23.074Z\",\"authorizationId\":\"5724284d-450c-4f77-b705-5a811ef393e1\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": "172.20.10.4",
+    "createdAt": new Date("2026-02-15T13:23:23.089Z")
+  },
+  {
+    "id": "f2ec3d67-ffd3-4393-8c21-ce4de3b72117",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"d3b10899-732b-445a-9c41-04cc46a1bdf7\",\"roomCode\":\"44-703\",\"slotNumber\":1,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": "172.20.10.4",
+    "createdAt": new Date("2026-02-15T13:25:10.249Z")
+  },
+  {
+    "id": "572f1668-7ef7-4d53-8bd5-581f7ab3341f",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"182785fc-e53a-4bb3-985d-385f734116a3\",\"roomCode\":\"44-703\",\"slotNumber\":1,\"dueAt\":\"2026-02-15T17:25:18.789Z\",\"authorizationId\":\"5724284d-450c-4f77-b705-5a811ef393e1\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": "172.20.10.4",
+    "createdAt": new Date("2026-02-15T13:25:18.805Z")
+  },
+  {
+    "id": "61cd77c3-6bdc-4212-9561-8d2f91be327c",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"182785fc-e53a-4bb3-985d-385f734116a3\",\"roomCode\":\"44-703\",\"slotNumber\":1,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": "172.20.10.4",
+    "createdAt": new Date("2026-02-15T13:25:46.538Z")
+  },
+  {
+    "id": "d71c01bf-0aeb-4fed-8d3f-2b32e74b403a",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"76755f49-cc6f-486c-8cc1-f762f8c55cbc\",\"roomCode\":\"44-703\",\"slotNumber\":1,\"dueAt\":\"2026-02-15T17:25:50.736Z\",\"authorizationId\":\"5724284d-450c-4f77-b705-5a811ef393e1\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": "172.20.10.4",
+    "createdAt": new Date("2026-02-15T13:25:50.751Z")
+  },
+  {
+    "id": "dc22e92a-4155-4243-8fe4-e0c3d7537663",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"76755f49-cc6f-486c-8cc1-f762f8c55cbc\",\"roomCode\":\"44-703\",\"slotNumber\":1,\"lateMinutes\":1122,\"penaltyScore\":375,\"isLate\":true,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": "172.20.10.3",
+    "createdAt": new Date("2026-02-16T12:38:40.035Z")
+  },
+  {
+    "id": "00140987-d97b-4f2c-b07c-fbbb03889ee8",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"99256e55-27dc-4edf-9bce-d61be470c958\",\"roomCode\":\"44-703\",\"slotNumber\":1,\"dueAt\":\"2026-02-16T16:39:31.423Z\",\"authorizationId\":null,\"reason\":\"ลืมกุญแจ\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": "172.20.10.3",
+    "createdAt": new Date("2026-02-16T12:39:31.436Z")
+  },
+  {
+    "id": "4f3cbcd8-5bd1-48eb-a89c-3916bf11fb43",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"99256e55-27dc-4edf-9bce-d61be470c958\",\"roomCode\":\"44-703\",\"slotNumber\":1,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": "172.20.10.3",
+    "createdAt": new Date("2026-02-16T12:39:36.747Z")
+  },
+  {
+    "id": "4fc5a692-1631-417f-8a9a-b3f6be3a9a97",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"3b8e98d7-4600-4539-86ee-7e6f395c39e9\",\"roomCode\":\"44-703\",\"slotNumber\":1,\"dueAt\":\"2026-02-16T16:43:35.056Z\",\"authorizationId\":\"2b4438df-69bc-4606-adc6-52aea8c69050\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": "172.20.10.3",
+    "createdAt": new Date("2026-02-16T12:43:35.074Z")
+  },
+  {
+    "id": "703276cc-c32a-418c-bbd2-a45712954c7e",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"3b8e98d7-4600-4539-86ee-7e6f395c39e9\",\"roomCode\":\"44-703\",\"slotNumber\":1,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": "172.20.10.4",
+    "createdAt": new Date("2026-02-16T13:08:31.545Z")
+  },
+  {
+    "id": "6fae4339-dce1-4267-beeb-89cedd079bd4",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"157a3bf0-9278-444e-ac78-168f3a4b9f77\",\"roomCode\":\"44-703\",\"slotNumber\":1,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-02-24T09:21:28.868Z")
+  },
+  {
+    "id": "276a7237-7830-46e1-99f7-21fb579f5b33",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"94feeb5a-4324-4955-bd08-2b85406a0a54\",\"roomCode\":\"44-703\",\"slotNumber\":1,\"dueAt\":\"2026-02-16T17:08:51.653Z\",\"authorizationId\":\"2b4438df-69bc-4606-adc6-52aea8c69050\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": "172.20.10.3",
+    "createdAt": new Date("2026-02-16T13:08:51.672Z")
+  },
+  {
+    "id": "a61cb564-43ff-4806-8c8e-1b883846807d",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"94feeb5a-4324-4955-bd08-2b85406a0a54\",\"roomCode\":\"44-703\",\"slotNumber\":1,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": "172.20.10.4",
+    "createdAt": new Date("2026-02-16T13:17:59.324Z")
+  },
+  {
+    "id": "3e6d573f-309b-40b9-a571-841c16409996",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"c3d5280e-a10a-48e1-9622-fdef07cff941\",\"roomCode\":\"44-703\",\"slotNumber\":1,\"dueAt\":\"2026-02-16T17:19:40.489Z\",\"authorizationId\":\"2b4438df-69bc-4606-adc6-52aea8c69050\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": "172.20.10.4",
+    "createdAt": new Date("2026-02-16T13:19:40.501Z")
+  },
+  {
+    "id": "b120d369-c1bc-4a73-906a-ebd8e976bc86",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"c3d5280e-a10a-48e1-9622-fdef07cff941\",\"roomCode\":\"44-703\",\"slotNumber\":1,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": "172.20.10.3",
+    "createdAt": new Date("2026-02-16T13:47:35.027Z")
+  },
+  {
+    "id": "610c4ebb-74b9-44e3-91f3-fd2383d0fe0f",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"23f03ed1-6698-429a-99b3-47f95d5a5b6a\",\"roomCode\":\"44-703\",\"slotNumber\":1,\"dueAt\":\"2026-02-16T17:47:39.610Z\",\"authorizationId\":\"2b4438df-69bc-4606-adc6-52aea8c69050\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": "172.20.10.3",
+    "createdAt": new Date("2026-02-16T13:47:39.626Z")
+  },
+  {
+    "id": "9051f186-cecc-48f3-88fb-39741eef8d41",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"23f03ed1-6698-429a-99b3-47f95d5a5b6a\",\"roomCode\":\"44-703\",\"slotNumber\":1,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": "172.20.10.3",
+    "createdAt": new Date("2026-02-16T13:47:50.616Z")
+  },
+  {
+    "id": "1b8864fc-8a74-4e51-ae65-aa196c46b0e3",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"88a03fe5-724b-4298-a0e4-56d83a8f9073\",\"roomCode\":\"44-703\",\"slotNumber\":1,\"dueAt\":\"2026-02-16T17:47:54.326Z\",\"authorizationId\":\"2b4438df-69bc-4606-adc6-52aea8c69050\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": "172.20.10.3",
+    "createdAt": new Date("2026-02-16T13:47:54.342Z")
+  },
+  {
+    "id": "544b25d8-841e-4e9b-8380-9881574d071b",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"67dfb464-0e2e-411f-818f-1a80add7a9a1\",\"roomCode\":\"44-704\",\"slotNumber\":2,\"dueAt\":\"2026-02-16T17:48:01.109Z\",\"authorizationId\":null,\"reason\":\"ติดต่ออาจารย์\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": "172.20.10.3",
+    "createdAt": new Date("2026-02-16T13:48:01.122Z")
+  },
+  {
+    "id": "835dacf0-1aab-4d4e-b438-47bf0179a14d",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"67dfb464-0e2e-411f-818f-1a80add7a9a1\",\"roomCode\":\"44-704\",\"slotNumber\":2,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": "172.20.10.3",
+    "createdAt": new Date("2026-02-16T13:48:07.619Z")
+  },
+  {
+    "id": "8d0eb0c3-6fdc-42d6-abc7-8f738e251c11",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"88a03fe5-724b-4298-a0e4-56d83a8f9073\",\"roomCode\":\"44-703\",\"slotNumber\":1,\"lateMinutes\":809,\"penaltyScore\":270,\"isLate\":true,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": "172.20.10.3",
+    "createdAt": new Date("2026-02-17T07:46:58.294Z")
+  },
+  {
+    "id": "9d833761-2854-4d23-8129-a010059737ff",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"666de7ac-ee21-4618-8489-1f54bad7904a\",\"roomCode\":\"44-703\",\"slotNumber\":1,\"dueAt\":\"2026-02-17T11:49:31.264Z\",\"authorizationId\":\"5e679da1-a2bb-4985-8e96-a7ed5507a042\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": "172.20.10.3",
+    "createdAt": new Date("2026-02-17T07:49:31.284Z")
+  },
+  {
+    "id": "7816fbb8-7b7a-402c-9eb4-8fb890c99b30",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"666de7ac-ee21-4618-8489-1f54bad7904a\",\"roomCode\":\"44-703\",\"slotNumber\":1,\"lateMinutes\":389,\"penaltyScore\":130,\"isLate\":true,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-02-17T18:49:10.283Z")
+  },
+  {
+    "id": "45f85d29-9a7e-418c-800c-562e8994afb3",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"b04a8b95-7849-42b2-a714-9db48a5ea0d1\",\"roomCode\":\"44-704\",\"slotNumber\":2,\"dueAt\":\"2026-02-17T22:52:55.029Z\",\"authorizationId\":null,\"reason\":\"ประชุม\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-02-17T18:52:55.052Z")
+  },
+  {
+    "id": "3de3d8a1-8150-4c41-8d87-d50f86c24e81",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"b04a8b95-7849-42b2-a714-9db48a5ea0d1\",\"roomCode\":\"44-704\",\"slotNumber\":2,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-02-17T18:58:54.410Z")
+  },
+  {
+    "id": "633f9af2-d52e-4fb7-befa-ae8c836dccc7",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"0f536406-7921-4638-b11c-9c0b0bdc0a63\",\"roomCode\":\"44-704\",\"slotNumber\":2,\"dueAt\":\"2026-02-17T23:04:38.556Z\",\"authorizationId\":\"8fa8df79-a8c4-4a7d-ad23-4097e0cb7340\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": "127.0.0.1",
+    "createdAt": new Date("2026-02-17T19:04:38.574Z")
+  },
+  {
+    "id": "3a728356-44df-4a28-85d0-cf08de93bc33",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"0f536406-7921-4638-b11c-9c0b0bdc0a63\",\"roomCode\":\"44-704\",\"slotNumber\":2,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-02-17T19:04:48.522Z")
+  },
+  {
+    "id": "aa8183f6-046f-4bd1-ade9-b93e0353e900",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"01e42523-a764-434f-9262-771fbc16f2d1\",\"roomCode\":\"44-704\",\"slotNumber\":2,\"dueAt\":\"2026-02-17T23:05:48.835Z\",\"authorizationId\":\"8fa8df79-a8c4-4a7d-ad23-4097e0cb7340\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-02-17T19:05:48.861Z")
+  },
+  {
+    "id": "e44850b1-a5e8-4a16-b033-4c562507f321",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"01e42523-a764-434f-9262-771fbc16f2d1\",\"roomCode\":\"44-704\",\"slotNumber\":2,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-02-17T19:06:00.077Z")
+  },
+  {
+    "id": "db264013-19b8-4fde-828e-20664bd4e33d",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"b715bced-d8f9-4214-b0d5-a93cc17606b4\",\"roomCode\":\"44-703\",\"slotNumber\":1,\"dueAt\":\"2026-02-17T23:13:32.740Z\",\"authorizationId\":\"0813d13f-b0ea-437e-8acc-06f7863baa9b\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": "127.0.0.1",
+    "createdAt": new Date("2026-02-17T19:13:32.754Z")
+  },
+  {
+    "id": "78881831-d989-4c48-b331-1263fb312968",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"2fe61ce9-07a2-43cd-b272-ca424784b73e\",\"roomCode\":\"44-703\",\"slotNumber\":1,\"dueAt\":\"2026-02-17T23:15:18.302Z\",\"authorizationId\":\"0813d13f-b0ea-437e-8acc-06f7863baa9b\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-02-17T19:15:18.335Z")
+  },
+  {
+    "id": "18741187-6348-4663-9ef7-e536c89958e5",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"0ce5d802-ff27-4e74-895e-2e27def68e2e\",\"roomCode\":\"44-704\",\"slotNumber\":2,\"dueAt\":\"2026-02-17T23:17:22.448Z\",\"authorizationId\":null,\"reason\":\"ประชุม\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-02-17T19:17:22.464Z")
+  },
+  {
+    "id": "3ce93b68-3b3a-43cd-a255-d1add6c441b4",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"2fe61ce9-07a2-43cd-b272-ca424784b73e\",\"roomCode\":\"44-703\",\"slotNumber\":1,\"lateMinutes\":520,\"penaltyScore\":175,\"isLate\":true,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-02-18T08:26:15.331Z")
+  },
+  {
+    "id": "61c1c803-306f-4547-a803-af4888042f66",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"fd0dbed7-f0dd-435c-86ef-ef3ecf3b23d6\",\"roomCode\":\"44-802\",\"slotNumber\":5,\"dueAt\":\"2026-02-18T12:40:59.472Z\",\"authorizationId\":null,\"reason\":\"ซ่อมบำรุง\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-02-18T08:40:59.491Z")
+  },
+  {
+    "id": "955b00ab-7f86-437b-95a8-85c48c136d30",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"fd0dbed7-f0dd-435c-86ef-ef3ecf3b23d6\",\"roomCode\":\"44-802\",\"slotNumber\":5,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-02-18T09:13:40.037Z")
+  },
+  {
+    "id": "d7a7e8df-e204-4f1a-acde-816055b62138",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"c55e93fb-8f71-4aa3-92f0-eda706bd39ff\",\"roomCode\":\"44-703\",\"slotNumber\":1,\"dueAt\":\"2026-02-18T13:13:51.190Z\",\"authorizationId\":\"0813d13f-b0ea-437e-8acc-06f7863baa9b\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-02-18T09:13:51.210Z")
+  },
+  {
+    "id": "a21bcbb1-9fd1-4e73-8949-2931f3a55b7b",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"c55e93fb-8f71-4aa3-92f0-eda706bd39ff\",\"roomCode\":\"44-703\",\"slotNumber\":1,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-02-18T09:17:10.519Z")
+  },
+  {
+    "id": "949f7bcf-dbf3-4159-8eca-7c377c5ce618",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"0f69a97d-bac5-41ff-b6d2-0e3493ab8a82\",\"roomCode\":\"44-703\",\"slotNumber\":1,\"dueAt\":\"2026-02-18T13:17:14.451Z\",\"authorizationId\":\"0813d13f-b0ea-437e-8acc-06f7863baa9b\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-02-18T09:17:14.467Z")
+  },
+  {
+    "id": "65c88fa4-a440-41a6-87b9-124d4e02ba52",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"0f69a97d-bac5-41ff-b6d2-0e3493ab8a82\",\"roomCode\":\"44-703\",\"slotNumber\":1,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-02-18T09:51:06.666Z")
+  },
+  {
+    "id": "1ebd4db8-d0ab-4496-aaec-69982692cc2f",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"eaba3f05-fcf8-4450-841f-80daf72ca312\",\"roomCode\":\"44-703\",\"slotNumber\":1,\"dueAt\":\"2026-02-18T13:51:37.058Z\",\"authorizationId\":\"0813d13f-b0ea-437e-8acc-06f7863baa9b\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-02-18T09:51:37.076Z")
+  },
+  {
+    "id": "5ad74125-1fd0-4385-98a2-c577de4f3e54",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"eaba3f05-fcf8-4450-841f-80daf72ca312\",\"roomCode\":\"44-703\",\"slotNumber\":1,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-02-18T09:52:36.928Z")
+  },
+  {
+    "id": "1f01c36d-6467-4323-84c3-a996ab918bc8",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"e0271f23-408d-438e-8351-5e6b2de4b966\",\"roomCode\":\"44-703\",\"slotNumber\":1,\"dueAt\":\"2026-02-18T13:52:43.556Z\",\"authorizationId\":\"0813d13f-b0ea-437e-8acc-06f7863baa9b\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-02-18T09:52:43.576Z")
+  },
+  {
+    "id": "1b3b62a1-d2db-43b4-b4bb-3a821205b16e",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"e0271f23-408d-438e-8351-5e6b2de4b966\",\"roomCode\":\"44-703\",\"slotNumber\":1,\"lateMinutes\":2978,\"penaltyScore\":995,\"isLate\":true,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-02-20T16:01:13.138Z")
+  },
+  {
+    "id": "7c6d6895-756c-4260-acda-f0c2d0deab3b",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"0ce5d802-ff27-4e74-895e-2e27def68e2e\",\"roomCode\":\"44-704\",\"slotNumber\":2,\"lateMinutes\":3853,\"penaltyScore\":1285,\"isLate\":true,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-02-20T16:01:16.362Z")
+  },
+  {
+    "id": "f842129c-586e-49d1-ad4f-522071ef7f5b",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"bcd3d23a-0aa0-46a5-b0e8-5d8e8dc5a98f\",\"roomCode\":\"44-703\",\"slotNumber\":1,\"dueAt\":\"2026-02-20T21:01:08.884Z\",\"authorizationId\":\"b47ae0d8-2169-4779-b661-1537e9c68237\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-02-20T17:01:08.909Z")
+  },
+  {
+    "id": "1b86e25a-f57a-4aab-8052-c114150c4f7e",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"bcd3d23a-0aa0-46a5-b0e8-5d8e8dc5a98f\",\"roomCode\":\"44-703\",\"slotNumber\":1,\"lateMinutes\":2052,\"penaltyScore\":685,\"isLate\":true,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-02-22T07:43:14.813Z")
+  },
+  {
+    "id": "72a57d3c-2428-495a-aa71-e24dfd91cc67",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_TRANSFER_AUTHORIZATION",
+    "details": "{\"transferType\":\"TRANSFER\",\"giverStudentCode\":\"6702041510164\",\"receiverStudentCode\":\"6702041510181\",\"roomCode\":\"44-703\",\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-02-22T08:28:00.388Z")
+  },
+  {
+    "id": "77f9f9f7-9639-4161-bddf-ae1b6fbaf0be",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"7e9b5964-df5b-49db-9865-0c3a207d1287\",\"roomCode\":\"44-703\",\"slotNumber\":1,\"dueAt\":\"2026-02-22T12:30:27.516Z\",\"authorizationId\":\"40652e1c-f1ef-4684-b5f0-b07d52d0fab6\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-02-22T08:30:27.549Z")
+  },
+  {
+    "id": "e2aab7b8-7ea2-4f52-8c20-bf4f944c9625",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"7e9b5964-df5b-49db-9865-0c3a207d1287\",\"roomCode\":\"44-703\",\"slotNumber\":1,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-02-22T08:31:17.411Z")
+  },
+  {
+    "id": "2be2eba7-2f0b-4d0b-be18-ae7c3d5a12de",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"973a2528-ad78-4dc1-b22c-2854c1d442dd\",\"roomCode\":\"44-703\",\"slotNumber\":1,\"dueAt\":\"2026-02-22T10:15:54.453Z\",\"authorizationId\":null,\"reason\":\"สอนชดเชย\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-02-22T08:45:54.471Z")
+  },
+  {
+    "id": "8a72f25d-2169-4742-9f45-e2b7845b3b36",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"973a2528-ad78-4dc1-b22c-2854c1d442dd\",\"roomCode\":\"44-703\",\"slotNumber\":1,\"lateMinutes\":2725,\"penaltyScore\":910,\"isLate\":true,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-02-24T08:11:01.713Z")
+  },
+  {
+    "id": "d81f39fa-d82f-4cb3-9f19-d4884a511569",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"c2dee081-099b-41ef-89a5-49e9061d5d62\",\"roomCode\":\"44-703\",\"slotNumber\":1,\"dueAt\":\"2026-02-24T12:12:21.667Z\",\"authorizationId\":\"6411f658-24c7-41e1-a34a-55b7ac518bff\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-02-24T08:12:21.686Z")
+  },
+  {
+    "id": "24d3f57d-ddae-4051-9175-749b572f0537",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"c2dee081-099b-41ef-89a5-49e9061d5d62\",\"roomCode\":\"44-703\",\"slotNumber\":1,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-02-24T09:00:44.806Z")
+  },
+  {
+    "id": "1497987c-c4fd-455b-9188-4e38c285b2ee",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"d470f7da-4279-496d-a52b-da5570d95740\",\"roomCode\":\"44-703\",\"slotNumber\":1,\"dueAt\":\"2026-02-24T13:01:45.801Z\",\"authorizationId\":\"6411f658-24c7-41e1-a34a-55b7ac518bff\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-02-24T09:01:45.820Z")
+  },
+  {
+    "id": "323b2830-6748-41a5-b27b-7fa227af6640",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"d470f7da-4279-496d-a52b-da5570d95740\",\"roomCode\":\"44-703\",\"slotNumber\":1,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-02-24T09:02:51.141Z")
+  },
+  {
+    "id": "8d9c5339-666b-4f39-9188-f9a23dd21fe8",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"2765e689-0c9a-4ac8-9bcd-45fc635ba866\",\"roomCode\":\"44-703\",\"slotNumber\":1,\"dueAt\":\"2026-02-24T13:02:55.875Z\",\"authorizationId\":\"6411f658-24c7-41e1-a34a-55b7ac518bff\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-02-24T09:02:55.888Z")
+  },
+  {
+    "id": "3b43740e-feff-42f0-9bb6-053ffc826202",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"2765e689-0c9a-4ac8-9bcd-45fc635ba866\",\"roomCode\":\"44-703\",\"slotNumber\":1,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-02-24T09:09:31.699Z")
+  },
+  {
+    "id": "16f965e1-f404-4560-a051-b9d1980e9990",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"4a3b400b-cb23-4e1d-8678-afeeed75eee4\",\"roomCode\":\"44-703\",\"slotNumber\":1,\"dueAt\":\"2026-02-24T13:09:35.955Z\",\"authorizationId\":\"6411f658-24c7-41e1-a34a-55b7ac518bff\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-02-24T09:09:35.972Z")
+  },
+  {
+    "id": "9294b8af-580b-462e-97f7-fe6cc81ef0b2",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"4a3b400b-cb23-4e1d-8678-afeeed75eee4\",\"roomCode\":\"44-703\",\"slotNumber\":1,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-02-24T09:21:15.971Z")
+  },
+  {
+    "id": "48a4a4dd-573c-42c6-8925-67834c62ab4c",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"157a3bf0-9278-444e-ac78-168f3a4b9f77\",\"roomCode\":\"44-703\",\"slotNumber\":1,\"dueAt\":\"2026-02-24T13:21:22.318Z\",\"authorizationId\":\"51be6985-e8da-4703-9946-d10b65157c7d\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-02-24T09:21:22.335Z")
+  },
+  {
+    "id": "fa674b6b-3f68-4a7d-b2ca-aadf6ae9dfc7",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"377ca932-303a-4171-98c1-d91d7c107dcb\",\"roomCode\":\"44-703\",\"slotNumber\":1,\"dueAt\":\"2026-02-25T14:59:57.465Z\",\"authorizationId\":\"64e958b3-2ef1-4167-b1f5-ec77c429311c\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-02-25T10:59:57.487Z")
+  },
+  {
+    "id": "66f36d93-ff0e-41c3-aae0-80317622672a",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"377ca932-303a-4171-98c1-d91d7c107dcb\",\"roomCode\":\"44-703\",\"slotNumber\":1,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-02-25T11:05:33.901Z")
+  },
+  {
+    "id": "e547848d-36e3-4a48-b154-c73e9c1184d1",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"8aab9972-47c1-488a-80d6-ba7dd8878c56\",\"roomCode\":\"44-703\",\"slotNumber\":1,\"dueAt\":\"2026-02-25T15:06:41.366Z\",\"authorizationId\":\"64e958b3-2ef1-4167-b1f5-ec77c429311c\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-02-25T11:06:41.379Z")
+  },
+  {
+    "id": "6a831a8c-bc8e-4ab0-9ed2-b0ace557c6c5",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"8aab9972-47c1-488a-80d6-ba7dd8878c56\",\"roomCode\":\"44-703\",\"slotNumber\":1,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-02-25T11:10:45.899Z")
+  },
+  {
+    "id": "5704a84e-77be-4b72-98dd-ef4cbba3a58d",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"81e94076-f08e-475b-9028-35ca1ce6281d\",\"roomCode\":\"44-703\",\"slotNumber\":1,\"dueAt\":\"2026-02-25T15:10:53.986Z\",\"authorizationId\":\"64e958b3-2ef1-4167-b1f5-ec77c429311c\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-02-25T11:10:54.015Z")
+  },
+  {
+    "id": "0386263f-e72c-4c63-8fbc-562e11b18cfa",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"81e94076-f08e-475b-9028-35ca1ce6281d\",\"roomCode\":\"44-703\",\"slotNumber\":1,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-02-25T11:12:07.286Z")
+  },
+  {
+    "id": "32856419-893a-4174-b74b-14c15cbf21f1",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"3bad0a10-244e-450e-93c7-91f8bd4c244b\",\"roomCode\":\"44-703\",\"slotNumber\":1,\"dueAt\":\"2026-02-25T15:12:13.144Z\",\"authorizationId\":\"64e958b3-2ef1-4167-b1f5-ec77c429311c\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-02-25T11:12:13.161Z")
+  },
+  {
+    "id": "9630719a-80d9-40a6-b8bc-5421b43b436b",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"3bad0a10-244e-450e-93c7-91f8bd4c244b\",\"roomCode\":\"44-703\",\"slotNumber\":1,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-02-25T11:17:58.450Z")
+  },
+  {
+    "id": "f827c316-a7ac-4ad4-a852-139ff359be5a",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"5572fb1b-7d9c-41b9-a5d0-4dcfdbc34f8c\",\"roomCode\":\"44-703\",\"slotNumber\":1,\"dueAt\":\"2026-02-25T15:18:04.681Z\",\"authorizationId\":\"64e958b3-2ef1-4167-b1f5-ec77c429311c\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-02-25T11:18:04.698Z")
+  },
+  {
+    "id": "2cb95d59-965e-4058-89d5-05c24a436e6b",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"5572fb1b-7d9c-41b9-a5d0-4dcfdbc34f8c\",\"roomCode\":\"44-703\",\"slotNumber\":1,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-02-25T11:30:22.281Z")
+  },
+  {
+    "id": "45aed891-52f5-4bda-b7ca-be7ae5eec2ce",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"c7f2a3ca-b387-43b4-850d-f554a9728521\",\"roomCode\":\"44-703\",\"slotNumber\":1,\"dueAt\":\"2026-02-25T15:30:45.407Z\",\"authorizationId\":\"64e958b3-2ef1-4167-b1f5-ec77c429311c\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-02-25T11:30:45.423Z")
+  },
+  {
+    "id": "219d14b4-ef4d-49fa-a3d3-218129adb38c",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"c7f2a3ca-b387-43b4-850d-f554a9728521\",\"roomCode\":\"44-703\",\"slotNumber\":1,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-02-25T11:33:33.012Z")
+  },
+  {
+    "id": "c702bb82-0606-4dba-a60c-e218b917391c",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"3077cc7a-ed39-4da6-b8a9-1ac578dceb49\",\"roomCode\":\"44-703\",\"slotNumber\":1,\"dueAt\":\"2026-02-25T15:34:30.179Z\",\"authorizationId\":\"64e958b3-2ef1-4167-b1f5-ec77c429311c\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-02-25T11:34:30.191Z")
+  },
+  {
+    "id": "63d5aa73-d81d-4208-a8a6-9498d9f19037",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"3077cc7a-ed39-4da6-b8a9-1ac578dceb49\",\"roomCode\":\"44-703\",\"slotNumber\":1,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-02-25T11:39:41.289Z")
+  },
+  {
+    "id": "675ddbac-c608-4ae8-82fe-433547b6eb1a",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"025e9e9e-57d5-4924-badd-7e95974a059c\",\"roomCode\":\"44-703\",\"slotNumber\":1,\"dueAt\":\"2026-02-25T15:39:47.689Z\",\"authorizationId\":\"64e958b3-2ef1-4167-b1f5-ec77c429311c\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-02-25T11:39:47.709Z")
+  },
+  {
+    "id": "f3337fe4-56d8-48a6-a113-990195fdc203",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"025e9e9e-57d5-4924-badd-7e95974a059c\",\"roomCode\":\"44-703\",\"slotNumber\":1,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-02-25T11:40:03.804Z")
+  },
+  {
+    "id": "41e4c384-6601-4247-869b-b1fb0d7eef35",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"3d6a20ab-a909-4f7d-a5ef-8ec9cdabf9ca\",\"roomCode\":\"44-703\",\"slotNumber\":1,\"dueAt\":\"2026-02-25T15:40:13.428Z\",\"authorizationId\":\"64e958b3-2ef1-4167-b1f5-ec77c429311c\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-02-25T11:40:13.441Z")
+  },
+  {
+    "id": "50a2e86d-ea96-41e9-afb7-1c3398339216",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"3d6a20ab-a909-4f7d-a5ef-8ec9cdabf9ca\",\"roomCode\":\"44-703\",\"slotNumber\":1,\"lateMinutes\":19528,\"penaltyScore\":6510,\"isLate\":true,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-11T05:38:48.650Z")
+  },
+  {
+    "id": "f2ea9252-dbf0-4f5a-af6f-e2fad8d1c5d0",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"57392458-b2fd-4b8f-929a-bfc2015644f9\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-12T15:01:13.659Z\",\"authorizationId\":\"cdfe8d84-5b10-4a8c-8348-1fab7ac1d270\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-12T11:01:13.683Z")
+  },
+  {
+    "id": "32995b80-6e9a-4def-ae48-c9da8415078a",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"57392458-b2fd-4b8f-929a-bfc2015644f9\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-12T11:01:53.834Z")
+  },
+  {
+    "id": "e932d33c-738f-4643-a4f9-355ccb7716ba",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"70744ff0-fbee-4a88-9f76-b69280dad7e4\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-12T15:02:03.317Z\",\"authorizationId\":\"cdfe8d84-5b10-4a8c-8348-1fab7ac1d270\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-12T11:02:03.334Z")
+  },
+  {
+    "id": "2244e406-4966-4a1e-bc4a-01d0c46cea02",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"70744ff0-fbee-4a88-9f76-b69280dad7e4\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-12T11:02:35.521Z")
+  },
+  {
+    "id": "e0e81257-cf54-4e54-9ac7-d243976e93df",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"2fb58617-0cbc-4107-a85b-5533f900d9db\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-12T15:13:25.398Z\",\"authorizationId\":\"cdfe8d84-5b10-4a8c-8348-1fab7ac1d270\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-12T11:13:25.414Z")
+  },
+  {
+    "id": "0db63552-5d2d-44d8-9f4c-807e714c4439",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"2fb58617-0cbc-4107-a85b-5533f900d9db\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-12T11:13:44.074Z")
+  },
+  {
+    "id": "58dd3368-6947-4393-9b18-2391e7358c78",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"c5841271-3a68-45a2-b9e2-8dd09fb5bb50\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-12T15:13:48.644Z\",\"authorizationId\":\"cdfe8d84-5b10-4a8c-8348-1fab7ac1d270\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-12T11:13:48.656Z")
+  },
+  {
+    "id": "3414f861-4c78-42ed-adfc-524c7070a10a",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"c5841271-3a68-45a2-b9e2-8dd09fb5bb50\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-12T11:15:19.684Z")
+  },
+  {
+    "id": "62d9913e-7a9a-4b51-9d81-b8c91b7960af",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"41c9cfdc-d713-4a32-b591-14f2732248d8\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-12T15:15:23.713Z\",\"authorizationId\":\"cdfe8d84-5b10-4a8c-8348-1fab7ac1d270\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-12T11:15:23.728Z")
+  },
+  {
+    "id": "69a4fcdc-a00e-46c4-8810-a33a5cf496a1",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"41c9cfdc-d713-4a32-b591-14f2732248d8\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-12T11:16:10.653Z")
+  },
+  {
+    "id": "984e8d55-56b4-40c3-969a-b0fac0e011f9",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"54bd645a-07f0-4b79-8258-407d5347ef2e\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-12T15:16:16.846Z\",\"authorizationId\":\"cdfe8d84-5b10-4a8c-8348-1fab7ac1d270\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-12T11:16:16.857Z")
+  },
+  {
+    "id": "3143962f-ef3e-4259-a217-890e208a3968",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"54bd645a-07f0-4b79-8258-407d5347ef2e\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-12T11:19:13.244Z")
+  },
+  {
+    "id": "70b89e8d-512a-4041-97b3-81209f787679",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"d98b73f7-b9ee-4110-8e6a-c4a119dc9402\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-12T15:19:16.871Z\",\"authorizationId\":\"cdfe8d84-5b10-4a8c-8348-1fab7ac1d270\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-12T11:19:16.888Z")
+  },
+  {
+    "id": "cb578984-ad33-4f18-ae63-d787f96562a2",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"d98b73f7-b9ee-4110-8e6a-c4a119dc9402\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-12T11:28:05.010Z")
+  },
+  {
+    "id": "9aad9bea-2b4a-4a55-9271-a18cd2ada0f3",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"4fd8c805-454e-4f32-9823-13e67749fc83\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-12T15:33:24.610Z\",\"authorizationId\":\"cdfe8d84-5b10-4a8c-8348-1fab7ac1d270\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-12T11:33:24.628Z")
+  },
+  {
+    "id": "4c7fd522-123e-4049-ae77-63a4f7f06e7b",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"4fd8c805-454e-4f32-9823-13e67749fc83\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-12T11:36:30.938Z")
+  },
+  {
+    "id": "b7f35de3-237e-4a1b-821d-744523d7058e",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"a97bf6d8-d160-4e21-9880-5121795fd614\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-12T15:57:54.341Z\",\"authorizationId\":\"cdfe8d84-5b10-4a8c-8348-1fab7ac1d270\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-12T11:57:54.359Z")
+  },
+  {
+    "id": "44147bbc-05a0-460e-8b91-2de7321c84bb",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"a97bf6d8-d160-4e21-9880-5121795fd614\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-12T12:23:52.500Z")
+  },
+  {
+    "id": "7b0346cc-60df-4c48-acfb-78a9303a8e39",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"be55c46f-8db1-4e38-ae59-d658a035ec57\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-13T12:20:21.999Z\",\"authorizationId\":\"4d317199-fe76-4a92-8ce1-f0cf9037f0af\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-13T08:20:22.026Z")
+  },
+  {
+    "id": "ca5b6500-6d81-4ec5-8b7b-91add502679e",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"be55c46f-8db1-4e38-ae59-d658a035ec57\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-13T08:20:33.942Z")
+  },
+  {
+    "id": "ccdd71ca-c56b-4de5-b51d-f5ce4df8ba0f",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"ca0414fd-f8cc-4c2e-b535-b67aa72e94f0\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-13T12:20:42.924Z\",\"authorizationId\":\"4d317199-fe76-4a92-8ce1-f0cf9037f0af\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-13T08:20:42.939Z")
+  },
+  {
+    "id": "465391fd-0243-4599-b757-156dc4eeb1f2",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"ca0414fd-f8cc-4c2e-b535-b67aa72e94f0\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-13T08:23:23.285Z")
+  },
+  {
+    "id": "c3f91b4c-ad8d-43c8-b7f5-07cc24fe1492",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"8fa85f45-ebd3-4c18-aba8-0682690d6850\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-13T12:23:28.414Z\",\"authorizationId\":\"4d317199-fe76-4a92-8ce1-f0cf9037f0af\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-13T08:23:28.456Z")
+  },
+  {
+    "id": "064ca4a9-98f5-4d22-ad6e-4f9a5d92b25b",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"8fa85f45-ebd3-4c18-aba8-0682690d6850\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-13T08:23:39.158Z")
+  },
+  {
+    "id": "d79f206b-9719-49c4-b38e-21eb44ed497c",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"18dda205-6b10-4fb8-a6fd-fb22e6933b8e\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-13T12:24:05.120Z\",\"authorizationId\":\"4d317199-fe76-4a92-8ce1-f0cf9037f0af\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-13T08:24:05.139Z")
+  },
+  {
+    "id": "81f6be44-0834-4725-9ab4-404685744fb2",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"18dda205-6b10-4fb8-a6fd-fb22e6933b8e\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-13T08:33:23.325Z")
+  },
+  {
+    "id": "f6ea1cae-4798-4879-bace-cbc39d8dc617",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"6bfbb17d-1b5a-4c88-8d9f-6bf0394839ac\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-13T12:33:41.435Z\",\"authorizationId\":\"e3399c27-17cc-4e99-91de-3d293a0cbb52\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-13T08:33:41.446Z")
+  },
+  {
+    "id": "9ecdc7d1-a14d-4dff-b0fc-87ccccb5a05f",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"6bfbb17d-1b5a-4c88-8d9f-6bf0394839ac\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-13T08:34:07.564Z")
+  },
+  {
+    "id": "7830bb52-10df-41ff-b210-9ce8c68d66af",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"af05271c-3990-4260-9b71-c5d838ee8a53\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-13T12:36:59.958Z\",\"authorizationId\":\"4d317199-fe76-4a92-8ce1-f0cf9037f0af\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-13T08:36:59.972Z")
+  },
+  {
+    "id": "b86da20f-e982-48ae-bc94-98a150f6c7cb",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"af05271c-3990-4260-9b71-c5d838ee8a53\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-13T08:39:13.393Z")
+  },
+  {
+    "id": "e3038889-da18-4515-ba0f-716ab760aeea",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_KEY_PULLED",
+    "details": "{\"bookingId\":\"97ff4d78-5b32-4caa-91d0-5407034b7558\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"message\":\"Physical key successfully removed from slot\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-31T10:36:23.402Z")
+  },
+  {
+    "id": "c26b9496-3d25-48dc-8d72-e8fd8c5a9aab",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"8be84846-4cd3-4995-891a-814c55e80f65\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-13T12:39:33.852Z\",\"authorizationId\":\"e3399c27-17cc-4e99-91de-3d293a0cbb52\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-13T08:39:33.867Z")
+  },
+  {
+    "id": "1288b629-aefd-45d9-9b58-91dacd9b3882",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"8be84846-4cd3-4995-891a-814c55e80f65\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-13T08:41:55.062Z")
+  },
+  {
+    "id": "a466012b-d24b-41d3-8676-bb3d00b08166",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"24421c54-211d-4d38-aba5-45f7e4357314\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-13T12:42:09.291Z\",\"authorizationId\":\"e3399c27-17cc-4e99-91de-3d293a0cbb52\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-13T08:42:09.305Z")
+  },
+  {
+    "id": "bd82a475-02fb-4ac4-9c8e-6628c6266977",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"24421c54-211d-4d38-aba5-45f7e4357314\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-13T08:50:44.410Z")
+  },
+  {
+    "id": "bb681c3a-f118-4b80-907a-ac582049fb1f",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"a602285f-4ae6-4194-8951-be64abe73d4f\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-13T13:15:47.423Z\",\"authorizationId\":\"4d317199-fe76-4a92-8ce1-f0cf9037f0af\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-13T09:15:47.445Z")
+  },
+  {
+    "id": "4dec0d8d-9ce4-4efa-948c-34f6c7503ab0",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"a602285f-4ae6-4194-8951-be64abe73d4f\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-13T09:15:55.304Z")
+  },
+  {
+    "id": "9577f819-be53-4c71-a724-2304fb95a2e6",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"df72fa24-be2c-4f01-bb2c-0ca58f224c63\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-13T13:16:01.303Z\",\"authorizationId\":\"4d317199-fe76-4a92-8ce1-f0cf9037f0af\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-13T09:16:01.312Z")
+  },
+  {
+    "id": "d19e663d-b785-4a44-9ca1-8286961efeea",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"df72fa24-be2c-4f01-bb2c-0ca58f224c63\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-13T09:16:43.982Z")
+  },
+  {
+    "id": "dda27d17-34e9-482d-971c-6f5fa033818f",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"1d47fdc1-218d-42b1-83c7-9f33745fc84e\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-13T13:16:51.091Z\",\"authorizationId\":\"4d317199-fe76-4a92-8ce1-f0cf9037f0af\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-13T09:16:51.106Z")
+  },
+  {
+    "id": "80797d71-0e2d-46de-8e31-d767d3ac1a6b",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"1d47fdc1-218d-42b1-83c7-9f33745fc84e\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-13T09:22:02.549Z")
+  },
+  {
+    "id": "37105a61-3c5d-4151-859a-6469fded4e01",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"81928982-e27f-4c9c-99ae-293edbf7d7c5\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-13T13:22:08.999Z\",\"authorizationId\":\"4d317199-fe76-4a92-8ce1-f0cf9037f0af\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-13T09:22:09.016Z")
+  },
+  {
+    "id": "8fe1eefa-c582-4eab-9b04-a86e72b5f4f7",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"81928982-e27f-4c9c-99ae-293edbf7d7c5\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-13T09:22:46.626Z")
+  },
+  {
+    "id": "61f458a8-fe2f-4908-a318-a6dbeed519b1",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"45dac100-7bc6-4f4d-b231-6d39819f3db6\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-13T13:22:50.581Z\",\"authorizationId\":\"4d317199-fe76-4a92-8ce1-f0cf9037f0af\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-13T09:22:50.595Z")
+  },
+  {
+    "id": "47ceda37-414c-4663-b1ac-8ca22d0a9d65",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"45dac100-7bc6-4f4d-b231-6d39819f3db6\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-13T09:25:48.655Z")
+  },
+  {
+    "id": "0285e58c-a194-4588-ae9e-1c9739d5b799",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"84e439d4-2139-4760-91db-dc6c7974f1f0\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-13T13:25:53.304Z\",\"authorizationId\":\"4d317199-fe76-4a92-8ce1-f0cf9037f0af\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-13T09:25:53.318Z")
+  },
+  {
+    "id": "1be3f241-88e3-4875-bcef-2a109f6ed5e6",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"84e439d4-2139-4760-91db-dc6c7974f1f0\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":6910,\"penaltyScore\":2305,\"isLate\":true,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-18T09:06:24.975Z")
+  },
+  {
+    "id": "1e1d6b0f-fd09-4968-be22-4d28af5c8f11",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"6c22e0b7-b4e5-4b51-a0c3-0fdd413daf22\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-18T13:27:33.775Z\",\"authorizationId\":\"6a405436-8865-4e14-a0d5-e7a63d885722\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-18T09:27:33.795Z")
+  },
+  {
+    "id": "5803c969-b668-4657-9eb9-e3e91d012d2a",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"6c22e0b7-b4e5-4b51-a0c3-0fdd413daf22\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-18T09:28:07.151Z")
+  },
+  {
+    "id": "a0568fed-3cae-473b-b31b-5db2ba98b3f0",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"3dbd93d3-e4b0-49c7-b0ef-596cb1c32d1d\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-18T13:28:11.942Z\",\"authorizationId\":\"6a405436-8865-4e14-a0d5-e7a63d885722\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-18T09:28:11.954Z")
+  },
+  {
+    "id": "03a68e5b-0af3-4f19-991e-08eaae873c4e",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"3dbd93d3-e4b0-49c7-b0ef-596cb1c32d1d\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-18T09:28:54.943Z")
+  },
+  {
+    "id": "156b7f50-2c22-40cb-8750-1249f039ef74",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"a509d8cc-8b3a-4572-9616-742523a39bac\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-18T13:29:02.929Z\",\"authorizationId\":\"6a405436-8865-4e14-a0d5-e7a63d885722\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-18T09:29:02.941Z")
+  },
+  {
+    "id": "dc32e2b5-0050-4d7a-bf90-70143a1dd142",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"a509d8cc-8b3a-4572-9616-742523a39bac\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-18T09:34:09.821Z")
+  },
+  {
+    "id": "e015b1be-9aae-44a8-923b-ec248b1ca2f7",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"0b95e153-4136-42ce-a3d7-40661ca18260\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-18T13:34:19.643Z\",\"authorizationId\":\"6a405436-8865-4e14-a0d5-e7a63d885722\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-18T09:34:19.656Z")
+  },
+  {
+    "id": "8bc50f50-e3a3-4f5d-b1f5-be071cfb64de",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"0b95e153-4136-42ce-a3d7-40661ca18260\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-18T09:37:21.522Z")
+  },
+  {
+    "id": "6c1f9928-8981-4998-b34c-1453859ae078",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_KEY_PULLED",
+    "details": "{\"bookingId\":\"39ab9fb7-ee4a-49af-b39d-878db5129b1e\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"message\":\"Physical key successfully removed from slot\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-31T10:38:12.086Z")
+  },
+  {
+    "id": "0b5e251f-2eac-46aa-89a5-a3054158f9a3",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"d7c95f25-50e5-41c7-ab4b-b1a0ac6fa716\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-18T13:37:38.414Z\",\"authorizationId\":\"6a405436-8865-4e14-a0d5-e7a63d885722\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-18T09:37:38.434Z")
+  },
+  {
+    "id": "2e8ecde7-575a-4ce8-ac35-1e28a7d9af10",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"d7c95f25-50e5-41c7-ab4b-b1a0ac6fa716\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-18T09:41:53.095Z")
+  },
+  {
+    "id": "59bc14be-d605-44fa-9d9a-da2fbad28769",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"b4c8b9cd-a08c-454b-9faa-e7adec6dc162\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-18T13:41:58.840Z\",\"authorizationId\":\"6a405436-8865-4e14-a0d5-e7a63d885722\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-18T09:41:58.854Z")
+  },
+  {
+    "id": "edb7db18-c3cb-47fc-8b31-adb7eddc52d5",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"b4c8b9cd-a08c-454b-9faa-e7adec6dc162\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-18T09:42:34.954Z")
+  },
+  {
+    "id": "fcdb43d0-2df1-4f97-95c7-d8316ad9018a",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"7fbde356-6369-4dd0-afff-977daa075a2a\",\"roomCode\":\"52-2 ครึ่ง\",\"slotNumber\":8,\"dueAt\":\"2026-03-24T11:40:00.000Z\",\"authorizationId\":null,\"reason\":\"สอนชดเชย\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-24T06:35:41.791Z")
+  },
+  {
+    "id": "acb192c3-0528-4e37-9e54-a560b3193551",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"7fbde356-6369-4dd0-afff-977daa075a2a\",\"roomCode\":\"52-2 ครึ่ง\",\"slotNumber\":8,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-24T06:35:50.663Z")
+  },
+  {
+    "id": "4ccba1f2-7118-4c9e-9e61-0e367815b394",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"7bc8b272-a63c-46b5-84c2-5991e0365db6\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-24T09:39:00.000Z\",\"authorizationId\":null,\"reason\":\"สอนชดเชย\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-24T06:36:18.332Z")
+  },
+  {
+    "id": "b599f34c-852d-4316-94d0-bf235f8d14b2",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"7bc8b272-a63c-46b5-84c2-5991e0365db6\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-24T06:36:30.833Z")
+  },
+  {
+    "id": "f3d53447-22c9-4d5c-8539-b45446801e17",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"29bc4e31-f644-4311-91d6-5cb9d2268c24\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-24T06:40:00.000Z\",\"authorizationId\":null,\"reason\":\"กิจกรรมพิเศษ\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-24T06:36:41.032Z")
+  },
+  {
+    "id": "05adf393-a041-4010-8bcc-82a2822b9fa7",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"29bc4e31-f644-4311-91d6-5cb9d2268c24\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-24T06:36:45.588Z")
+  },
+  {
+    "id": "62b812f2-936d-423b-8b52-e383b9fd9770",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"5ccf6e81-1b19-418f-bebb-37e1fba52fb1\",\"roomCode\":\"52-215\",\"slotNumber\":4,\"dueAt\":\"2026-03-24T10:36:00.000Z\",\"authorizationId\":null,\"reason\":\"กิจกรรมพิเศษ\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-24T06:36:56.470Z")
+  },
+  {
+    "id": "9328d8e7-8767-4ca7-82b8-c6986de4729f",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"5ccf6e81-1b19-418f-bebb-37e1fba52fb1\",\"roomCode\":\"52-215\",\"slotNumber\":4,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-24T06:37:17.809Z")
+  },
+  {
+    "id": "f4043981-091b-4953-bd27-66338534b64b",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"d0d22653-fb4f-4636-b3b3-806052f2547e\",\"roomCode\":\"52-215\",\"slotNumber\":4,\"dueAt\":\"2026-03-24T12:37:00.000Z\",\"authorizationId\":null,\"reason\":\"กิจกรรมพิเศษ\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-24T06:37:27.994Z")
+  },
+  {
+    "id": "60eec693-30ca-4a10-9786-f5e08f81bbdc",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"d0d22653-fb4f-4636-b3b3-806052f2547e\",\"roomCode\":\"52-215\",\"slotNumber\":4,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-24T06:37:41.467Z")
+  },
+  {
+    "id": "8c77f415-326e-4529-a24e-336917e8bc0c",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"1619bb17-7b2a-4176-935f-fc27c7ae3e7b\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-24T11:37:00.000Z\",\"authorizationId\":null,\"reason\":\"กิจกรรมพิเศษ\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-24T06:37:51.717Z")
+  },
+  {
+    "id": "06410fc9-1154-4d04-b1bc-943bf73f94d9",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"1619bb17-7b2a-4176-935f-fc27c7ae3e7b\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-24T06:38:05.352Z")
+  },
+  {
+    "id": "6b4c29a6-f218-44e2-a90d-05593cafd040",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"782db935-9e8e-4456-90a1-f04e3ff34730\",\"roomCode\":\"52-205\",\"slotNumber\":1,\"dueAt\":\"2026-03-24T10:38:00.000Z\",\"authorizationId\":null,\"reason\":\"ประชุม\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-24T06:38:25.913Z")
+  },
+  {
+    "id": "e04cbedb-0f04-4930-98ae-70377f07cca7",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"782db935-9e8e-4456-90a1-f04e3ff34730\",\"roomCode\":\"52-205\",\"slotNumber\":1,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-24T06:54:35.434Z")
+  },
+  {
+    "id": "ce25c9c1-29a4-4dae-aba6-2c347b343236",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"8b0c2e7a-5431-478b-9cbe-1e06b505926a\",\"roomCode\":\"52-205\",\"slotNumber\":1,\"dueAt\":\"2026-03-24T11:54:00.000Z\",\"authorizationId\":null,\"reason\":\"ประชุม\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-24T06:54:49.242Z")
+  },
+  {
+    "id": "a68ac78e-e1fc-4890-aa03-7107f5fa192f",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"8b0c2e7a-5431-478b-9cbe-1e06b505926a\",\"roomCode\":\"52-205\",\"slotNumber\":1,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-24T06:55:18.699Z")
+  },
+  {
+    "id": "347de52b-c406-4f17-88f3-3ecefe7abe7b",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"406ad5b1-5289-4459-9c20-3175b7ec7b45\",\"roomCode\":\"52-205\",\"slotNumber\":1,\"dueAt\":\"2026-03-25T06:00:00.000Z\",\"authorizationId\":null,\"reason\":\"กิจกรรมพิเศษ\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-24T06:55:30.219Z")
+  },
+  {
+    "id": "885c4e75-7b2a-4e12-bac1-0c7a655e08aa",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"406ad5b1-5289-4459-9c20-3175b7ec7b45\",\"roomCode\":\"52-205\",\"slotNumber\":1,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-24T06:55:55.048Z")
+  },
+  {
+    "id": "26ba009f-eb3e-4a22-ab9d-dec49043cce9",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"540a2219-141c-410f-8ea4-fe8e620fd975\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-24T11:56:00.000Z\",\"authorizationId\":null,\"reason\":\"ซ่อมบำรุง\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-24T06:56:03.426Z")
+  },
+  {
+    "id": "33242e81-5a27-4a65-a636-0a38dc9293ec",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"540a2219-141c-410f-8ea4-fe8e620fd975\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-24T06:57:13.774Z")
+  },
+  {
+    "id": "dae2c916-3ff5-4ae5-9b55-92b9dfb3d845",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"d88aba27-f8f1-4e6e-8ec1-ea38a201288f\",\"roomCode\":\"52-511\",\"slotNumber\":5,\"dueAt\":\"2026-03-24T11:57:00.000Z\",\"authorizationId\":null,\"reason\":\"ซ่อมบำรุง\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-24T06:57:34.773Z")
+  },
+  {
+    "id": "9f854a7d-4bee-43ee-bd65-f2df85170284",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"d88aba27-f8f1-4e6e-8ec1-ea38a201288f\",\"roomCode\":\"52-511\",\"slotNumber\":5,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-24T06:58:31.557Z")
+  },
+  {
+    "id": "95e92ceb-4467-4824-bdc8-38c5416e49dc",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"b41b3297-37cb-4bfb-8ff6-38e7789ba3f7\",\"roomCode\":\"52-215\",\"slotNumber\":4,\"dueAt\":\"2026-03-24T11:58:00.000Z\",\"authorizationId\":null,\"reason\":\"ซ่อมบำรุง\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-24T06:58:43.316Z")
+  },
+  {
+    "id": "39f691fe-c424-4571-ae9b-ef2e8d72310c",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"b41b3297-37cb-4bfb-8ff6-38e7789ba3f7\",\"roomCode\":\"52-215\",\"slotNumber\":4,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-24T07:01:15.888Z")
+  },
+  {
+    "id": "261caee5-b9d8-4933-a392-7fc632822982",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"2c100ea6-9e9a-412a-9400-d7ebb0188129\",\"roomCode\":\"52-511\",\"slotNumber\":5,\"dueAt\":\"2026-03-24T11:01:00.000Z\",\"authorizationId\":null,\"reason\":\"กิจกรรมพิเศษ\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-24T07:01:40.993Z")
+  },
+  {
+    "id": "110c3798-a13a-4fda-bcce-3490f1de76b6",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"2c100ea6-9e9a-412a-9400-d7ebb0188129\",\"roomCode\":\"52-511\",\"slotNumber\":5,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-24T07:02:11.307Z")
+  },
+  {
+    "id": "d40a5683-53d6-4e7c-81d0-f121117bfad6",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"dcfad700-56bf-4065-a84f-2fe1159bf417\",\"roomCode\":\"52-205\",\"slotNumber\":1,\"dueAt\":\"2026-03-24T10:09:00.000Z\",\"authorizationId\":null,\"reason\":\"ซ่อมบำรุง\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-24T07:09:53.078Z")
+  },
+  {
+    "id": "6da5efd3-1bcd-45f6-8c81-a940b6008a35",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"dcfad700-56bf-4065-a84f-2fe1159bf417\",\"roomCode\":\"52-205\",\"slotNumber\":1,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-24T07:10:11.077Z")
+  },
+  {
+    "id": "797b8e23-90ab-460c-80cb-e1fc7df9a9a5",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"130997dd-9d73-4495-9160-fa951c6a8203\",\"roomCode\":\"52-205\",\"slotNumber\":1,\"dueAt\":\"2026-03-24T12:10:00.000Z\",\"authorizationId\":null,\"reason\":\"กิจกรรมพิเศษ\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-24T07:10:22.326Z")
+  },
+  {
+    "id": "1f552996-c640-46c8-9c5f-70a995429e1e",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"130997dd-9d73-4495-9160-fa951c6a8203\",\"roomCode\":\"52-205\",\"slotNumber\":1,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-24T11:58:45.914Z")
+  },
+  {
+    "id": "fbc8259f-26b9-4202-bb04-c6a5db60444d",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"fc90bdf2-b7e6-4921-b366-2b2cb4f7bf72\",\"roomCode\":\"52-205\",\"slotNumber\":1,\"dueAt\":\"2026-03-25T05:58:00.000Z\",\"authorizationId\":null,\"reason\":\"ซ่อมบำรุง\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-24T11:59:02.544Z")
+  },
+  {
+    "id": "ba7b4727-8efe-49ab-8877-9396c779f7bc",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"fc90bdf2-b7e6-4921-b366-2b2cb4f7bf72\",\"roomCode\":\"52-205\",\"slotNumber\":1,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-24T11:59:26.864Z")
+  },
+  {
+    "id": "6cd8284b-bb46-45c5-a280-af55e95835ef",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"78006443-ec78-4769-bed7-4e588abde506\",\"roomCode\":\"52-205\",\"slotNumber\":1,\"dueAt\":\"2026-03-24T16:59:00.000Z\",\"authorizationId\":null,\"reason\":\"กิจกรรมพิเศษ\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-24T11:59:39.765Z")
+  },
+  {
+    "id": "16ef30f2-61d5-4e00-a264-4e748096929b",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"78006443-ec78-4769-bed7-4e588abde506\",\"roomCode\":\"52-205\",\"slotNumber\":1,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-24T12:00:05.080Z")
+  },
+  {
+    "id": "10051e3a-c1f9-4baf-98f4-a8216b8fd11b",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"f62c8a40-e97a-4c23-b982-55d529c39e31\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-25T05:00:00.000Z\",\"authorizationId\":null,\"reason\":\"ซ่อมบำรุง\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-24T12:00:23.051Z")
+  },
+  {
+    "id": "b3e44ece-c916-4a9b-848d-650fcb5f57d0",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"f62c8a40-e97a-4c23-b982-55d529c39e31\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-24T12:13:29.529Z")
+  },
+  {
+    "id": "bd7b5464-b55d-4d05-b40c-19824eb8bd86",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"2edff0a4-c526-40a8-a689-66229bc7570e\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-25T05:13:00.000Z\",\"authorizationId\":null,\"reason\":\"กิจกรรมพิเศษ\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-24T12:13:41.323Z")
+  },
+  {
+    "id": "4322b426-2071-4835-821c-eb3b0e99e333",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"2edff0a4-c526-40a8-a689-66229bc7570e\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-24T12:16:33.471Z")
+  },
+  {
+    "id": "422794b7-ed93-4958-b41f-71247f36a476",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"43840812-2f4e-4b67-ad76-8b504b5492a6\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-25T05:17:00.000Z\",\"authorizationId\":null,\"reason\":\"กิจกรรมพิเศษ\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-24T12:17:06.978Z")
+  },
+  {
+    "id": "d6031713-97da-412d-b539-da548015dc6e",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"43840812-2f4e-4b67-ad76-8b504b5492a6\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-24T12:17:55.102Z")
+  },
+  {
+    "id": "0920fa72-8cd0-4127-b39a-0bfb3af6ccff",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"f8b08d67-430b-4f8e-8dd2-47e6d0bb1aa9\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-25T11:29:00.000Z\",\"authorizationId\":null,\"reason\":\"สอนชดเชย\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-25T06:23:31.215Z")
+  },
+  {
+    "id": "72929261-1de5-4189-b83f-d822b5d94254",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"f8b08d67-430b-4f8e-8dd2-47e6d0bb1aa9\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-25T06:24:00.341Z")
+  },
+  {
+    "id": "b66f93fa-e534-498d-aff9-75a5d64dcd72",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"e520ec11-54c0-46a0-add9-7faf91dc9f4e\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-25T12:52:00.000Z\",\"authorizationId\":null,\"reason\":\"กิจกรรมพิเศษ\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-25T07:52:35.565Z")
+  },
+  {
+    "id": "c3298140-8d37-45d7-b770-6d799e671efc",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"8be537c1-1877-44f7-9ad5-5e5c5d9ad4c1\",\"roomCode\":\"52-215\",\"slotNumber\":4,\"dueAt\":\"2026-03-25T10:57:00.000Z\",\"authorizationId\":null,\"reason\":\"สอนชดเชย\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-25T07:57:05.548Z")
+  },
+  {
+    "id": "29711422-bffa-428a-bede-ca2a9e082b6e",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"8be537c1-1877-44f7-9ad5-5e5c5d9ad4c1\",\"roomCode\":\"52-215\",\"slotNumber\":4,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-25T07:58:03.910Z")
+  },
+  {
+    "id": "1293e96f-0056-4ef9-9a68-36a789ce7675",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"e520ec11-54c0-46a0-add9-7faf91dc9f4e\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-25T08:00:01.796Z")
+  },
+  {
+    "id": "88368617-4c1d-4920-96ec-5892730dac42",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"901923e2-b9a6-40d6-8d20-7831096a7393\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-25T13:00:00.000Z\",\"authorizationId\":null,\"reason\":\"กิจกรรมพิเศษ\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-25T08:00:16.538Z")
+  },
+  {
+    "id": "8a800f56-48ae-404f-9080-5bd914084be5",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"901923e2-b9a6-40d6-8d20-7831096a7393\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-25T08:01:34.181Z")
+  },
+  {
+    "id": "97c234d1-1622-46f1-89d0-bd66bc1ce24d",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"eb9bfba3-3e1f-4856-a073-3b71622af8f3\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-25T13:01:00.000Z\",\"authorizationId\":null,\"reason\":\"สอนชดเชย\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-25T08:01:45.503Z")
+  },
+  {
+    "id": "d1a918d5-429d-469e-81db-a4f1ab56fceb",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"eb9bfba3-3e1f-4856-a073-3b71622af8f3\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-25T08:05:29.047Z")
+  },
+  {
+    "id": "45ee5041-8203-46c7-b1c5-ca1c2a59d299",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"9d9ab2c7-84b5-4f5d-a641-0f234b9be6f4\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-25T14:07:00.000Z\",\"authorizationId\":null,\"reason\":\"สอนชดเชย\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-25T08:07:01.876Z")
+  },
+  {
+    "id": "4549029c-87e1-4fc1-8ba4-5984ce9e064c",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"9d9ab2c7-84b5-4f5d-a641-0f234b9be6f4\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-25T08:14:20.932Z")
+  },
+  {
+    "id": "fde12a3f-f102-4342-8a4f-43892492e7a0",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"7aca30ea-8f86-4c79-9d6d-07d1c7a5c859\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-25T12:15:17.232Z\",\"authorizationId\":\"43d296ad-a1d5-4570-8115-6a24573431c7\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-25T08:15:17.247Z")
+  },
+  {
+    "id": "721f0d1e-35aa-403d-9fa9-015ca07f12ce",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"7aca30ea-8f86-4c79-9d6d-07d1c7a5c859\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-25T08:22:53.395Z")
+  },
+  {
+    "id": "6ae1bff2-4807-4c07-a3ef-4564a0ef5c91",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"17208e7b-6fe1-4005-823e-6f92fe531de9\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-25T12:23:14.641Z\",\"authorizationId\":\"43d296ad-a1d5-4570-8115-6a24573431c7\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-25T08:23:14.657Z")
+  },
+  {
+    "id": "ad94030e-bdf3-4d5c-b113-88b36bbf0ead",
+    "userId": "5ac6609d-e691-4cf4-b5b2-c7566f99edb7",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"92c32e3c-c23f-4da1-a569-4b1ce48ab668\",\"roomCode\":\"52-701\",\"slotNumber\":6,\"dueAt\":\"2026-03-25T13:28:00.000Z\",\"authorizationId\":null,\"reason\":\"สอนชดเชย\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-25T08:28:09.843Z")
+  },
+  {
+    "id": "b4535587-ef82-4d44-bfc2-ec11149f4b01",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"17208e7b-6fe1-4005-823e-6f92fe531de9\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-25T08:41:26.095Z")
+  },
+  {
+    "id": "45c3a5f1-df19-4f53-b8ae-ce08cecfc715",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"d0b1702a-f596-48e7-9626-d6c9601aef20\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-25T12:41:36.598Z\",\"authorizationId\":\"37bdfe11-7811-4dbc-975f-a1bb26ca4ee4\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-25T08:41:36.625Z")
+  },
+  {
+    "id": "dd6f178b-c9d5-4138-945d-5ce8684516d2",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"d0b1702a-f596-48e7-9626-d6c9601aef20\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-25T08:43:07.711Z")
+  },
+  {
+    "id": "6212b68e-4274-4400-b7e8-72dad100b593",
+    "userId": "c027fd82-5cca-4431-aa13-b413f420b57f",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"8f4a7484-5f02-41dd-bb85-fb38e3990e0a\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-25T12:44:03.756Z\",\"authorizationId\":\"d2bea166-c276-40c8-b79c-e627f3054ef1\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-25T08:44:03.768Z")
+  },
+  {
+    "id": "3325d1c7-1ca2-4d35-8454-6d174ef14524",
+    "userId": "c027fd82-5cca-4431-aa13-b413f420b57f",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"8f4a7484-5f02-41dd-bb85-fb38e3990e0a\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-25T08:44:41.419Z")
+  },
+  {
+    "id": "7e726ad6-7770-4b4b-940a-3c4a90fd07be",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"ac1b173d-e969-479b-b6e9-a55362fee210\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-25T12:48:32.173Z\",\"authorizationId\":\"37bdfe11-7811-4dbc-975f-a1bb26ca4ee4\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-25T08:48:32.196Z")
+  },
+  {
+    "id": "3e8e11d4-ddc1-4b6c-b0ab-2fc486708c3b",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"ac1b173d-e969-479b-b6e9-a55362fee210\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-25T09:00:35.247Z")
+  },
+  {
+    "id": "5fbbeb23-cfd4-4e34-81ac-12a3dc302353",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"337aa9fc-2190-47dd-a8d9-c068bf436177\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-25T13:00:40.368Z\",\"authorizationId\":\"37bdfe11-7811-4dbc-975f-a1bb26ca4ee4\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-25T09:00:40.383Z")
+  },
+  {
+    "id": "7a8ba548-2d4b-4ddc-a6d1-90776c36d83a",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"337aa9fc-2190-47dd-a8d9-c068bf436177\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-25T09:04:33.412Z")
+  },
+  {
+    "id": "66074264-3a37-4061-9b9e-e151d35ea87d",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"7c6f3d3e-0aa1-4dba-a5ea-394643e563b2\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-25T13:04:46.401Z\",\"authorizationId\":\"37bdfe11-7811-4dbc-975f-a1bb26ca4ee4\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-25T09:04:46.416Z")
+  },
+  {
+    "id": "5dfb9955-923e-4976-9573-600972efd545",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"7c6f3d3e-0aa1-4dba-a5ea-394643e563b2\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-25T09:07:31.766Z")
+  },
+  {
+    "id": "93bcb10e-e1e1-4e5b-b9ae-6a277a5be196",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"b222755b-bd35-41b2-8118-bc334a11c363\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-25T13:11:30.270Z\",\"authorizationId\":\"37bdfe11-7811-4dbc-975f-a1bb26ca4ee4\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-25T09:11:30.288Z")
+  },
+  {
+    "id": "a459fa05-79d8-41ff-9b2d-00d345e542aa",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"a79a4ed9-36de-4266-81bd-5d3adb237f38\",\"roomCode\":\"52-211\",\"slotNumber\":2,\"dueAt\":\"2026-03-25T13:14:00.000Z\",\"authorizationId\":null,\"reason\":\"สอนชดเชย\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-25T09:14:27.032Z")
+  },
+  {
+    "id": "c629410f-e027-4e01-8a0e-8791fa4a8c34",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"b222755b-bd35-41b2-8118-bc334a11c363\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-25T09:15:39.368Z")
+  },
+  {
+    "id": "59ee6d2b-3a4e-4545-8894-dff1a566f5c6",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"a79a4ed9-36de-4266-81bd-5d3adb237f38\",\"roomCode\":\"52-211\",\"slotNumber\":2,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-25T09:15:41.975Z")
+  },
+  {
+    "id": "149b7498-e92f-4a91-9bc5-2ad4a93e0302",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"b2e3d172-77b4-4396-99fe-2fc8207f8ae6\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-25T13:15:56.814Z\",\"authorizationId\":\"37bdfe11-7811-4dbc-975f-a1bb26ca4ee4\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-25T09:15:56.827Z")
+  },
+  {
+    "id": "e8e72589-9da7-44f0-b9d4-cb642c5dac4c",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"b2e3d172-77b4-4396-99fe-2fc8207f8ae6\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-25T09:25:07.102Z")
+  },
+  {
+    "id": "ebc39d72-2f69-4892-a584-94182a85669d",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"aa37355e-07f3-4db4-9de7-3bd73f3bab77\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-25T13:25:12.756Z\",\"authorizationId\":\"37bdfe11-7811-4dbc-975f-a1bb26ca4ee4\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-25T09:25:12.773Z")
+  },
+  {
+    "id": "d69fe3a9-1264-43ae-8e20-cb27225e70fc",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"aa37355e-07f3-4db4-9de7-3bd73f3bab77\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-25T09:36:41.196Z")
+  },
+  {
+    "id": "6837f360-958f-454f-b3a8-9fd4b1e46565",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"4ddc57b0-6a28-4f02-b8a0-a08db91d1af4\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-25T13:36:46.236Z\",\"authorizationId\":\"37bdfe11-7811-4dbc-975f-a1bb26ca4ee4\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-25T09:36:46.252Z")
+  },
+  {
+    "id": "9ab4e617-c448-46f1-970f-c725822c5b5e",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"4ddc57b0-6a28-4f02-b8a0-a08db91d1af4\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-25T09:36:54.168Z")
+  },
+  {
+    "id": "da7fa1f6-3533-4e0b-a1b6-d95f9566fdd6",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"42ee53df-dc56-470e-bb85-5b1d488531bf\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-25T13:36:59.921Z\",\"authorizationId\":\"37bdfe11-7811-4dbc-975f-a1bb26ca4ee4\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-25T09:36:59.934Z")
+  },
+  {
+    "id": "4bc29394-6b45-41c5-b1ca-fd5150f072c0",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"42ee53df-dc56-470e-bb85-5b1d488531bf\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-25T09:37:46.356Z")
+  },
+  {
+    "id": "620c8cc0-d051-420f-88d8-6effc63c0d8a",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"5a1c6f2f-5013-4383-a367-98cfa3f2d215\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-25T13:37:50.416Z\",\"authorizationId\":\"37bdfe11-7811-4dbc-975f-a1bb26ca4ee4\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-25T09:37:50.428Z")
+  },
+  {
+    "id": "add36a83-6609-43b0-b583-b2c7b221f79f",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"5a1c6f2f-5013-4383-a367-98cfa3f2d215\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-25T09:41:00.947Z")
+  },
+  {
+    "id": "9f477b99-79b3-4573-86bf-27efef0ddd2e",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"4f6c56ab-4ac2-43f2-a19f-8b0e1eb4c509\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-25T13:41:05.794Z\",\"authorizationId\":\"37bdfe11-7811-4dbc-975f-a1bb26ca4ee4\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-25T09:41:05.806Z")
+  },
+  {
+    "id": "c6177311-7626-4f1e-b1a9-97d43f599169",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"4f6c56ab-4ac2-43f2-a19f-8b0e1eb4c509\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-25T09:44:27.698Z")
+  },
+  {
+    "id": "12df4f32-9f88-4e13-9e1d-e91e38444a91",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"c042ec93-15e2-4f8a-ba72-c2890f861cd6\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-25T13:44:31.909Z\",\"authorizationId\":\"37bdfe11-7811-4dbc-975f-a1bb26ca4ee4\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-25T09:44:31.926Z")
+  },
+  {
+    "id": "edf1a8b3-417a-4fd3-8386-1916048e4829",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"c042ec93-15e2-4f8a-ba72-c2890f861cd6\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-25T09:44:59.953Z")
+  },
+  {
+    "id": "b349cdc6-d143-44f2-9cb7-59db892f2478",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"20f29235-5b76-410f-9021-474e124555ed\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-25T13:45:04.063Z\",\"authorizationId\":\"37bdfe11-7811-4dbc-975f-a1bb26ca4ee4\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-25T09:45:04.077Z")
+  },
+  {
+    "id": "89db00d8-7a73-4a31-82bd-c91eba049e91",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"20f29235-5b76-410f-9021-474e124555ed\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-25T09:50:11.503Z")
+  },
+  {
+    "id": "3aa90d70-13f9-43a4-a2d6-844305ef71f4",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"c8c55f73-1aa7-4a0b-af34-b0a1579695be\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-25T13:50:15.769Z\",\"authorizationId\":\"37bdfe11-7811-4dbc-975f-a1bb26ca4ee4\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-25T09:50:15.784Z")
+  },
+  {
+    "id": "dfed41d3-9d46-4709-8bbb-c15cfcc15eb1",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"c8c55f73-1aa7-4a0b-af34-b0a1579695be\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-25T09:52:50.210Z")
+  },
+  {
+    "id": "6e9de57c-472c-421b-b504-fff8e4fad443",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"dfdde8ca-100d-4120-87b6-ef243f8ca05e\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-25T13:52:53.416Z\",\"authorizationId\":\"37bdfe11-7811-4dbc-975f-a1bb26ca4ee4\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-25T09:52:53.429Z")
+  },
+  {
+    "id": "4ce3818a-1839-45a7-813c-285904ff94a4",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"dfdde8ca-100d-4120-87b6-ef243f8ca05e\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-25T10:10:53.369Z")
+  },
+  {
+    "id": "3b468eec-d6ea-4fd6-8368-1ae51c865d1c",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"88909397-dea0-4d5c-bea5-9189206e7cd8\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-25T14:10:57.583Z\",\"authorizationId\":\"37bdfe11-7811-4dbc-975f-a1bb26ca4ee4\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-25T10:10:57.602Z")
+  },
+  {
+    "id": "7ceec26a-1a3c-4135-8c4e-26246588c393",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_KEY_PULLED",
+    "details": "{\"bookingId\":\"939f8c58-344d-4932-8b25-9727b70bc913\",\"roomCode\":\"52-205\",\"slotNumber\":1,\"message\":\"Physical key successfully removed from slot\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-31T10:38:41.937Z")
+  },
+  {
+    "id": "ccd37a90-8c39-4e71-b282-1e74fa7148e1",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"88909397-dea0-4d5c-bea5-9189206e7cd8\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-25T10:11:09.639Z")
+  },
+  {
+    "id": "1db10285-e567-405f-8d0e-dd535124fac6",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"6bf57ddb-59c1-4eba-9a18-556d923ab4f2\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-25T14:11:13.077Z\",\"authorizationId\":\"37bdfe11-7811-4dbc-975f-a1bb26ca4ee4\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-25T10:11:13.089Z")
+  },
+  {
+    "id": "ca5d84dc-e7c0-4368-8e1d-a3e46be48506",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"6bf57ddb-59c1-4eba-9a18-556d923ab4f2\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-25T10:11:50.987Z")
+  },
+  {
+    "id": "85410e26-5072-41e7-901a-7c6b3f54ce9a",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"a74c06d0-5224-4219-9041-97551c4b28fc\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-25T14:11:57.968Z\",\"authorizationId\":\"37bdfe11-7811-4dbc-975f-a1bb26ca4ee4\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-25T10:11:57.983Z")
+  },
+  {
+    "id": "808a7264-d16e-408c-8498-d2a0e1d4a945",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"a74c06d0-5224-4219-9041-97551c4b28fc\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-25T10:13:21.161Z")
+  },
+  {
+    "id": "b719c49b-05e3-4d6c-b57b-a0a88219cf3c",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"569bbb90-45f9-4c2d-a9be-49d3b305a1d4\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-25T14:13:28.624Z\",\"authorizationId\":\"37bdfe11-7811-4dbc-975f-a1bb26ca4ee4\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-25T10:13:28.637Z")
+  },
+  {
+    "id": "85cd0523-d51c-4329-bb6b-95f62a7a4c8f",
+    "userId": "c027fd82-5cca-4431-aa13-b413f420b57f",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"13084809-660e-4567-a84c-839b20c5fb88\",\"roomCode\":\"52-511\",\"slotNumber\":5,\"dueAt\":\"2026-03-25T15:15:00.000Z\",\"authorizationId\":null,\"reason\":\"กิจกรรมพิเศษ\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-25T10:15:47.169Z")
+  },
+  {
+    "id": "b9c73186-5b3e-4c6b-bb22-3276368202ec",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"569bbb90-45f9-4c2d-a9be-49d3b305a1d4\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-25T10:16:23.560Z")
+  },
+  {
+    "id": "ca4c3626-1a0f-4330-bbdc-19a47fef80c1",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"ff5ce196-8d6d-43fd-bb07-3885bd8a4ae2\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-25T14:16:28.069Z\",\"authorizationId\":\"37bdfe11-7811-4dbc-975f-a1bb26ca4ee4\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-25T10:16:28.078Z")
+  },
+  {
+    "id": "ecc55f7f-bebe-4aff-937b-1797f96ca93d",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"ff5ce196-8d6d-43fd-bb07-3885bd8a4ae2\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-25T10:31:23.964Z")
+  },
+  {
+    "id": "33771325-1f61-46b2-bec1-ffba1a65e626",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"60de6409-bd85-4701-a72e-be707f127c80\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-25T14:31:29.962Z\",\"authorizationId\":\"37bdfe11-7811-4dbc-975f-a1bb26ca4ee4\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-25T10:31:29.972Z")
+  },
+  {
+    "id": "97dfebcd-5785-41b3-b842-5a80652c9936",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"60de6409-bd85-4701-a72e-be707f127c80\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-25T10:31:45.756Z")
+  },
+  {
+    "id": "b2e51676-b610-4440-8fcb-66802533354e",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"52c5b562-c75b-4efe-9596-546860067c3d\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-25T14:31:52.043Z\",\"authorizationId\":\"37bdfe11-7811-4dbc-975f-a1bb26ca4ee4\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-25T10:31:52.056Z")
+  },
+  {
+    "id": "691bd069-8720-43cd-b394-4c741a706bb9",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"52c5b562-c75b-4efe-9596-546860067c3d\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-25T10:32:43.086Z")
+  },
+  {
+    "id": "0b61cb54-c983-45c9-964d-73c1e7228de3",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"70e6095b-87f5-4361-962c-dee5880355ab\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-25T14:32:47.580Z\",\"authorizationId\":\"37bdfe11-7811-4dbc-975f-a1bb26ca4ee4\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-25T10:32:47.592Z")
+  },
+  {
+    "id": "c13efc8a-aaa1-421b-bfa7-e4ef867bc895",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"70e6095b-87f5-4361-962c-dee5880355ab\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-25T10:37:46.822Z")
+  },
+  {
+    "id": "e175b280-ade9-4ded-b8f6-2267d2327d5d",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"d96e0fa4-2ec0-4860-a2f2-d5430fdaa0ae\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-25T14:37:51.700Z\",\"authorizationId\":\"37bdfe11-7811-4dbc-975f-a1bb26ca4ee4\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-25T10:37:51.715Z")
+  },
+  {
+    "id": "30116e51-04f6-4731-9e44-ee0996fc689b",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"d96e0fa4-2ec0-4860-a2f2-d5430fdaa0ae\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-25T10:49:52.935Z")
+  },
+  {
+    "id": "3d4f0e46-645e-441a-bb3a-bd85cc460715",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"63276cde-2bea-4cfe-9002-e87c86b29206\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-25T14:50:03.220Z\",\"authorizationId\":\"37bdfe11-7811-4dbc-975f-a1bb26ca4ee4\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-25T10:50:03.235Z")
+  },
+  {
+    "id": "cd1d51ea-b04e-4c9c-a3ad-45b7efb0a1b7",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"63276cde-2bea-4cfe-9002-e87c86b29206\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-25T10:50:34.695Z")
+  },
+  {
+    "id": "4c293de9-0de2-41b2-a335-850411cd7795",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"de5b9fa0-dc0b-41e4-8c4b-b6345de5a8cf\",\"roomCode\":\"52-205\",\"slotNumber\":1,\"dueAt\":\"2026-03-25T15:50:00.000Z\",\"authorizationId\":null,\"reason\":\"กิจกรรมพิเศษ\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-25T10:50:57.457Z")
+  },
+  {
+    "id": "ddf44d4e-83a8-415b-ab09-b14363490dca",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"de5b9fa0-dc0b-41e4-8c4b-b6345de5a8cf\",\"roomCode\":\"52-205\",\"slotNumber\":1,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-25T10:51:19.254Z")
+  },
+  {
+    "id": "6b413855-c515-4255-ba9d-0aaddfad0f5d",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"3aab891f-63b1-49f4-afc3-226350bb572f\",\"roomCode\":\"52-205\",\"slotNumber\":1,\"dueAt\":\"2026-03-25T16:51:00.000Z\",\"authorizationId\":null,\"reason\":\"กิจกรรมพิเศษ\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-25T10:51:39.564Z")
+  },
+  {
+    "id": "c63d41a9-97ec-47f9-9f52-b1620ee9de8f",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"3aab891f-63b1-49f4-afc3-226350bb572f\",\"roomCode\":\"52-205\",\"slotNumber\":1,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-25T10:51:58.017Z")
+  },
+  {
+    "id": "436e5e36-9d59-4a3d-8935-be470119cbfc",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"2a8e85f7-3d72-4ab6-8c20-a963f6207c97\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-25T14:52:03.380Z\",\"authorizationId\":\"37bdfe11-7811-4dbc-975f-a1bb26ca4ee4\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-25T10:52:03.395Z")
+  },
+  {
+    "id": "4c08ab56-4ff8-4243-8668-9a5bf3d5f8a1",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"2a8e85f7-3d72-4ab6-8c20-a963f6207c97\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-25T10:59:05.543Z")
+  },
+  {
+    "id": "50ad73c5-a758-492d-8e24-7b1a4bce9aba",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"d2fb4cde-8774-4c5b-9f06-a8d5b2d77efe\",\"roomCode\":\"52-205\",\"slotNumber\":1,\"dueAt\":\"2026-03-25T15:06:00.000Z\",\"authorizationId\":null,\"reason\":\"กิจกรรมพิเศษ\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-25T11:06:08.503Z")
+  },
+  {
+    "id": "43c1c740-497e-4656-b3a5-b1396d0532ce",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"a10d54ff-b65a-49d0-af05-5a0e556ffc04\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-25T15:22:12.111Z\",\"authorizationId\":\"5136f6f8-8e10-47d4-bdd9-e59e7da561da\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-25T11:22:12.127Z")
+  },
+  {
+    "id": "8286ab76-13d0-40b8-aac6-9be0cd28c729",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"d2fb4cde-8774-4c5b-9f06-a8d5b2d77efe\",\"roomCode\":\"52-205\",\"slotNumber\":1,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-25T11:33:12.858Z")
+  },
+  {
+    "id": "2c8b6f5d-416a-4d28-95f5-4388a6fa20bc",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"579362a0-bf41-4d74-accb-6ac18a5ec076\",\"roomCode\":\"52-211\",\"slotNumber\":2,\"dueAt\":\"2026-03-25T16:33:00.000Z\",\"authorizationId\":null,\"reason\":\"ซ่อมบำรุง\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-25T11:33:28.562Z")
+  },
+  {
+    "id": "2544c9db-a48c-4e57-bd9f-07f4756855f8",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"a10d54ff-b65a-49d0-af05-5a0e556ffc04\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-25T11:44:45.811Z")
+  },
+  {
+    "id": "0d814fd8-e78e-4026-9026-fef2f05e244d",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"579362a0-bf41-4d74-accb-6ac18a5ec076\",\"roomCode\":\"52-211\",\"slotNumber\":2,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-25T11:57:34.849Z")
+  },
+  {
+    "id": "a870d7d7-2ee4-4d91-8808-158bb4aeef2f",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"2b4c51f5-ae0f-4011-859f-8e60aed32eeb\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-25T15:57:47.562Z\",\"authorizationId\":\"37bdfe11-7811-4dbc-975f-a1bb26ca4ee4\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-25T11:57:47.571Z")
+  },
+  {
+    "id": "aba8e2b5-0965-4ce1-abfd-3885a44bf575",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"2b4c51f5-ae0f-4011-859f-8e60aed32eeb\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-25T11:58:11.030Z")
+  },
+  {
+    "id": "1c022350-261e-40c1-8619-281dd8623895",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"7095a84f-8c5b-438f-880f-b914eba0595a\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-25T15:58:44.702Z\",\"authorizationId\":\"37bdfe11-7811-4dbc-975f-a1bb26ca4ee4\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-25T11:58:44.713Z")
+  },
+  {
+    "id": "ac287deb-a6b1-41ee-8c20-290f649a5a95",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"7095a84f-8c5b-438f-880f-b914eba0595a\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-25T12:01:03.170Z")
+  },
+  {
+    "id": "b406b92f-eda5-4904-9842-3b9471ee92fb",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"5c0a275f-de95-49fe-8310-388491d462bb\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-25T16:01:17.288Z\",\"authorizationId\":\"37bdfe11-7811-4dbc-975f-a1bb26ca4ee4\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-25T12:01:17.303Z")
+  },
+  {
+    "id": "819cb11b-d836-4939-abe5-b670fd192d2a",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"5c0a275f-de95-49fe-8310-388491d462bb\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-25T12:01:37.834Z")
+  },
+  {
+    "id": "2da26855-ed40-4ac7-89f6-5df176d9df42",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"d26173d3-cede-479a-8631-b7ae7a5237bb\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-26T18:27:00.000Z\",\"authorizationId\":null,\"reason\":\"สอนชดเชย\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-26T07:37:38.265Z")
+  },
+  {
+    "id": "df55777d-c29d-4b87-936c-c6fd96b510ee",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"d26173d3-cede-479a-8631-b7ae7a5237bb\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-26T07:39:09.106Z")
+  },
+  {
+    "id": "05d5d813-5017-48b5-b9de-7edf4ddfc181",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"d3e1a7af-9845-4c31-99c5-fdd5efa12a82\",\"roomCode\":\"52-702\",\"slotNumber\":7,\"dueAt\":\"2026-03-26T11:49:00.000Z\",\"authorizationId\":null,\"reason\":\"กิจกรรมพิเศษ\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-26T07:49:12.560Z")
+  },
+  {
+    "id": "b69a88c3-c0e6-46ab-8cd3-d821443c86eb",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"d3e1a7af-9845-4c31-99c5-fdd5efa12a82\",\"roomCode\":\"52-702\",\"slotNumber\":7,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-26T08:32:46.188Z")
+  },
+  {
+    "id": "aacdc701-bafa-4cf9-b6ce-5205155a977c",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"36adb636-8cc5-48d1-b8ad-82fdd038f77b\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-26T12:33:02.263Z\",\"authorizationId\":\"fa93ba41-7b33-49df-97eb-88f1b53fc8a1\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-26T08:33:02.273Z")
+  },
+  {
+    "id": "da3fe569-1f5c-4a4b-b9a9-c638966eee1f",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"36adb636-8cc5-48d1-b8ad-82fdd038f77b\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-26T08:33:23.820Z")
+  },
+  {
+    "id": "beb7c48f-9f87-4724-b932-4b2538c9b97b",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"6ae71598-3415-4565-96a3-7b12971331cb\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-26T12:43:09.053Z\",\"authorizationId\":\"fa93ba41-7b33-49df-97eb-88f1b53fc8a1\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-26T08:43:09.075Z")
+  },
+  {
+    "id": "d4f5d6c2-f7de-4aed-8c06-2e90e025de35",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"6ae71598-3415-4565-96a3-7b12971331cb\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-26T09:17:03.170Z")
+  },
+  {
+    "id": "1edd9cc7-373b-4586-a898-f5cb28aca23e",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"ee9c327b-b27e-47e1-af61-23885316afb8\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-26T13:17:27.885Z\",\"authorizationId\":\"fa93ba41-7b33-49df-97eb-88f1b53fc8a1\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-26T09:17:27.902Z")
+  },
+  {
+    "id": "528f9435-67f2-49b6-8ffb-2d16031d1a5c",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"ee9c327b-b27e-47e1-af61-23885316afb8\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-26T09:18:07.055Z")
+  },
+  {
+    "id": "d0fa5407-271c-46e1-8788-89f2b5e222dc",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"3b675be1-d888-4f46-b623-0336c5724c30\",\"roomCode\":\"52-702\",\"slotNumber\":7,\"dueAt\":\"2026-03-26T14:19:00.000Z\",\"authorizationId\":null,\"reason\":\"กิจกรรมพิเศษ\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-26T09:19:13.508Z")
+  },
+  {
+    "id": "dcab3a31-26f5-47a2-accb-2d5f34b199ac",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"3b675be1-d888-4f46-b623-0336c5724c30\",\"roomCode\":\"52-702\",\"slotNumber\":7,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-26T09:27:11.713Z")
+  },
+  {
+    "id": "0aa48603-a4bc-4777-b2f7-11a35f673f50",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"95265000-cdeb-4f61-ba8a-899e1dfe04d1\",\"roomCode\":\"52-702\",\"slotNumber\":7,\"dueAt\":\"2026-03-26T13:27:00.000Z\",\"authorizationId\":null,\"reason\":\"สอนชดเชย\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-26T09:27:43.714Z")
+  },
+  {
+    "id": "26569b78-435f-4327-ac57-9a2444edace7",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"95265000-cdeb-4f61-ba8a-899e1dfe04d1\",\"roomCode\":\"52-702\",\"slotNumber\":7,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-26T09:28:47.934Z")
+  },
+  {
+    "id": "43b0be2b-3a42-4239-b42c-6348292963de",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_MOVE_AUTHORIZATION",
+    "details": "{\"moveType\":\"MOVE\",\"studentCode\":\"6702041510164\",\"fromRoom\":\"52-213\",\"toRoom\":\"52-205\",\"authorizationId\":\"fa93ba41-7b33-49df-97eb-88f1b53fc8a1\",\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-26T09:41:46.277Z")
+  },
+  {
+    "id": "f5d5180c-3267-470b-ba14-8d3a2a93415f",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"5c308e0e-90e3-43d8-89ff-9be2796326e0\",\"roomCode\":\"52-205\",\"slotNumber\":1,\"dueAt\":\"2026-03-26T13:41:56.702Z\",\"authorizationId\":\"def76998-67d1-4980-9ae6-a4d4de54a363\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-26T09:41:56.721Z")
+  },
+  {
+    "id": "c29f2d8f-3193-478a-b69e-7efbb73aaca5",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"5c308e0e-90e3-43d8-89ff-9be2796326e0\",\"roomCode\":\"52-205\",\"slotNumber\":1,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-26T10:38:45.048Z")
+  },
+  {
+    "id": "a8a88708-47fc-4e08-a62d-9391cb9e32bb",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"4bb7b3c9-f357-4ccd-851d-c9d121bee331\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-26T14:45:17.793Z\",\"authorizationId\":\"dcd9b8d2-2a14-41f9-bda6-2e0bce1aab6b\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-26T10:45:17.811Z")
+  },
+  {
+    "id": "5bef399a-84ee-40ee-939f-dbfd5731cf26",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"4bb7b3c9-f357-4ccd-851d-c9d121bee331\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-26T10:45:52.953Z")
+  },
+  {
+    "id": "2340a871-dfcf-4b77-9fe4-c7316512df20",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"824d3863-47eb-4bf6-8974-789be7022971\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-26T22:58:00.000Z\",\"authorizationId\":null,\"reason\":\"กิจกรรมพิเศษ\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-26T13:54:40.768Z")
+  },
+  {
+    "id": "11d6b4e1-179a-4bc5-bd30-06191b8b3aa9",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"824d3863-47eb-4bf6-8974-789be7022971\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-26T13:55:03.598Z")
+  },
+  {
+    "id": "0414262a-d27f-4900-b1bb-7e85afe9ef03",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"0d912b85-f9fb-4799-b4ec-694897ed9b28\",\"roomCode\":\"52-205\",\"slotNumber\":1,\"dueAt\":\"2026-03-28T08:00:00.000Z\",\"authorizationId\":null,\"reason\":\"กิจกรรมพิเศษ\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-27T08:18:28.374Z")
+  },
+  {
+    "id": "e0dd2118-4580-4edb-8b8f-1202640e8f97",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"0d912b85-f9fb-4799-b4ec-694897ed9b28\",\"roomCode\":\"52-205\",\"slotNumber\":1,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-27T08:53:18.361Z")
+  },
+  {
+    "id": "13f3fcf0-7b41-4206-8802-71da26071504",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"e30a131f-51cc-4df3-b6a2-625f40ab1d30\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-27T10:00:00.000Z\",\"authorizationId\":null,\"reason\":\"กิจกรรมพิเศษ\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-27T08:54:24.647Z")
+  },
+  {
+    "id": "3a87b70d-1c7a-4985-bce2-2a527c122817",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"e30a131f-51cc-4df3-b6a2-625f40ab1d30\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-27T09:01:17.281Z")
+  },
+  {
+    "id": "76909925-7d73-440d-abe8-a9f6f03d53dd",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"fa6a78ff-e89f-450c-8275-d8beda18cced\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-27T10:30:00.000Z\",\"authorizationId\":null,\"reason\":\"กิจกรรมพิเศษ\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-27T09:14:31.467Z")
+  },
+  {
+    "id": "7c431e8e-29eb-4e6e-8005-e0de53f88b2e",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"fa6a78ff-e89f-450c-8275-d8beda18cced\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-27T09:14:54.001Z")
+  },
+  {
+    "id": "3e29b5c8-688c-4217-ab48-909d348e11f7",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"5c187aec-685a-4c8d-a175-c738fc60aeb5\",\"roomCode\":\"52-211\",\"slotNumber\":2,\"dueAt\":\"2026-03-27T11:00:00.000Z\",\"authorizationId\":null,\"reason\":\"กิจกรรมพิเศษ\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-27T09:16:29.060Z")
+  },
+  {
+    "id": "270acef6-6dea-4a85-b755-870066ea6b3c",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"d4008f4d-3da4-4796-9549-902061be46f0\",\"roomCode\":\"52-511\",\"slotNumber\":5,\"dueAt\":\"2026-03-27T11:00:00.000Z\",\"authorizationId\":null,\"reason\":\"สอนชดเชย\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-27T09:18:17.822Z")
+  },
+  {
+    "id": "0dd0c21a-14fb-46d5-9e96-a0f1ba8165dc",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"5c187aec-685a-4c8d-a175-c738fc60aeb5\",\"roomCode\":\"52-211\",\"slotNumber\":2,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-27T09:20:07.417Z")
+  },
+  {
+    "id": "26357429-2db1-4465-8963-e643ca6267b6",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"d4008f4d-3da4-4796-9549-902061be46f0\",\"roomCode\":\"52-511\",\"slotNumber\":5,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-27T09:20:18.254Z")
+  },
+  {
+    "id": "0ede3737-4bb1-4a04-9203-73397e53fb76",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"292a3db1-86d7-4122-a7db-276fbc936808\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-27T11:00:00.000Z\",\"authorizationId\":null,\"reason\":\"ซ่อมบำรุง\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-27T09:20:33.696Z")
+  },
+  {
+    "id": "c2a83cc0-8468-4dfe-baf5-1ac6e2d1f4df",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"292a3db1-86d7-4122-a7db-276fbc936808\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-27T09:42:10.049Z")
+  },
+  {
+    "id": "86fdb8c1-80e3-4db4-87ca-53fe25a0add7",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"12580632-74ce-4768-9b00-c6199bc0a926\",\"roomCode\":\"52-205\",\"slotNumber\":1,\"dueAt\":\"2026-03-27T11:00:00.000Z\",\"authorizationId\":null,\"reason\":\"กิจกรรมพิเศษ\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-27T09:42:22.188Z")
+  },
+  {
+    "id": "4aa16a09-cf84-4908-acdb-3d33184a6d76",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"12580632-74ce-4768-9b00-c6199bc0a926\",\"roomCode\":\"52-205\",\"slotNumber\":1,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-27T09:42:51.319Z")
+  },
+  {
+    "id": "3f3497a2-e0aa-4b42-92f6-70ba371454eb",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"333aad53-90eb-4e75-990c-ee552111de21\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-27T11:00:00.000Z\",\"authorizationId\":null,\"reason\":\"กิจกรรมพิเศษ\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-27T09:43:02.506Z")
+  },
+  {
+    "id": "e8bdd690-eb1e-42f0-8d35-78896cd1f27d",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"333aad53-90eb-4e75-990c-ee552111de21\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-27T09:43:50.157Z")
+  },
+  {
+    "id": "818cdf4d-ad4f-49e5-9513-ced226d4ef2b",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"3daf0258-3d19-4de5-a4e7-58c8b8524944\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-27T11:00:00.000Z\",\"authorizationId\":null,\"reason\":\"กิจกรรมพิเศษ\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-27T09:45:31.537Z")
+  },
+  {
+    "id": "2e5e82ea-e069-4271-be21-1db2921b19f8",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"3daf0258-3d19-4de5-a4e7-58c8b8524944\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-27T09:46:41.450Z")
+  },
+  {
+    "id": "96ff0790-992b-413b-8603-02c5fc57b75c",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"434d912c-f2e3-4825-a19b-a2b8ec01102b\",\"roomCode\":\"52-511\",\"slotNumber\":5,\"dueAt\":\"2026-03-27T11:00:00.000Z\",\"authorizationId\":null,\"reason\":\"กิจกรรมพิเศษ\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-27T09:52:27.184Z")
+  },
+  {
+    "id": "71a594af-6a42-4c3b-8179-3274389fa7f9",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"434d912c-f2e3-4825-a19b-a2b8ec01102b\",\"roomCode\":\"52-511\",\"slotNumber\":5,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-27T09:54:21.939Z")
+  },
+  {
+    "id": "0726451c-6746-4c55-8a83-1e5ff0f7bd23",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"b39990fd-61c4-4694-b177-4903444c44dc\",\"roomCode\":\"52-511\",\"slotNumber\":5,\"dueAt\":\"2026-03-27T12:00:00.000Z\",\"authorizationId\":null,\"reason\":\"สอนชดเชย\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-27T10:30:10.999Z")
+  },
+  {
+    "id": "b9adc76f-b579-492c-8fc1-ff34e63965cb",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"b39990fd-61c4-4694-b177-4903444c44dc\",\"roomCode\":\"52-511\",\"slotNumber\":5,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-27T10:31:27.282Z")
+  },
+  {
+    "id": "cf4a9ee3-cc06-482f-a7ad-5dc26109a395",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"d4bfc70d-eb51-499a-af0a-fbe64e050b1c\",\"roomCode\":\"52-511\",\"slotNumber\":5,\"dueAt\":\"2026-03-27T12:00:00.000Z\",\"authorizationId\":null,\"reason\":\"สอนชดเชย\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-27T10:33:01.591Z")
+  },
+  {
+    "id": "e560c4b8-b9df-4e0e-9a20-c049300a8f7d",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"d4bfc70d-eb51-499a-af0a-fbe64e050b1c\",\"roomCode\":\"52-511\",\"slotNumber\":5,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-27T10:33:26.715Z")
+  },
+  {
+    "id": "7c008ab1-59ae-4532-8fc5-b4dd5393a8b3",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"b33cf124-8bce-4651-8e0b-0c1fafc280ca\",\"roomCode\":\"52-205\",\"slotNumber\":1,\"dueAt\":\"2026-03-27T12:00:00.000Z\",\"authorizationId\":null,\"reason\":\"สอนชดเชย\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-27T10:33:35.874Z")
+  },
+  {
+    "id": "44bff1cc-fc40-45cd-99a5-fdb3a09026a5",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"b33cf124-8bce-4651-8e0b-0c1fafc280ca\",\"roomCode\":\"52-205\",\"slotNumber\":1,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-27T10:33:52.323Z")
+  },
+  {
+    "id": "681cd8b4-dcc3-4b01-9215-4c7c71a86b08",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"002abafd-d5e7-480b-923c-9de8d33b6391\",\"roomCode\":\"52-215\",\"slotNumber\":4,\"dueAt\":\"2026-03-27T12:00:00.000Z\",\"authorizationId\":null,\"reason\":\"สอนชดเชย\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-27T10:34:38.580Z")
+  },
+  {
+    "id": "b63cff43-639c-4c25-a1a9-7fad0bed9064",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"002abafd-d5e7-480b-923c-9de8d33b6391\",\"roomCode\":\"52-215\",\"slotNumber\":4,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-27T10:35:48.101Z")
+  },
+  {
+    "id": "46408fa1-91b4-4d7d-8e9a-5da878ba476c",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"f6923481-745f-49e9-96de-612884e623ae\",\"roomCode\":\"52-511\",\"slotNumber\":5,\"dueAt\":\"2026-03-27T12:00:00.000Z\",\"authorizationId\":null,\"reason\":\"สอนชดเชย\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-27T10:38:25.556Z")
+  },
+  {
+    "id": "625bfb83-44b0-470b-ab9e-49821de1c4a0",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"f6923481-745f-49e9-96de-612884e623ae\",\"roomCode\":\"52-511\",\"slotNumber\":5,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-27T10:38:46.203Z")
+  },
+  {
+    "id": "6e46bddb-3c68-46bd-9665-28ab10eec5d1",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"a72fdf6f-4911-49b2-adc1-657d3a0ded59\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-27T12:00:00.000Z\",\"authorizationId\":null,\"reason\":\"ซ่อมบำรุง\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-27T10:49:06.395Z")
+  },
+  {
+    "id": "36f3b648-b479-4aab-b920-82a315902995",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"a72fdf6f-4911-49b2-adc1-657d3a0ded59\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-27T10:49:21.210Z")
+  },
+  {
+    "id": "82a21759-f878-435f-8e18-07b89e752a5b",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"d5566401-5657-4a41-8c2a-62b27a8d94a3\",\"roomCode\":\"52-511\",\"slotNumber\":5,\"dueAt\":\"2026-03-27T12:00:00.000Z\",\"authorizationId\":null,\"reason\":\"สอนชดเชย\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-27T10:49:35.538Z")
+  },
+  {
+    "id": "471a0ea7-510f-4780-8834-18d9cbf8f040",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"d5566401-5657-4a41-8c2a-62b27a8d94a3\",\"roomCode\":\"52-511\",\"slotNumber\":5,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-27T10:49:55.456Z")
+  },
+  {
+    "id": "ab8aa4ed-74c7-4190-98cb-04db79cceaa2",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"509a20a8-d873-49a3-8017-c7aaf78204dd\",\"roomCode\":\"52-701\",\"slotNumber\":6,\"dueAt\":\"2026-03-27T12:00:00.000Z\",\"authorizationId\":null,\"reason\":\"กิจกรรมพิเศษ\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-27T10:50:14.717Z")
+  },
+  {
+    "id": "21f2ce7c-d0bd-4942-8524-3d394eb0e3a9",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"509a20a8-d873-49a3-8017-c7aaf78204dd\",\"roomCode\":\"52-701\",\"slotNumber\":6,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-27T10:50:38.833Z")
+  },
+  {
+    "id": "4bca7c69-4103-459d-8063-4716762f646c",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"5261987b-24ae-4a22-b86f-ed56eece5974\",\"roomCode\":\"52-702\",\"slotNumber\":7,\"dueAt\":\"2026-03-27T12:00:00.000Z\",\"authorizationId\":null,\"reason\":\"ประชุม\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-27T10:51:11.442Z")
+  },
+  {
+    "id": "f0350d0a-fd14-4af8-b110-186e41dcf7cb",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"5261987b-24ae-4a22-b86f-ed56eece5974\",\"roomCode\":\"52-702\",\"slotNumber\":7,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-27T10:51:26.161Z")
+  },
+  {
+    "id": "0139b5a9-5a5b-49d4-994b-b1860376dc80",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"a498d925-bd29-4604-bdb6-06f38430e77e\",\"roomCode\":\"52-702\",\"slotNumber\":7,\"dueAt\":\"2026-03-27T12:00:00.000Z\",\"authorizationId\":null,\"reason\":\"กิจกรรมพิเศษ\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-27T10:51:36.621Z")
+  },
+  {
+    "id": "564377a8-d5f6-4916-8225-e8d5d2d37153",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"a498d925-bd29-4604-bdb6-06f38430e77e\",\"roomCode\":\"52-702\",\"slotNumber\":7,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-27T10:51:53.444Z")
+  },
+  {
+    "id": "e42bb298-a8d4-44a5-822f-f5d39bae155c",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"897ffd75-a60b-464d-a0f6-b19661e40bd5\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-27T12:00:00.000Z\",\"authorizationId\":null,\"reason\":\"กิจกรรมพิเศษ\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-27T10:59:06.565Z")
+  },
+  {
+    "id": "6949e5d4-8046-43c1-abe2-2c78f8752d98",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"897ffd75-a60b-464d-a0f6-b19661e40bd5\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-27T11:38:23.007Z")
+  },
+  {
+    "id": "59df2bcd-1a16-4fe4-8b7c-ae7e095a2460",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"5c65d865-b199-4bcf-a42b-a154a610e651\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-27T13:00:00.000Z\",\"authorizationId\":null,\"reason\":\"กิจกรรมพิเศษ\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-27T11:38:33.236Z")
+  },
+  {
+    "id": "d9e32241-ce89-4c74-8a7b-f4b613a9e985",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"5c65d865-b199-4bcf-a42b-a154a610e651\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-27T11:39:22.181Z")
+  },
+  {
+    "id": "0e5c897c-63b8-4cff-9694-ff1c956e508d",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"c130577c-9af7-4e8c-b5c0-af1165cd876c\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-27T13:00:00.000Z\",\"authorizationId\":null,\"reason\":\"สอนชดเชย\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-27T11:41:52.236Z")
+  },
+  {
+    "id": "a510ca69-ae78-40b0-b7db-fd0966327fac",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"c130577c-9af7-4e8c-b5c0-af1165cd876c\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-27T11:44:59.165Z")
+  },
+  {
+    "id": "675708b2-0d08-4689-b6a3-386c92c0148f",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"0ceb4609-e1a1-4cb7-a6f8-c254a70339c3\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-27T13:00:00.000Z\",\"authorizationId\":null,\"reason\":\"กิจกรรมพิเศษ\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-27T11:45:40.671Z")
+  },
+  {
+    "id": "684783f9-cd9b-48bd-96c2-c2620e815b3c",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"0ceb4609-e1a1-4cb7-a6f8-c254a70339c3\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-27T11:47:34.916Z")
+  },
+  {
+    "id": "a6cad538-ce79-4093-956b-dd9f343842c6",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"ad86f6a8-356e-494f-89e5-f7c6f6187ce5\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-27T13:00:00.000Z\",\"authorizationId\":null,\"reason\":\"กิจกรรมพิเศษ\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-27T11:54:07.471Z")
+  },
+  {
+    "id": "44b2b5d0-a509-4ec8-90e1-651024b38326",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"ad86f6a8-356e-494f-89e5-f7c6f6187ce5\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-27T11:54:34.530Z")
+  },
+  {
+    "id": "ddae6f70-6d48-46c4-84aa-e8bc22295618",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"b125d2f1-ce74-4865-8473-92ec0085cba1\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-27T13:00:00.000Z\",\"authorizationId\":null,\"reason\":\"กิจกรรมพิเศษ\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-27T11:58:48.118Z")
+  },
+  {
+    "id": "4c4e3657-5f9f-4a99-9e45-fbb30f1459a5",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"b125d2f1-ce74-4865-8473-92ec0085cba1\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-27T11:59:16.551Z")
+  },
+  {
+    "id": "9fc9181b-e0e4-44aa-a81d-3377f9cc9896",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"3468c3f8-c3cb-4f57-9b91-4c3bee3808c8\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-27T14:00:00.000Z\",\"authorizationId\":null,\"reason\":\"กิจกรรมพิเศษ\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-27T12:01:11.934Z")
+  },
+  {
+    "id": "de897a91-4148-445e-b86f-49cfd3bd7b7e",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"3468c3f8-c3cb-4f57-9b91-4c3bee3808c8\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-27T12:01:38.996Z")
+  },
+  {
+    "id": "55c02e4a-5c31-4f3e-9581-a57c42d9f030",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"04a9540f-4aa3-4b89-83b0-75a75d8b585e\",\"roomCode\":\"52-511\",\"slotNumber\":5,\"dueAt\":\"2026-03-27T14:00:00.000Z\",\"authorizationId\":null,\"reason\":\"ประชุม\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-27T12:01:52.631Z")
+  },
+  {
+    "id": "f8e8a1ce-47a9-408d-85bd-2b66b7b6beb6",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"04a9540f-4aa3-4b89-83b0-75a75d8b585e\",\"roomCode\":\"52-511\",\"slotNumber\":5,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-27T12:02:27.364Z")
+  },
+  {
+    "id": "384118c0-7d84-47e2-ad90-6bc274565bcd",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"60d928c4-da2a-4747-9db8-36bdb2bad7c9\",\"roomCode\":\"52-511\",\"slotNumber\":5,\"dueAt\":\"2026-03-27T14:00:00.000Z\",\"authorizationId\":null,\"reason\":\"กิจกรรมพิเศษ\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-27T12:02:56.252Z")
+  },
+  {
+    "id": "6924a3cf-c1b1-4a3c-a2ba-80df3307f929",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"60d928c4-da2a-4747-9db8-36bdb2bad7c9\",\"roomCode\":\"52-511\",\"slotNumber\":5,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-27T12:12:12.325Z")
+  },
+  {
+    "id": "8cd39dd0-4eb9-4ca3-9ec1-d7ea41d90f2a",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"287fa90d-bb4f-46c3-b918-3f2b29f5c9f5\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-27T14:00:00.000Z\",\"authorizationId\":null,\"reason\":\"กิจกรรมพิเศษ\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-27T12:12:23.029Z")
+  },
+  {
+    "id": "86222c85-38df-48fb-bb20-5174175287fb",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"287fa90d-bb4f-46c3-b918-3f2b29f5c9f5\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-27T12:12:44.899Z")
+  },
+  {
+    "id": "1fb47d27-850c-4cca-8fda-6658fd94b5b1",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"71def2b6-b935-4fb5-93ae-26020c8b5a4d\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-27T14:00:00.000Z\",\"authorizationId\":null,\"reason\":\"ซ่อมบำรุง\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-27T12:13:15.442Z")
+  },
+  {
+    "id": "4c7ff2ea-d358-4452-b82f-018fc4122113",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"71def2b6-b935-4fb5-93ae-26020c8b5a4d\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-27T12:14:35.626Z")
+  },
+  {
+    "id": "67d696d4-dc0d-4db1-b642-fe90cdc97b8f",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"ca89b623-0e80-419d-86e6-40eab38777e9\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-27T14:00:00.000Z\",\"authorizationId\":null,\"reason\":\"กิจกรรมพิเศษ\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-27T12:16:18.296Z")
+  },
+  {
+    "id": "e1f8298a-6122-43bf-9221-27dc7bde3c0c",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"ca89b623-0e80-419d-86e6-40eab38777e9\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-27T12:18:59.679Z")
+  },
+  {
+    "id": "7f76df3d-e267-4ac9-826c-cf8838b1aa86",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"9578e98b-45ac-4e7f-9315-6f8764a0da4e\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-27T14:00:00.000Z\",\"authorizationId\":null,\"reason\":\"กิจกรรมพิเศษ\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-27T12:19:22.293Z")
+  },
+  {
+    "id": "32254834-6126-476a-afaf-edcce204fa3b",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"9578e98b-45ac-4e7f-9315-6f8764a0da4e\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-27T12:35:23.369Z")
+  },
+  {
+    "id": "b3a5a202-330d-4a2c-b174-80b833e5ed57",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"9a22872b-5ec2-42c0-94e6-0384abaf9870\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-27T14:00:00.000Z\",\"authorizationId\":null,\"reason\":\"สอนชดเชย\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-27T12:36:53.690Z")
+  },
+  {
+    "id": "be88c604-2a74-45dc-9fb2-4a23f9cea893",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"9a22872b-5ec2-42c0-94e6-0384abaf9870\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-27T12:37:07.376Z")
+  },
+  {
+    "id": "650c6486-4531-4c6c-8fcc-ecf427d2a9e1",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"0548617d-e1dc-4d0e-8571-c0161df3108d\",\"roomCode\":\"52-205\",\"slotNumber\":1,\"dueAt\":\"2026-03-27T14:00:00.000Z\",\"authorizationId\":null,\"reason\":\"สอนชดเชย\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-27T12:37:53.814Z")
+  },
+  {
+    "id": "bc865c6c-625a-437d-b999-e59f58b44677",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"0548617d-e1dc-4d0e-8571-c0161df3108d\",\"roomCode\":\"52-205\",\"slotNumber\":1,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-27T12:43:21.505Z")
+  },
+  {
+    "id": "881c1f6c-6f82-4c91-a357-510f070862be",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"1818f0ad-c4a7-4ed7-a89d-fc3a19632ee9\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-27T14:00:00.000Z\",\"authorizationId\":null,\"reason\":\"สอนชดเชย\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-27T12:43:42.473Z")
+  },
+  {
+    "id": "dea54ce8-e47f-475d-92f3-810b8e3e9ec7",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"1818f0ad-c4a7-4ed7-a89d-fc3a19632ee9\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-27T12:44:31.010Z")
+  },
+  {
+    "id": "5694249e-509d-4cca-89b5-94927232c992",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"5b0ee826-bb30-4978-bc1b-d18aa842b654\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-27T14:00:00.000Z\",\"authorizationId\":null,\"reason\":\"สอนชดเชย\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-27T12:50:35.714Z")
+  },
+  {
+    "id": "3c214220-7fe2-498f-9fab-928be451a20b",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"5b0ee826-bb30-4978-bc1b-d18aa842b654\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-27T12:50:55.823Z")
+  },
+  {
+    "id": "7277ac0f-8774-4fa8-af5f-4e8236074f1b",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"e911e844-a0b0-4e7b-afcf-f947bc296079\",\"roomCode\":\"52-205\",\"slotNumber\":1,\"dueAt\":\"2026-03-27T14:00:00.000Z\",\"authorizationId\":null,\"reason\":\"สอนชดเชย\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-27T12:51:49.420Z")
+  },
+  {
+    "id": "a2c9a175-ddf1-4798-80bc-e6aff9ecdaf8",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"e911e844-a0b0-4e7b-afcf-f947bc296079\",\"roomCode\":\"52-205\",\"slotNumber\":1,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-27T12:52:04.866Z")
+  },
+  {
+    "id": "366a5496-6da1-47d7-863e-679d30d0de51",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"98371a7a-d147-41af-9bb3-e1c5d81eee0c\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-27T14:00:00.000Z\",\"authorizationId\":null,\"reason\":\"สอนชดเชย\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-27T12:56:06.028Z")
+  },
+  {
+    "id": "c52b7fa2-259b-4127-b925-26a34cac4027",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"98371a7a-d147-41af-9bb3-e1c5d81eee0c\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-27T12:56:22.735Z")
+  },
+  {
+    "id": "21097f0d-6ee3-4dd1-bc55-c852f2007072",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"c70d7f34-c684-4c01-b4ed-9b36aa113b2c\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-27T15:00:00.000Z\",\"authorizationId\":null,\"reason\":\"กิจกรรมพิเศษ\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-27T12:58:48.707Z")
+  },
+  {
+    "id": "a97849b2-2209-4f4a-8473-85771f48c7ab",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"c70d7f34-c684-4c01-b4ed-9b36aa113b2c\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-27T12:59:19.373Z")
+  },
+  {
+    "id": "0724e257-5cf7-4902-a962-0bb2f72d967b",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"4c8fa53a-17a3-4718-9f3f-506e0510a3fe\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-27T14:00:00.000Z\",\"authorizationId\":null,\"reason\":\"กิจกรรมพิเศษ\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-27T12:59:35.127Z")
+  },
+  {
+    "id": "21e8af96-f902-4db2-9f87-0290814decc6",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"4c8fa53a-17a3-4718-9f3f-506e0510a3fe\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-27T13:00:01.381Z")
+  },
+  {
+    "id": "573c5218-1f9c-4dfc-aea3-139bb3ee4a57",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"20e5c5ee-e8c7-4a63-b395-2f9cf1adb99c\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-27T17:01:36.201Z\",\"authorizationId\":\"7d02a08b-0458-4a14-a894-7eb26b8eaaa5\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-27T13:01:36.216Z")
+  },
+  {
+    "id": "ffcd47bf-fff0-40c1-9019-65cc06ddafdd",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"20e5c5ee-e8c7-4a63-b395-2f9cf1adb99c\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":720,\"penaltyScore\":240,\"isLate\":true,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-28T05:32:28.349Z")
+  },
+  {
+    "id": "5b12d1e6-de79-4cd6-98fe-4e191895d494",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"d9098080-c5be-4f6a-9c73-97f5353255f0\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-28T07:00:00.000Z\",\"authorizationId\":null,\"reason\":\"สอนชดเชย\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-28T05:37:24.437Z")
+  },
+  {
+    "id": "e936b842-cba1-47ec-825b-712ca71e67e3",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"d9098080-c5be-4f6a-9c73-97f5353255f0\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-28T05:37:54.383Z")
+  },
+  {
+    "id": "1a016ac1-696a-4f23-86a0-98d20c2795f1",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"0e8eb1cc-7b3f-4f58-a9ad-a8d98c161fc8\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-28T09:39:14.135Z\",\"authorizationId\":\"a4e9a5d5-b01f-4c31-83ca-92f54922fe19\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-28T05:39:14.154Z")
+  },
+  {
+    "id": "f463e365-323b-444d-8d21-7bafb44289b4",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_TRANSFER_AUTHORIZATION",
+    "details": "{\"transferType\":\"AUTHORIZATION_ONLY\",\"bookingId\":null,\"roomCode\":\"52-213\",\"giver\":\"6702041510164\",\"receiver\":\"6702041510181\",\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-28T05:51:56.486Z")
+  },
+  {
+    "id": "0abd2743-6df4-4219-9234-c1e1cd802c98",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"0e8eb1cc-7b3f-4f58-a9ad-a8d98c161fc8\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-28T05:53:46.731Z")
+  },
+  {
+    "id": "8bd97e8b-a8bc-443a-b952-f161d0fc267d",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"2afebef8-e7f0-4c36-83d4-17b8f05d693b\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-28T07:00:00.000Z\",\"authorizationId\":null,\"reason\":\"กิจกรรมพิเศษ\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-28T05:54:57.212Z")
+  },
+  {
+    "id": "dac0a192-00db-4711-a23e-12948c830f65",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"70836e88-7afb-41ce-9d63-7d1215d14ca8\",\"roomCode\":\"52-215\",\"slotNumber\":4,\"dueAt\":\"2026-03-28T07:30:00.000Z\",\"authorizationId\":null,\"reason\":\"สอนชดเชย\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-28T05:57:04.979Z")
+  },
+  {
+    "id": "190e3eda-16d0-4228-a368-edd0c047000d",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"2afebef8-e7f0-4c36-83d4-17b8f05d693b\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-28T05:59:40.283Z")
+  },
+  {
+    "id": "c50b3a39-cd74-440b-87f4-9167484e21c7",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"70836e88-7afb-41ce-9d63-7d1215d14ca8\",\"roomCode\":\"52-215\",\"slotNumber\":4,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-28T05:59:57.803Z")
+  },
+  {
+    "id": "e5f831a9-ad8e-4003-a28e-1488663d5e25",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"f0712216-df7e-4e95-9076-fbfbe73036f9\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-28T08:00:00.000Z\",\"authorizationId\":null,\"reason\":\"กิจกรรมพิเศษ\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-28T06:00:13.857Z")
+  },
+  {
+    "id": "9f7201f6-6892-44cb-8e6d-075f9c92120e",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"76f9739e-c175-4b8b-b899-80b4caffbf95\",\"roomCode\":\"52-215\",\"slotNumber\":4,\"dueAt\":\"2026-03-28T08:00:00.000Z\",\"authorizationId\":null,\"reason\":\"สอนชดเชย\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-28T06:00:38.049Z")
+  },
+  {
+    "id": "98ed1d5d-f967-4b29-9184-f8cfdd9faab2",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_SWAP_KEY_ACTIVE",
+    "details": "{\"swapType\":\"ACTIVE_BOOKINGS\",\"userA\":{\"studentCode\":\"6702041510164\",\"fromRoom\":\"52-213\",\"hadBooking\":true},\"userB\":{\"studentCode\":\"6702041510181\",\"fromRoom\":\"52-215\",\"hadBooking\":true},\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-28T06:06:47.707Z")
+  },
+  {
+    "id": "921b832d-750a-4ef2-90c9-a8d20083346e",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_SWAP_KEY_ACTIVE",
+    "details": "{\"swapType\":\"ACTIVE_BOOKINGS\",\"userA\":{\"studentCode\":\"6702041510164\",\"fromRoom\":\"52-215\",\"hadBooking\":true},\"userB\":{\"studentCode\":\"6702041510181\",\"fromRoom\":\"52-213\",\"hadBooking\":true},\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-28T06:07:49.944Z")
+  },
+  {
+    "id": "55c60e7c-010f-409c-9a05-aa43dc32ebb5",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"f0712216-df7e-4e95-9076-fbfbe73036f9\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-28T06:08:40.819Z")
+  },
+  {
+    "id": "57e3ffd9-fc6c-411d-a1a3-543f79fdb4df",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"76f9739e-c175-4b8b-b899-80b4caffbf95\",\"roomCode\":\"52-215\",\"slotNumber\":4,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-28T06:09:35.319Z")
+  },
+  {
+    "id": "59515d16-6ed6-422e-9553-0885bfb7a7c2",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"0a2450cb-54b5-41ca-8d7e-cc36d21d5f3e\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-30T09:00:00.000Z\",\"authorizationId\":null,\"reason\":\"สอนชดเชย\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-30T07:52:37.167Z")
+  },
+  {
+    "id": "ef852979-1898-4b26-b788-85105eee6d35",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"0a2450cb-54b5-41ca-8d7e-cc36d21d5f3e\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-30T07:53:00.386Z")
+  },
+  {
+    "id": "f7bb4a86-7e9b-4c98-b235-8b34e0769601",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"f9c470ab-48de-4f79-8cbf-43956a6e8336\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-30T12:07:50.561Z\",\"authorizationId\":\"33031cd2-64df-4b66-b4be-c93cd5f1e145\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-30T08:07:50.578Z")
+  },
+  {
+    "id": "48a20081-0e2f-4ec7-aadd-3f5166321ccf",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"b0560488-549e-4ae6-ae64-422af900c9c2\",\"roomCode\":\"52-215\",\"slotNumber\":4,\"dueAt\":\"2026-03-30T10:00:00.000Z\",\"authorizationId\":null,\"reason\":\"สอนชดเชย\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-30T08:08:37.177Z")
+  },
+  {
+    "id": "917fd466-6721-4700-83f3-f0771c760954",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"b0560488-549e-4ae6-ae64-422af900c9c2\",\"roomCode\":\"52-215\",\"slotNumber\":4,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-30T08:08:58.261Z")
+  },
+  {
+    "id": "1c11139e-4e53-4d84-8f8c-ffc5750629eb",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"f9c470ab-48de-4f79-8cbf-43956a6e8336\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-30T08:09:17.435Z")
+  },
+  {
+    "id": "39c9dc69-647c-4466-932d-7d47cb012516",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"7aabfe21-ad8d-429d-8221-59e87464e8e9\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-30T12:14:35.059Z\",\"authorizationId\":\"4aa36633-4d52-456d-8c48-14f4a117e0c2\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-30T08:14:35.076Z")
+  },
+  {
+    "id": "98e121df-7edf-46e7-bc1e-c26f21c0a7c5",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"7aabfe21-ad8d-429d-8221-59e87464e8e9\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-30T08:16:07.322Z")
+  },
+  {
+    "id": "75ee3ebf-8bb2-426f-9528-8b62745977b9",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"4bb88bd7-7f87-44f8-802d-7dbc4f59577c\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-30T12:17:03.283Z\",\"authorizationId\":\"4aa36633-4d52-456d-8c48-14f4a117e0c2\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-30T08:17:03.300Z")
+  },
+  {
+    "id": "dd5f17c6-1bcf-4923-a4cd-7c787247ff34",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"4bb88bd7-7f87-44f8-802d-7dbc4f59577c\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-30T08:18:43.101Z")
+  },
+  {
+    "id": "e737ae5b-f97c-43a0-a3f3-7746bf1fbc53",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"8af16c23-9ec2-4b64-a724-a31eb17c6e13\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-30T13:15:43.195Z\",\"authorizationId\":\"4aa36633-4d52-456d-8c48-14f4a117e0c2\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-30T09:15:43.214Z")
+  },
+  {
+    "id": "6f09017e-0e42-4bd8-8b20-580bf4c12ed5",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"8af16c23-9ec2-4b64-a724-a31eb17c6e13\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-30T09:17:22.036Z")
+  },
+  {
+    "id": "cc0d5f4d-2cb4-4b92-9d32-5313fee98ce0",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"497e11fc-46fc-4e92-bb64-3e0cc601e35e\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-30T15:16:46.851Z\",\"authorizationId\":\"33031cd2-64df-4b66-b4be-c93cd5f1e145\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-30T11:16:46.877Z")
+  },
+  {
+    "id": "d64b730a-b02c-4e53-bfed-dd80f202b134",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"19ced70e-9f55-4716-9d62-f37d30a310cb\",\"roomCode\":\"52-215\",\"slotNumber\":4,\"dueAt\":\"2026-03-30T13:00:00.000Z\",\"authorizationId\":null,\"reason\":\"สอนชดเชย\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-30T11:28:51.170Z")
+  },
+  {
+    "id": "88e06f98-80cc-42d2-bd41-3356763082f4",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"497e11fc-46fc-4e92-bb64-3e0cc601e35e\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-30T11:30:45.147Z")
+  },
+  {
+    "id": "e5a77c36-6ac0-433e-b09c-5e50f6c522e2",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"19ced70e-9f55-4716-9d62-f37d30a310cb\",\"roomCode\":\"52-215\",\"slotNumber\":4,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-30T11:34:18.589Z")
+  },
+  {
+    "id": "7b7d9127-9355-47d5-8233-83b4aa81202c",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"c7832d7f-a168-483a-b4c2-d07ca3dccacc\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-31T08:00:00.000Z\",\"authorizationId\":null,\"reason\":\"กิจกรรมพิเศษ\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-31T06:48:37.192Z")
+  },
+  {
+    "id": "20254823-470d-4182-b847-5ddc19722058",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"e2f3c7ca-8f36-4ce1-a55d-ba268b23bdfb\",\"roomCode\":\"52-215\",\"slotNumber\":4,\"dueAt\":\"2026-03-31T08:00:00.000Z\",\"authorizationId\":null,\"reason\":\"กิจกรรมพิเศษ\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-31T06:49:08.088Z")
+  },
+  {
+    "id": "29893631-92dc-4a31-b993-ccf236ecc5f0",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_SWAP_KEY_ACTIVE",
+    "details": "{\"swapType\":\"ACTIVE_BOOKINGS\",\"userA\":{\"studentCode\":\"6702041510164\",\"fromRoom\":\"52-213\",\"hadBooking\":true},\"userB\":{\"studentCode\":\"6702041510181\",\"fromRoom\":\"52-215\",\"hadBooking\":true},\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-31T06:49:24.297Z")
+  },
+  {
+    "id": "2fc8960a-090e-4429-87a7-99e536eeb7c1",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"e2f3c7ca-8f36-4ce1-a55d-ba268b23bdfb\",\"roomCode\":\"52-215\",\"slotNumber\":4,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-31T06:51:16.989Z")
+  },
+  {
+    "id": "f1863fa4-bb2d-4bb8-842a-7ca8ef9112cd",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"c7832d7f-a168-483a-b4c2-d07ca3dccacc\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-31T06:51:31.179Z")
+  },
+  {
+    "id": "0fde4cff-4f68-48dc-be05-f69f58bcba57",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"c90d3ff0-919a-458d-9aca-4ebe52334279\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-31T11:24:37.232Z\",\"authorizationId\":\"dcb2dc0e-cb9d-4c5e-9fd1-26ac9bdb8854\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-31T07:24:37.254Z")
+  },
+  {
+    "id": "5428108e-7936-4e1f-a95e-ae4c160c043b",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"fbe5e409-91c4-4277-a4ae-25f5983095e0\",\"roomCode\":\"52-205\",\"slotNumber\":1,\"dueAt\":\"2026-03-31T11:00:00.000Z\",\"authorizationId\":null,\"reason\":\"กิจกรรมพิเศษ\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-31T07:25:11.230Z")
+  },
+  {
+    "id": "3d54bd87-4bc5-4c95-8f78-4b13af092388",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"fbe5e409-91c4-4277-a4ae-25f5983095e0\",\"roomCode\":\"52-205\",\"slotNumber\":1,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-31T07:31:27.212Z")
+  },
+  {
+    "id": "73839a40-eafb-4682-963e-a9d2a8764ab1",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"20f3c519-5897-4b98-9430-3192bb0f3557\",\"roomCode\":\"52-205\",\"slotNumber\":1,\"dueAt\":\"2026-03-31T08:30:00.000Z\",\"authorizationId\":null,\"reason\":\"กิจกรรมพิเศษ\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-31T07:47:41.268Z")
+  },
+  {
+    "id": "63191f30-e87b-43a2-b48f-39c656d93889",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_KEY_PULLED",
+    "details": "{\"bookingId\":\"20f3c519-5897-4b98-9430-3192bb0f3557\",\"roomCode\":\"52-205\",\"slotNumber\":1,\"message\":\"Physical key successfully removed from slot\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-31T07:47:46.897Z")
+  },
+  {
+    "id": "f3844816-4f68-4944-9690-85f1f0edb7ab",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_SWAP_KEY_ACTIVE",
+    "details": "{\"swapType\":\"ACTIVE_BOOKINGS\",\"userA\":{\"studentCode\":\"6702041510164\",\"fromRoom\":\"52-213\",\"hadBooking\":true},\"userB\":{\"studentCode\":\"6702041510181\",\"fromRoom\":\"52-205\",\"hadBooking\":true},\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": "127.0.0.1",
+    "createdAt": new Date("2026-03-31T08:28:00.498Z")
+  },
+  {
+    "id": "e3fa94fd-b48a-44f0-8858-a5d24c0711c9",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_SWAP_KEY_ACTIVE",
+    "details": "{\"swapType\":\"ACTIVE_BOOKINGS\",\"userA\":{\"studentCode\":\"6702041510181\",\"fromRoom\":\"52-213\",\"hadBooking\":true},\"userB\":{\"studentCode\":\"6702041510164\",\"fromRoom\":\"52-205\",\"hadBooking\":true},\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-31T08:44:51.387Z")
+  },
+  {
+    "id": "a350a42d-f573-414f-bcfb-b9c23a74ffb9",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"c90d3ff0-919a-458d-9aca-4ebe52334279\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":337,\"penaltyScore\":115,\"isLate\":true,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-31T10:07:43.407Z")
+  },
+  {
+    "id": "e47cd39c-4b9f-4d02-9ffa-34126e1bd30e",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"20f3c519-5897-4b98-9430-3192bb0f3557\",\"roomCode\":\"52-205\",\"slotNumber\":1,\"lateMinutes\":68,\"penaltyScore\":25,\"isLate\":true,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-31T10:08:19.542Z")
+  },
+  {
+    "id": "b85a5c06-8023-411f-9961-1947955f6f03",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"8898f24e-3cc1-48fe-a179-8cfcaeb43de7\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-31T14:35:35.356Z\",\"authorizationId\":\"34eaa36f-3df5-42fc-9bcf-eb4b08ed5b98\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-31T10:35:35.375Z")
+  },
+  {
+    "id": "3e4d194d-4f22-4c7c-8e82-6313a602c0dc",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_KEY_PULLED",
+    "details": "{\"bookingId\":\"8898f24e-3cc1-48fe-a179-8cfcaeb43de7\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"message\":\"Physical key successfully removed from slot\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-31T10:35:38.763Z")
+  },
+  {
+    "id": "ce084e59-637d-46af-a6db-528fb1b270c3",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"cff7ddef-364c-4001-8861-47e2b24c2608\",\"roomCode\":\"52-205\",\"slotNumber\":1,\"dueAt\":\"2026-03-31T14:35:50.304Z\",\"authorizationId\":\"0ccf8093-c7fb-4265-9e99-c0774fabb033\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-31T10:35:50.318Z")
+  },
+  {
+    "id": "64bda090-f3bb-453a-a4e5-39ba79a080ad",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_KEY_PULLED",
+    "details": "{\"bookingId\":\"cff7ddef-364c-4001-8861-47e2b24c2608\",\"roomCode\":\"52-205\",\"slotNumber\":1,\"message\":\"Physical key successfully removed from slot\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-31T10:35:53.866Z")
+  },
+  {
+    "id": "f7c0c1c3-5e6e-4442-a8b6-fa0771285eb4",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"8898f24e-3cc1-48fe-a179-8cfcaeb43de7\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-31T10:36:09.947Z")
+  },
+  {
+    "id": "9b1e5f43-4a61-44f9-a1ce-a3e145b4d691",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"97ff4d78-5b32-4caa-91d0-5407034b7558\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-31T14:36:20.322Z\",\"authorizationId\":\"34eaa36f-3df5-42fc-9bcf-eb4b08ed5b98\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-31T10:36:20.337Z")
+  },
+  {
+    "id": "498dd319-2f97-4016-be0d-bf58ce302c65",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"cff7ddef-364c-4001-8861-47e2b24c2608\",\"roomCode\":\"52-205\",\"slotNumber\":1,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-31T10:36:40.082Z")
+  },
+  {
+    "id": "44924538-4e3f-4a65-ac7c-7c58e5cc175d",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"97ff4d78-5b32-4caa-91d0-5407034b7558\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-31T10:36:50.401Z")
+  },
+  {
+    "id": "5a1936aa-df68-434a-910e-2e422572de4c",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"39ab9fb7-ee4a-49af-b39d-878db5129b1e\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-31T14:38:09.724Z\",\"authorizationId\":\"34eaa36f-3df5-42fc-9bcf-eb4b08ed5b98\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-31T10:38:09.741Z")
+  },
+  {
+    "id": "91613f55-1944-4b5c-b9e7-35d54db64f7f",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"939f8c58-344d-4932-8b25-9727b70bc913\",\"roomCode\":\"52-205\",\"slotNumber\":1,\"dueAt\":\"2026-03-31T14:38:38.540Z\",\"authorizationId\":\"0ccf8093-c7fb-4265-9e99-c0774fabb033\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-31T10:38:38.556Z")
+  },
+  {
+    "id": "0c6f4f46-c552-455f-8c50-95f71282d99f",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"39ab9fb7-ee4a-49af-b39d-878db5129b1e\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-31T10:38:55.457Z")
+  },
+  {
+    "id": "72460973-62fb-48c1-9cbe-472e0b62ce6a",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"42411938-896a-4638-9ab0-e6b8014f7d06\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-31T14:40:09.221Z\",\"authorizationId\":\"34eaa36f-3df5-42fc-9bcf-eb4b08ed5b98\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-31T10:40:09.235Z")
+  },
+  {
+    "id": "f7aa40cc-599d-49ca-aecd-a6d15e26edbd",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_KEY_PULLED",
+    "details": "{\"bookingId\":\"42411938-896a-4638-9ab0-e6b8014f7d06\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"message\":\"Physical key successfully removed from slot\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-31T10:40:12.156Z")
+  },
+  {
+    "id": "855990f7-ed45-4892-80e7-aa35439da558",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"42411938-896a-4638-9ab0-e6b8014f7d06\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-31T10:42:20.972Z")
+  },
+  {
+    "id": "3520cf7e-5f2f-4f51-91e0-a90bf4bac26c",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"939f8c58-344d-4932-8b25-9727b70bc913\",\"roomCode\":\"52-205\",\"slotNumber\":1,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-31T10:42:34.951Z")
+  },
+  {
+    "id": "92b974fc-717b-4f6a-bea9-844e4753f2d9",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"d9abb127-d299-42ff-984f-e2838ce07ca2\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-31T14:43:38.325Z\",\"authorizationId\":\"34eaa36f-3df5-42fc-9bcf-eb4b08ed5b98\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-31T10:43:38.335Z")
+  },
+  {
+    "id": "ab5172be-fc52-442e-82ce-e2a1beafc9a7",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_KEY_PULLED",
+    "details": "{\"bookingId\":\"d9abb127-d299-42ff-984f-e2838ce07ca2\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"message\":\"Physical key successfully removed from slot\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-31T10:43:41.153Z")
+  },
+  {
+    "id": "0d0ea6b7-9257-46b4-ae72-ff3f467e23d8",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"d9abb127-d299-42ff-984f-e2838ce07ca2\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-31T10:47:08.791Z")
+  },
+  {
+    "id": "15422278-9f05-411d-ad02-94f359da36e9",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"1ec980cf-3ea9-4bed-a0bf-a8a6ca2e6bbd\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-03-31T14:50:58.875Z\",\"authorizationId\":\"34eaa36f-3df5-42fc-9bcf-eb4b08ed5b98\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-31T10:50:58.893Z")
+  },
+  {
+    "id": "11ce62ef-c396-4eb4-9448-799b743f02cd",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_KEY_PULLED",
+    "details": "{\"bookingId\":\"1ec980cf-3ea9-4bed-a0bf-a8a6ca2e6bbd\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"message\":\"Physical key successfully removed from slot\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-31T10:51:02.876Z")
+  },
+  {
+    "id": "755400e5-dd1b-453c-9c0c-bc6e47e63da4",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_TRANSFER_KEY_ACTIVE",
+    "details": "{\"transferType\":\"ACTIVE_BOOKING\",\"bookingId\":\"1ec980cf-3ea9-4bed-a0bf-a8a6ca2e6bbd\",\"roomCode\":\"52-213\",\"giver\":\"6702041510164\",\"receiver\":\"6702041510181\",\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-31T11:17:54.676Z")
+  },
+  {
+    "id": "cc68135c-9024-4c8a-98e6-fb7cde6223d9",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"5413229d-c821-4d5a-b10a-a219975dc108\",\"roomCode\":\"52-211\",\"slotNumber\":2,\"dueAt\":\"2026-03-31T13:00:00.000Z\",\"authorizationId\":null,\"reason\":\"กิจกรรมพิเศษ\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-31T11:18:41.964Z")
+  },
+  {
+    "id": "5a07997f-2378-4821-87ba-92c75af11313",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_KEY_PULLED",
+    "details": "{\"bookingId\":\"5413229d-c821-4d5a-b10a-a219975dc108\",\"roomCode\":\"52-211\",\"slotNumber\":2,\"message\":\"Physical key successfully removed from slot\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-31T11:18:45.191Z")
+  },
+  {
+    "id": "45e22a01-808d-4929-a725-8dcaf7b56dbe",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"1ec980cf-3ea9-4bed-a0bf-a8a6ca2e6bbd\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-31T11:19:03.317Z")
+  },
+  {
+    "id": "6349e94b-a9e1-48ba-b6e7-57230283f9de",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"5413229d-c821-4d5a-b10a-a219975dc108\",\"roomCode\":\"52-211\",\"slotNumber\":2,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-03-31T11:19:20.119Z")
+  },
+  {
+    "id": "e3aa3f29-a83e-42ae-9f67-b482335d3952",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"853eacb9-4ea4-4731-a1f0-d0f78891141f\",\"roomCode\":\"52-702\",\"slotNumber\":7,\"dueAt\":\"2026-04-02T08:00:00.000Z\",\"authorizationId\":null,\"reason\":\"สอนชดเชย\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-04-02T06:52:48.786Z")
+  },
+  {
+    "id": "0fef539f-bff2-4470-855c-9268b9aac0ea",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_KEY_PULLED",
+    "details": "{\"bookingId\":\"853eacb9-4ea4-4731-a1f0-d0f78891141f\",\"roomCode\":\"52-702\",\"slotNumber\":7,\"message\":\"Physical key successfully removed from slot\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-04-02T06:52:52.217Z")
+  },
+  {
+    "id": "0ea5c292-710b-4154-8fcc-767217875071",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"853eacb9-4ea4-4731-a1f0-d0f78891141f\",\"roomCode\":\"52-702\",\"slotNumber\":7,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-04-02T06:53:08.054Z")
+  },
+  {
+    "id": "d2b494ae-19a5-4d29-85e9-3aaf7cdeeb5e",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"54bacfe4-513d-4d6f-83a5-70322cfef374\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-04-02T08:00:00.000Z\",\"authorizationId\":null,\"reason\":\"สอนชดเชย\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-04-02T06:53:23.425Z")
+  },
+  {
+    "id": "cd7ce346-0f65-403a-8d0b-fa49bcb43676",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_KEY_PULLED",
+    "details": "{\"bookingId\":\"54bacfe4-513d-4d6f-83a5-70322cfef374\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"message\":\"Physical key successfully removed from slot\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-04-02T06:53:25.767Z")
+  },
+  {
+    "id": "8dd2eb7a-215f-486f-a145-7827426bb3f5",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"54bacfe4-513d-4d6f-83a5-70322cfef374\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-04-02T06:53:55.514Z")
+  },
+  {
+    "id": "489bdc6d-adea-4265-a920-99103faea5b2",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"093e99fa-9b5a-442d-ba70-cde9fe74fc17\",\"roomCode\":\"52-211\",\"slotNumber\":2,\"dueAt\":\"2026-04-07T08:00:00.000Z\",\"authorizationId\":null,\"reason\":\"กิจกรรมพิเศษ\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-04-07T06:05:19.175Z")
+  },
+  {
+    "id": "7320cf6e-b3cd-40bd-9c6a-fa87d354349f",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_KEY_PULLED",
+    "details": "{\"bookingId\":\"093e99fa-9b5a-442d-ba70-cde9fe74fc17\",\"roomCode\":\"52-211\",\"slotNumber\":2,\"message\":\"Physical key successfully removed from slot\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-04-07T06:05:21.781Z")
+  },
+  {
+    "id": "7f3f1e2f-cef1-478c-acb9-688caf126424",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"a1b1cd76-46cf-4d3a-99a2-2d3fca12eb61\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-04-07T08:00:00.000Z\",\"authorizationId\":null,\"reason\":\"กิจกรรมพิเศษ\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-04-07T06:05:40.406Z")
+  },
+  {
+    "id": "edf5217c-e871-4cc9-9923-a3cef9cc512a",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_KEY_PULLED",
+    "details": "{\"bookingId\":\"a1b1cd76-46cf-4d3a-99a2-2d3fca12eb61\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"message\":\"Physical key successfully removed from slot\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-04-07T06:05:44.646Z")
+  },
+  {
+    "id": "7a108014-ffcc-4666-be49-3d18c24bcc9b",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"a1b1cd76-46cf-4d3a-99a2-2d3fca12eb61\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-04-07T06:06:10.862Z")
+  },
+  {
+    "id": "931677ec-ad0f-472a-97a9-8c615311f3bf",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "AUTO_RECONCILE_RETURN",
+    "details": "{\"bookingId\":\"093e99fa-9b5a-442d-ba70-cde9fe74fc17\",\"roomCode\":\"52-211\",\"slotNumber\":2,\"detectedUid\":\"04:B3:C4:09:30:02:89\",\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"message\":\"กุญแจถูกคืนมาแล้ว (ตรวจพบจาก NFC อัตโนมัติ)\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-04-07T06:06:28.937Z")
+  },
+  {
+    "id": "7d17bd31-8d66-41ed-99c9-ca73d420fbec",
+    "userId": "d3e0d5c5-4d60-469b-8754-675804901c53",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"c538ddeb-739a-4166-be55-f67daacf7db8\",\"roomCode\":\"52-205\",\"slotNumber\":1,\"dueAt\":null,\"authorizationId\":null,\"reason\":\"เบิกโดยอาจารย์\",\"source\":\"FACE_SCANNER_PRIVILEGED\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-04-07T06:48:04.637Z")
+  },
+  {
+    "id": "21d95eff-5f39-4f9a-b4bd-8786a8cfc939",
+    "userId": "d3e0d5c5-4d60-469b-8754-675804901c53",
+    "action": "HARDWARE_KEY_PULLED",
+    "details": "{\"bookingId\":\"c538ddeb-739a-4166-be55-f67daacf7db8\",\"roomCode\":\"52-205\",\"slotNumber\":1,\"message\":\"Physical key successfully removed from slot\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-04-07T06:48:09.306Z")
+  },
+  {
+    "id": "94d9a5a5-601b-4956-b586-99033bc4f3f3",
+    "userId": "d3e0d5c5-4d60-469b-8754-675804901c53",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"c538ddeb-739a-4166-be55-f67daacf7db8\",\"roomCode\":\"52-205\",\"slotNumber\":1,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-04-07T06:48:25.897Z")
+  },
+  {
+    "id": "59af6e79-3a18-4ab4-ae8b-1f917fa4e2fa",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"5370e849-451d-462c-9cc6-485d96ea5f72\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-04-07T08:00:00.000Z\",\"authorizationId\":null,\"reason\":\"สอนชดเชย\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-04-07T06:49:28.271Z")
+  },
+  {
+    "id": "fc316b10-38d3-4d2f-8f80-1e1f8f730369",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_KEY_PULLED",
+    "details": "{\"bookingId\":\"5370e849-451d-462c-9cc6-485d96ea5f72\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"message\":\"Physical key successfully removed from slot\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-04-07T06:49:30.900Z")
+  },
+  {
+    "id": "ab810e8b-588a-4e45-9ba9-8bc9bc293353",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "AUTO_RECONCILE_RETURN",
+    "details": "{\"bookingId\":\"5370e849-451d-462c-9cc6-485d96ea5f72\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"detectedUid\":\"04:63:40:A5:30:02:89\",\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"message\":\"กุญแจถูกคืนมาแล้ว (ตรวจพบจาก NFC อัตโนมัติ)\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-04-07T06:49:41.045Z")
+  },
+  {
+    "id": "4739c5e2-277e-43a1-a0d0-cffb017c612f",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"7db29bc8-8c19-4e7a-a2d3-6feb6968e8a3\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-04-07T09:00:00.000Z\",\"authorizationId\":null,\"reason\":\"สอนชดเชย\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-04-07T07:13:12.015Z")
+  },
+  {
+    "id": "21a47253-93e0-412b-b500-245b168baedc",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_KEY_PULLED",
+    "details": "{\"bookingId\":\"7db29bc8-8c19-4e7a-a2d3-6feb6968e8a3\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"message\":\"Physical key successfully removed from slot\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-04-07T07:13:14.890Z")
+  },
+  {
+    "id": "45e29613-e568-4ed8-8da5-0c7c2a9ff85c",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "AUTO_RECONCILE_RETURN",
+    "details": "{\"bookingId\":\"7db29bc8-8c19-4e7a-a2d3-6feb6968e8a3\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"detectedUid\":\"04:63:40:A5:30:02:89\",\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"message\":\"กุญแจถูกคืนมาแล้ว (ตรวจพบจาก NFC อัตโนมัติ)\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-04-07T07:28:49.374Z")
+  },
+  {
+    "id": "a4881bbf-39d6-4eec-92be-43bf15ada925",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"7e585759-9c14-4561-b32f-2530b21704bb\",\"roomCode\":\"52-2 ครึ่ง\",\"slotNumber\":8,\"dueAt\":\"2026-04-07T09:00:00.000Z\",\"authorizationId\":null,\"reason\":\"สอนชดเชย\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-04-07T07:28:56.054Z")
+  },
+  {
+    "id": "b7b91369-d360-40d6-adcf-9ba8fee90579",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_KEY_PULLED",
+    "details": "{\"bookingId\":\"7e585759-9c14-4561-b32f-2530b21704bb\",\"roomCode\":\"52-2 ครึ่ง\",\"slotNumber\":8,\"message\":\"Physical key successfully removed from slot\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-04-07T07:28:58.916Z")
+  },
+  {
+    "id": "72f724f7-9a9a-4ee7-821f-f82003e6ebeb",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "AUTO_RECONCILE_RETURN",
+    "details": "{\"bookingId\":\"7e585759-9c14-4561-b32f-2530b21704bb\",\"roomCode\":\"52-2 ครึ่ง\",\"slotNumber\":8,\"detectedUid\":\"04:C3:0F:57:30:02:89\",\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"message\":\"กุญแจถูกคืนมาแล้ว (ตรวจพบจาก NFC อัตโนมัติ)\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-04-07T07:49:22.685Z")
+  },
+  {
+    "id": "c31a1c51-826b-43e4-8f21-b0fb28a2e64f",
+    "userId": "d3e0d5c5-4d60-469b-8754-675804901c53",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"2121df2c-092a-40b7-9079-84ea7cc6a8b6\",\"roomCode\":\"52-2 ครึ่ง\",\"slotNumber\":8,\"dueAt\":null,\"authorizationId\":null,\"reason\":\"เบิกโดยอาจารย์\",\"source\":\"FACE_SCANNER_PRIVILEGED\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-04-07T07:49:32.993Z")
+  },
+  {
+    "id": "533e1ee1-da3f-45cb-b0e5-b453be5fbb69",
+    "userId": "d3e0d5c5-4d60-469b-8754-675804901c53",
+    "action": "HARDWARE_KEY_PULLED",
+    "details": "{\"bookingId\":\"2121df2c-092a-40b7-9079-84ea7cc6a8b6\",\"roomCode\":\"52-2 ครึ่ง\",\"slotNumber\":8,\"message\":\"Physical key successfully removed from slot\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-04-07T07:49:36.515Z")
+  },
+  {
+    "id": "005f5b1f-9165-4196-84b2-1f96009ab026",
+    "userId": "d3e0d5c5-4d60-469b-8754-675804901c53",
+    "action": "HARDWARE_RETURN_KEY",
+    "details": "{\"bookingId\":\"2121df2c-092a-40b7-9079-84ea7cc6a8b6\",\"roomCode\":\"52-2 ครึ่ง\",\"slotNumber\":8,\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-04-07T07:49:57.830Z")
+  },
+  {
+    "id": "30a72cc5-cd4b-4f84-81ce-c5e2ce5d9bff",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"8c9f76da-3a7a-4ba7-b9b8-47537c86097e\",\"roomCode\":\"52-2 ครึ่ง\",\"slotNumber\":8,\"dueAt\":\"2026-04-07T09:00:00.000Z\",\"authorizationId\":null,\"reason\":\"สอนชดเชย\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-04-07T07:50:16.208Z")
+  },
+  {
+    "id": "f97fec71-8021-4417-9b15-f99e7005dacc",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_KEY_PULLED",
+    "details": "{\"bookingId\":\"8c9f76da-3a7a-4ba7-b9b8-47537c86097e\",\"roomCode\":\"52-2 ครึ่ง\",\"slotNumber\":8,\"message\":\"Physical key successfully removed from slot\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-04-07T07:50:20.431Z")
+  },
+  {
+    "id": "a4048e0b-bae1-4337-8ea2-950d97283abb",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "AUTO_RECONCILE_RETURN",
+    "details": "{\"bookingId\":\"8c9f76da-3a7a-4ba7-b9b8-47537c86097e\",\"roomCode\":\"52-2 ครึ่ง\",\"slotNumber\":8,\"detectedUid\":\"04:C3:0F:57:30:02:89\",\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"message\":\"กุญแจถูกคืนมาแล้ว (ตรวจพบจาก NFC อัตโนมัติ)\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-04-07T07:55:02.254Z")
+  },
+  {
+    "id": "b950d8bc-9c72-4b94-91af-e61729b7e97f",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"e4d78030-99e3-4ce6-b2f3-e27ad00859ef\",\"roomCode\":\"52-2 ครึ่ง\",\"slotNumber\":8,\"dueAt\":\"2026-04-07T09:00:00.000Z\",\"authorizationId\":null,\"reason\":\"สอนชดเชย\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-04-07T07:55:55.089Z")
+  },
+  {
+    "id": "a84f1334-c8b7-4c86-ab3e-6fb5877fb88c",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_KEY_PULLED",
+    "details": "{\"bookingId\":\"e4d78030-99e3-4ce6-b2f3-e27ad00859ef\",\"roomCode\":\"52-2 ครึ่ง\",\"slotNumber\":8,\"message\":\"Physical key successfully removed from slot\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-04-07T07:56:00.147Z")
+  },
+  {
+    "id": "0d9af336-b2c1-4e91-923e-9837522659a4",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "AUTO_RECONCILE_RETURN",
+    "details": "{\"bookingId\":\"e4d78030-99e3-4ce6-b2f3-e27ad00859ef\",\"roomCode\":\"52-2 ครึ่ง\",\"slotNumber\":8,\"detectedUid\":\"04:C3:0F:57:30:02:89\",\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"message\":\"กุญแจถูกคืนมาแล้ว (ตรวจพบจาก NFC อัตโนมัติ)\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-04-07T07:57:31.358Z")
+  },
+  {
+    "id": "adad0346-f693-4169-835d-6f95bcc4e607",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"58e6fdd6-3293-4a09-84c4-d1e2565dc891\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"dueAt\":\"2026-04-07T12:16:36.071Z\",\"authorizationId\":\"7973ac6a-ac3f-4131-b301-85d92d624488\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-04-07T08:16:36.092Z")
+  },
+  {
+    "id": "f6a34742-049d-4063-8221-01c2ee00d3cd",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_KEY_PULLED",
+    "details": "{\"bookingId\":\"58e6fdd6-3293-4a09-84c4-d1e2565dc891\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"message\":\"Physical key successfully removed from slot\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-04-07T08:16:39.049Z")
+  },
+  {
+    "id": "cf181230-a7a0-402f-8302-23c424aae592",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"99d6c805-f7d4-44f8-af7f-d95dd4949f6c\",\"roomCode\":\"52-205\",\"slotNumber\":1,\"dueAt\":\"2026-04-07T12:17:08.901Z\",\"authorizationId\":\"3e88abbd-429d-4a4c-ae45-846e3e7cb566\",\"reason\":null,\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-04-07T08:17:08.914Z")
+  },
+  {
+    "id": "9cf839c8-71db-4f1b-b0fb-010baefbb545",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "HARDWARE_SWAP_KEY_ACTIVE",
+    "details": "{\"swapType\":\"ACTIVE_BOOKINGS\",\"userA\":{\"studentCode\":\"6702041510164\",\"fromRoom\":\"52-213\",\"hadBooking\":true},\"userB\":{\"studentCode\":\"6702041510181\",\"fromRoom\":\"52-205\",\"hadBooking\":true},\"source\":\"FACE_SCANNER\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-04-07T08:17:26.269Z")
+  },
+  {
+    "id": "b5f9c24a-6ef8-43e9-8bca-46130bda6696",
+    "userId": "eb5cf9f9-a512-4bfb-82f4-33dd17440ecd",
+    "action": "AUTO_RECONCILE_RETURN",
+    "details": "{\"bookingId\":\"99d6c805-f7d4-44f8-af7f-d95dd4949f6c\",\"roomCode\":\"52-205\",\"slotNumber\":1,\"detectedUid\":\"04:23:F6:57:30:02:89\",\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"message\":\"กุญแจถูกคืนมาแล้ว (ตรวจพบจาก NFC อัตโนมัติ)\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-04-07T08:17:42.959Z")
+  },
+  {
+    "id": "077406f9-c0b2-474e-a41e-ca05e5771440",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "AUTO_RECONCILE_RETURN",
+    "details": "{\"bookingId\":\"58e6fdd6-3293-4a09-84c4-d1e2565dc891\",\"roomCode\":\"52-213\",\"slotNumber\":3,\"detectedUid\":\"04:63:40:A5:30:02:89\",\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"message\":\"กุญแจถูกคืนมาแล้ว (ตรวจพบจาก NFC อัตโนมัติ)\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-04-07T08:17:50.414Z")
+  },
+  {
+    "id": "a4d9409f-ec60-4d3d-84ef-69628efe7527",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_KEY_PULLED",
+    "details": "{\"bookingId\":\"99d6c805-f7d4-44f8-af7f-d95dd4949f6c\",\"roomCode\":\"52-205\",\"slotNumber\":1,\"message\":\"Physical key successfully removed from slot\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-04-07T08:17:12.963Z")
+  },
+  {
+    "id": "22c3bda8-585b-40c7-aed8-c302fd149399",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_BORROW_KEY",
+    "details": "{\"bookingId\":\"870c58f1-51c1-4d80-a624-0cfce81836da\",\"roomCode\":\"52-701\",\"slotNumber\":6,\"dueAt\":\"2026-04-07T11:00:00.000Z\",\"authorizationId\":null,\"reason\":\"สอนชดเชย\",\"source\":\"FACE_SCANNER_WITH_REASON\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-04-07T09:53:12.351Z")
+  },
+  {
+    "id": "56432dbe-8cab-4dea-af40-e3c65fd0e392",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "HARDWARE_KEY_PULLED",
+    "details": "{\"bookingId\":\"870c58f1-51c1-4d80-a624-0cfce81836da\",\"roomCode\":\"52-701\",\"slotNumber\":6,\"message\":\"Physical key successfully removed from slot\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-04-07T09:53:23.545Z")
+  },
+  {
+    "id": "dc0b2b79-d8bf-4694-9db8-c5206469b5a4",
+    "userId": "6a2a97c7-e95b-4766-808e-dd55108fe3bd",
+    "action": "AUTO_RECONCILE_RETURN",
+    "details": "{\"bookingId\":\"870c58f1-51c1-4d80-a624-0cfce81836da\",\"roomCode\":\"52-701\",\"slotNumber\":6,\"detectedUid\":\"04:53:E7:04:30:02:89\",\"lateMinutes\":0,\"penaltyScore\":0,\"isLate\":false,\"message\":\"กุญแจถูกคืนมาแล้ว (ตรวจพบจาก NFC อัตโนมัติ)\"}",
+    "ipAddress": null,
+    "createdAt": new Date("2026-04-07T10:14:43.951Z")
+  }
+];
+
 async function main() {
-    console.log('🌱 Starting seed...');
+  console.log('🌱 Start seeding...');
 
-    // =============================
-    // สร้างสาขาวิชา (Major)
-    // TCT = เทคโนโลยีคอมพิวเตอร์
-    // CED = คอมพิวเตอร์ศึกษา
-    // =============================
-    const majorTCT = await prisma.major.upsert({
-        where: { code: 'TCT' },
-        update: {},
-        create: {
-            code: 'TCT',
-            name: 'เทคโนโลยีคอมพิวเตอร์'
-        }
-    });
+  try {
+    if (majors.length > 0) {
+      await prisma.major.createMany({ data: majors, skipDuplicates: true });
+      console.log('✅ Majors seeded');
+    }
+  } catch (e) { console.error('Error seeding majors'); }
+  
+  try {
+    if (sections.length > 0) {
+      await prisma.section.createMany({ data: sections, skipDuplicates: true });
+      console.log('✅ Sections seeded');
+    }
+  } catch (e) { console.error('Error seeding sections'); }
 
-    const majorCED = await prisma.major.upsert({
-        where: { code: 'CED' },
-        update: {},
-        create: {
-            code: 'CED',
-            name: 'คอมพิวเตอร์ศึกษา'
-        }
-    });
-    console.log('✅ Created 2 majors: TCT, CED');
+  try {
+    if (users.length > 0) {
+      await prisma.user.createMany({ data: users, skipDuplicates: true });
+      console.log('✅ Users seeded');
+    }
+  } catch (e) { console.error('Error seeding users'); }
 
-    // =============================
-    // สร้างกลุ่มเรียน (Section)
-    // TCT: DE-RA, DE-RB
-    // CED: DE-RA
-    // =============================
-    const sectionTCT_DERA = await prisma.section.upsert({
-        where: { id: 'tct-de-ra' },
-        update: {},
-        create: {
-            id: 'tct-de-ra',
-            name: 'DE-RA',
-            majorId: majorTCT.id
-        }
-    });
+  try {
+    if (subjects.length > 0) {
+      await prisma.subject.createMany({ data: subjects, skipDuplicates: true });
+      console.log('✅ Subjects seeded');
+    }
+  } catch (e) { console.error('Error seeding subjects'); }
 
-    const sectionTCT_DERB = await prisma.section.upsert({
-        where: { id: 'tct-de-rb' },
-        update: {},
-        create: {
-            id: 'tct-de-rb',
-            name: 'DE-RB',
-            majorId: majorTCT.id
-        }
-    });
+  try {
+    if (subjectTeachers.length > 0) {
+      await prisma.subjectTeacher.createMany({ data: subjectTeachers, skipDuplicates: true });
+      console.log('✅ SubjectTeachers seeded');
+    }
+  } catch (e) { console.error('Error seeding subjectTeachers'); }
 
-    const sectionCED_DERA = await prisma.section.upsert({
-        where: { id: 'ced-de-ra' },
-        update: {},
-        create: {
-            id: 'ced-de-ra',
-            name: 'DE-RA',
-            majorId: majorCED.id
-        }
-    });
-    console.log('✅ Created 3 sections: TCT(DE-RA, DE-RB), CED(DE-RA)');
+  try {
+    if (keys.length > 0) {
+      await prisma.key.createMany({ data: keys, skipDuplicates: true });
+      console.log('✅ Keys seeded');
+    }
+  } catch (e) { console.error('Error seeding keys'); }
 
-    // =============================
-    // สร้าง Staff User (Admin)
-    // =============================
-    const hashedPassword = await bcrypt.hash('admin123', 10);
+  try {
+    if (schedules.length > 0) {
+      await prisma.schedule.createMany({ data: schedules, skipDuplicates: true });
+      console.log('✅ Schedules seeded');
+    }
+  } catch (e) { console.error('Error seeding schedules'); }
 
-    const staff = await prisma.user.upsert({
-        where: { studentCode: 'STAFF001' },
-        update: {},
-        create: {
-            studentCode: 'STAFF001',
-            email: 'admin@kmutnb.ac.th',
-            password: hashedPassword,
-            firstName: 'Admin',
-            lastName: 'System',
-            role: 'STAFF'
-        }
-    });
-    console.log('✅ Created staff user:', staff.email);
+  try {
+    if (borrowReasons.length > 0) {
+      await prisma.borrowReason.createMany({ data: borrowReasons, skipDuplicates: true });
+      console.log('✅ BorrowReasons seeded');
+    }
+  } catch (e) { console.error('Error seeding borrowReasons'); }
 
-    // =============================
-    // สร้างอาจารย์ตัวอย่าง
-    // =============================
-    const teacherPassword = await bcrypt.hash('teacher123', 10);
-    const teacher1 = await prisma.user.upsert({
-        where: { studentCode: 'T001' },
-        update: {},
-        create: {
-            studentCode: 'T001',
-            email: 'teacher@kmutnb.ac.th',
-            password: teacherPassword,
-            firstName: 'สมหญิง',
-            lastName: 'ครูดี',
-            role: 'TEACHER',
-            role: 'TEACHER'
-        }
-    });
+  try {
+    if (penaltyConfigs.length > 0) {
+      await prisma.penaltyConfig.createMany({ data: penaltyConfigs, skipDuplicates: true });
+      console.log('✅ PenaltyConfigs seeded');
+    }
+  } catch (e) { console.error('Error seeding penaltyConfigs'); }
+  
+  try {
+    if (dailyAuthorizations.length > 0) {
+      await prisma.dailyAuthorization.createMany({ data: dailyAuthorizations, skipDuplicates: true });
+      console.log('✅ DailyAuthorizations seeded');
+    }
+  } catch (e) { console.error('Error seeding dailyAuthorizations'); }
 
-    const teacher2 = await prisma.user.upsert({
-        where: { studentCode: 'T002' },
-        update: {},
-        create: {
-            studentCode: 'T002',
-            email: 'teacher2@kmutnb.ac.th',
-            password: teacherPassword,
-            firstName: 'สมศักดิ์',
-            lastName: 'อาจารย์',
-            role: 'TEACHER',
-        }
-    });
-    console.log('✅ Created 2 teacher users');
+  try {
+    if (bookings.length > 0) {
+      await prisma.booking.createMany({ data: bookings, skipDuplicates: true });
+      console.log('✅ Bookings seeded');
+    }
+  } catch (e) { console.error('Error seeding bookings'); }
 
-    // =============================
-    // สร้างนักศึกษาตัวอย่าง
-    // =============================
-    const studentPassword = await bcrypt.hash('student123', 10);
+  try {
+    if (penaltyLogs.length > 0) {
+      await prisma.penaltyLog.createMany({ data: penaltyLogs, skipDuplicates: true });
+      console.log('✅ PenaltyLogs seeded');
+    }
+  } catch (e) { console.error('Error seeding penaltyLogs'); }
 
-    // นักศึกษา TCT DE-RA
-    const student1 = await prisma.user.upsert({
-        where: { studentCode: 's6702041510164' },
-        update: {},
-        create: {
-            studentCode: 's6702041510164',
-            email: 'student@email.kmutnb.ac.th',
-            password: studentPassword,
-            firstName: 'สมชาย',
-            lastName: 'ใจดี',
-            role: 'STUDENT',
-            sectionId: sectionTCT_DERA.id
-        }
-    });
+  try {
+    if (systemLogs.length > 0) {
+      await prisma.systemLog.createMany({ data: systemLogs, skipDuplicates: true });
+      console.log('✅ SystemLogs seeded');
+    }
+  } catch (e) { console.error('Error seeding systemLogs'); }
 
-    // นักศึกษา TCT DE-RB
-    const student2 = await prisma.user.upsert({
-        where: { studentCode: 's6702041510165' },
-        update: {},
-        create: {
-            studentCode: 's6702041510165',
-            email: 'student2@email.kmutnb.ac.th',
-            password: studentPassword,
-            firstName: 'สมหญิง',
-            lastName: 'ดีใจ',
-            role: 'STUDENT',
-            sectionId: sectionTCT_DERB.id
-        }
-    });
-
-    // นักศึกษา CED DE-RA
-    const student3 = await prisma.user.upsert({
-        where: { studentCode: 's6702041520001' },
-        update: {},
-        create: {
-            studentCode: 's6702041520001',
-            email: 'student3@email.kmutnb.ac.th',
-            password: studentPassword,
-            firstName: 'วิชัย',
-            lastName: 'เรียนดี',
-            role: 'STUDENT',
-            sectionId: sectionCED_DERA.id
-        }
-    });
-    console.log('✅ Created 3 student users');
-
-    // =============================
-    // สร้างรายวิชา (Subject)
-    // =============================
-    const subject1 = await prisma.subject.upsert({
-        where: { code: '020413215' },
-        update: {},
-        create: {
-            code: '020413215',
-            name: 'ปัญญาประดิษฐ์'
-        }
-    });
-
-    const subject2 = await prisma.subject.upsert({
-        where: { code: 'CS201' },
-        update: {},
-        create: {
-            code: 'CS201',
-            name: 'โครงสร้างข้อมูล'
-        }
-    });
-
-    const subject3 = await prisma.subject.upsert({
-        where: { code: 'CS301' },
-        update: {},
-        create: {
-            code: 'CS301',
-            name: 'ฐานข้อมูล'
-        }
-    });
-
-    const subject4 = await prisma.subject.upsert({
-        where: { code: 'CS101' },
-        update: {},
-        create: {
-            code: 'CS101',
-            name: 'การเขียนโปรแกรมเบื้องต้น'
-        }
-    });
-    console.log('✅ Created 4 subjects');
-
-    // =============================
-    // สร้างกุญแจ (Key)
-    // รูปแบบ: XX-YYY (XX = เลขตึก, YYY = เลขห้อง)
-    // ตึก 44 และ ตึก 52
-    // =============================
-
-    // === ตึก 44 ===
-    const key44_703 = await prisma.key.upsert({
-        where: { id: 'key-44-703' },
-        update: {},
-        create: {
-            id: 'key-44-703',
-            roomCode: '44-703',
-            slotNumber: 1
-        }
-    });
-
-    const key44_704 = await prisma.key.upsert({
-        where: { id: 'key-44-704' },
-        update: {},
-        create: {
-            id: 'key-44-704',
-            roomCode: '44-704',
-            slotNumber: 2
-        }
-    });
-
-    const key44_705 = await prisma.key.upsert({
-        where: { id: 'key-44-705' },
-        update: {},
-        create: {
-            id: 'key-44-705',
-            roomCode: '44-705',
-            slotNumber: 3
-        }
-    });
-
-    const key44_801 = await prisma.key.upsert({
-        where: { id: 'key-44-801' },
-        update: {},
-        create: {
-            id: 'key-44-801',
-            roomCode: '44-801',
-            slotNumber: 4
-        }
-    });
-
-    const key44_802 = await prisma.key.upsert({
-        where: { id: 'key-44-802' },
-        update: {},
-        create: {
-            id: 'key-44-802',
-            roomCode: '44-802',
-            slotNumber: 5
-        }
-    });
-
-    // === ตึก 52 ===
-    const key52_211 = await prisma.key.upsert({
-        where: { id: 'key-52-211' },
-        update: {},
-        create: {
-            id: 'key-52-211',
-            roomCode: '52-211',
-            slotNumber: 6
-        }
-    });
-
-    const key52_212 = await prisma.key.upsert({
-        where: { id: 'key-52-212' },
-        update: {},
-        create: {
-            id: 'key-52-212',
-            roomCode: '52-212',
-            slotNumber: 7
-        }
-    });
-
-    const key52_213 = await prisma.key.upsert({
-        where: { id: 'key-52-213' },
-        update: {},
-        create: {
-            id: 'key-52-213',
-            roomCode: '52-213',
-            slotNumber: 8
-        }
-    });
-
-    const key52_311 = await prisma.key.upsert({
-        where: { id: 'key-52-311' },
-        update: {},
-        create: {
-            id: 'key-52-311',
-            roomCode: '52-311',
-            slotNumber: 9
-        }
-    });
-
-    const key52_312 = await prisma.key.upsert({
-        where: { id: 'key-52-312' },
-        update: {},
-        create: {
-            id: 'key-52-312',
-            roomCode: '52-312',
-            slotNumber: 10
-        }
-    });
-    console.log('✅ Created 10 keys (Building 44: 5, Building 52: 5)');
-
-    // =============================
-    // สร้างตารางเรียน (Schedule)
-    // =============================
-    await prisma.schedule.deleteMany({});
-
-    // ตึก 44
-    const schedule1 = await prisma.schedule.create({
-        data: {
-            subjectId: subject1.id,
-            roomCode: '44-703',
-            section: 'TCT DE-RA',
-            teacherId: teacher1.id,
-            dayOfWeek: 5, // Friday
-            startTime: new Date('2024-01-01T13:00:00Z'),
-            endTime: new Date('2024-01-01T16:00:00Z')
-        }
-    });
-
-    const schedule2 = await prisma.schedule.create({
-        data: {
-            subjectId: subject2.id,
-            roomCode: '44-704',
-            section: 'TCT DE-RB',
-            teacherId: teacher1.id,
-            dayOfWeek: 3, // Wednesday
-            startTime: new Date('2024-01-01T09:00:00Z'),
-            endTime: new Date('2024-01-01T12:00:00Z')
-        }
-    });
-
-    const schedule3 = await prisma.schedule.create({
-        data: {
-            subjectId: subject3.id,
-            roomCode: '44-705',
-            section: 'CED DE-RA',
-            teacherId: teacher2.id,
-            dayOfWeek: 1, // Monday
-            startTime: new Date('2024-01-01T09:00:00Z'),
-            endTime: new Date('2024-01-01T12:00:00Z')
-        }
-    });
-
-    const schedule4 = await prisma.schedule.create({
-        data: {
-            subjectId: subject4.id,
-            roomCode: '44-801',
-            section: 'TCT DE-RA',
-            teacherId: teacher1.id,
-            dayOfWeek: 2, // Tuesday
-            startTime: new Date('2024-01-01T13:00:00Z'),
-            endTime: new Date('2024-01-01T16:00:00Z')
-        }
-    });
-
-    // ตึก 52
-    const schedule5 = await prisma.schedule.create({
-        data: {
-            subjectId: subject1.id,
-            roomCode: '52-211',
-            section: 'TCT DE-RB',
-            teacherId: teacher1.id,
-            dayOfWeek: 1, // Monday
-            startTime: new Date('2024-01-01T13:00:00Z'),
-            endTime: new Date('2024-01-01T16:00:00Z')
-        }
-    });
-
-    const schedule6 = await prisma.schedule.create({
-        data: {
-            subjectId: subject2.id,
-            roomCode: '52-212',
-            section: 'CED DE-RA',
-            teacherId: teacher2.id,
-            dayOfWeek: 4, // Thursday
-            startTime: new Date('2024-01-01T09:00:00Z'),
-            endTime: new Date('2024-01-01T12:00:00Z')
-        }
-    });
-
-    const schedule7 = await prisma.schedule.create({
-        data: {
-            subjectId: subject3.id,
-            roomCode: '52-213',
-            section: 'TCT DE-RA',
-            teacherId: teacher1.id,
-            dayOfWeek: 4, // Thursday
-            startTime: new Date('2024-01-01T13:00:00Z'),
-            endTime: new Date('2024-01-01T16:00:00Z')
-        }
-    });
-
-    const schedule8 = await prisma.schedule.create({
-        data: {
-            subjectId: subject4.id,
-            roomCode: '52-311',
-            section: 'TCT DE-RB',
-            teacherId: teacher1.id,
-            dayOfWeek: 5, // Friday
-            startTime: new Date('2024-01-01T09:00:00Z'),
-            endTime: new Date('2024-01-01T12:00:00Z')
-        }
-    });
-    console.log('✅ Created 8 schedules (Building 44: 4, Building 52: 4)');
-
-    // =============================
-    // สร้าง Penalty Config
-    // =============================
-    await prisma.penaltyConfig.deleteMany({});
-    const penaltyConfig = await prisma.penaltyConfig.create({
-        data: {
-            graceMinutes: 30,         // ผ่อนผัน 30 นาที
-            scorePerInterval: 5,      // หักคะแนน 5 คะแนน
-            intervalMinutes: 15,      // ทุก 15 นาที
-            isActive: true
-        }
-    });
-    console.log('✅ Created penalty config');
-
-    console.log('');
-    console.log('🎉 Seed completed successfully!');
-    console.log('');
-    console.log('===============================');
-    console.log('       MAJORS & SECTIONS       ');
-    console.log('===============================');
-    console.log('Major: TCT (เทคโนโลยีคอมพิวเตอร์)');
-    console.log('  - Section: DE-RA');
-    console.log('  - Section: DE-RB');
-    console.log('Major: CED (คอมพิวเตอร์ศึกษา)');
-    console.log('  - Section: DE-RA');
-    console.log('');
-    console.log('===============================');
-    console.log('        DEFAULT USERS          ');
-    console.log('===============================');
-    console.log('Staff:    admin@kmutnb.ac.th / admin123');
-    console.log('Teacher1: teacher@kmutnb.ac.th / teacher123');
-    console.log('Teacher2: teacher2@kmutnb.ac.th / teacher123');
-    console.log('Student1: student@email.kmutnb.ac.th / student123 (TCT DE-RA)');
-    console.log('Student2: student2@email.kmutnb.ac.th / student123 (TCT DE-RB)');
-    console.log('Student3: student3@email.kmutnb.ac.th / student123 (CED DE-RA)');
+  console.log('🎉 Seeding finished.');
 }
 
 main()
-    .catch((e) => {
-        console.error('❌ Error during seed:', e);
-        process.exit(1);
-    })
-    .finally(async () => {
-        await prisma.$disconnect();
-    });
+  .catch((e) => {
+    console.error(e);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });
