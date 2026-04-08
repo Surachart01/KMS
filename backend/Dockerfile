@@ -1,11 +1,11 @@
 # ── Stage 1: Install dependencies ──
-FROM node:18-alpine AS deps
+FROM node:22-alpine AS deps
 WORKDIR /app
 COPY package.json yarn.lock ./
 RUN yarn install --frozen-lockfile
 
 # ── Stage 2: Build Prisma + Production ──
-FROM node:18-alpine AS runner
+FROM node:22-alpine AS runner
 WORKDIR /app
 
 COPY --from=deps /app/node_modules ./node_modules
