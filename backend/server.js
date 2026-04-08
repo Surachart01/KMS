@@ -43,7 +43,14 @@ const httpServer = createServer(app);
 // ================================
 // ดักลบ /kmsws ตั้งแต่ระดับ HTTP Server ก่อนจะถึง Socket.IO และ Express
 const stripPrefix = (req) => {
-  if (req.url && req.url.startsWith('/kmsws')) {
+  if (!req.url) return;
+  // บังคับให้ Socket.IO เชื่อมต่อได้เสมอ ไม่ว่า Nginx จะส่งพาธแบบไหนมา
+  if (req.url.includes('/socket.io/')) {
+    const query = req.url.split('/socket.io/')[1] || '';
+    req.url = '/socket.io/' + query;
+    return;
+  }
+  if (req.url.startsWith('/kmsws')) {
     req.url = req.url.replace('/kmsws', '');
     if (req.url === '') req.url = '/';
   }
@@ -53,7 +60,7 @@ httpServer.prependListener('upgrade', (req, socket, head) => stripPrefix(req));
 
 const io = new Server(httpServer, {
   cors: { origin: '*', methods: ['GET', 'POST'] },
-  path: '/api/socket.io'
+  // ไม่ต้องระบุ path แล้ว เพราะเราบีบให้วิ่งเข้าค่าเริ่มต้น ( /socket.io/) เสมอ
 });
 
 const prisma = new PrismaClient();
