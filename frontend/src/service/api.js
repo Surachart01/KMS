@@ -1,7 +1,7 @@
 import axios from 'axios';
 import Cookies from 'js-cookie';
 
-const envUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4556';
+const envUrl = process.env.NEXT_PUBLIC_API_URL || 'https://btct.ced.kmutnb.ac.th/kmsws';
 // Sanitize URL: remove trailing slash and '/api' suffix if present
 const API_URL = envUrl.replace(/\/$/, "").replace(/\/api$/, "");
 
