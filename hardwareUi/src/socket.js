@@ -4,9 +4,14 @@
  */
 import { io } from 'socket.io-client';
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:4556';
+const BACKEND_URL_STR = import.meta.env.VITE_BACKEND_URL || 'https://btct.ced.kmutnb.ac.th/kmsws';
 
-export const socket = io(BACKEND_URL, {
+// Extract hostname and prefix path so Socket.io routes through Nginx properly
+const parsedUrl = new URL(BACKEND_URL_STR);
+const urlPath = parsedUrl.pathname === '/' ? '' : parsedUrl.pathname;
+
+export const socket = io(parsedUrl.origin, {
+    path: `${urlPath}/socket.io`,
     autoConnect: true,
     reconnection: true,
     reconnectionDelay: 1000,
