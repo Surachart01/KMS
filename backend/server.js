@@ -53,6 +53,7 @@ httpServer.prependListener('upgrade', (req, socket, head) => stripPrefix(req));
 
 const io = new Server(httpServer, {
   cors: { origin: '*', methods: ['GET', 'POST'] },
+  path: '/api/socket.io'
 });
 
 const prisma = new PrismaClient();

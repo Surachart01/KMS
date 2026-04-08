@@ -10,8 +10,9 @@ const BACKEND_URL_STR = import.meta.env.VITE_BACKEND_URL || 'https://btct.ced.km
 const parsedUrl = new URL(BACKEND_URL_STR);
 const urlPath = parsedUrl.pathname === '/' ? '' : parsedUrl.pathname.replace(/\/$/, '');
 
+// บังคับให้ Socket.IO วิ่งผ่าน /api/socket.io เพื่อหลบข้อจำกัดของ Nginx ที่อนุญาตแค่ /kmsws/api
 export const socket = io(parsedUrl.origin, {
-    path: `${urlPath}/socket.io`,
+    path: `${urlPath}/api/socket.io`,
     autoConnect: true,
     reconnection: true,
     reconnectionDelay: 1000,
