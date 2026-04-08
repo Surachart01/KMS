@@ -3,9 +3,8 @@ const nextConfig = {
   /* config options here */
   reactCompiler: true,
   output: 'standalone',
-    basePath: '/kms',
+  basePath: '/kms',
   trailingSlash: true,
-
 };
 
 export default nextConfig;
