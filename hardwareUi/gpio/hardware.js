@@ -756,7 +756,12 @@ function setLedRelay(slotNumber, keyBorrowed) {
 // Socket.IO Connection
 // ─────────────────────────────────────────────
 
-const socket = io(BACKEND_URL, {
+// Extract hostname and prefix path so Socket.io routes through Nginx properly
+const parsedUrl = new URL(BACKEND_URL);
+const urlPath = parsedUrl.pathname === '/' ? '' : parsedUrl.pathname.replace(/\/$/, '');
+
+const socket = io(parsedUrl.origin, {
+    path: `${urlPath}/api/socket.io`,
     reconnection: true,
     reconnectionDelay: 2000,
 });
