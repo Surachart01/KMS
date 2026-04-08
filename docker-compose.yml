@@ -70,12 +70,12 @@ services:
       dockerfile: Dockerfile
       args:
         NEXT_PUBLIC_API_URL: http://localhost:4556/api
-    container_name: SKMS-frontend
+    container_name: KMS-frontend
     restart: always
     ports:
-      - "3000:3000"
+      - "80:80"
     environment:
-      NEXT_PUBLIC_API_URL: http://localhost:4556/api
+      NEXT_PUBLIC_API_URL: http://btct.ced.kmutnb.ac.th/kmsws/api
       NEXT_PUBLIC_REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
     depends_on:
       - backend
