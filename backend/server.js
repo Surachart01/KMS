@@ -37,17 +37,22 @@ import { syncTodayInternal } from './src/controllers/authorizationController.js'
 
 const app = express();
 const httpServer = createServer(app);
+const io = new Server(httpServer, {
+  cors: { origin: '*', methods: ['GET', 'POST'] },
+  path: '/api/socket.io'
+});
 
 // ================================
 // HANDLE NGINX PROXY PREFIX (GLOBAL)
 // ================================
-// ดักลบ /kmsws ตั้งแต่ระดับ HTTP Server ก่อนจะถึง Socket.IO และ Express
+// ดักลบ /kmsws ตั้งแต่ระดับ HTTP Server
+// สังเกต: เราต้องประกาศหลังสร้าง new Server() เพื่อให้ prependListener อันนี้ แซงคิว Socket.IO ที่พยายามอยู่หน้าสุดเสมอ
 const stripPrefix = (req) => {
   if (!req.url) return;
-  // บังคับให้ Socket.IO เชื่อมต่อได้เสมอ ไม่ว่า Nginx จะส่งพาธแบบไหนมา
+  // บังคับเปลี่ยนสารพัดรูปแบบ socket.io ให้ตรงกับ path ด้านบน
   if (req.url.includes('/socket.io/')) {
     const query = req.url.split('/socket.io/')[1] || '';
-    req.url = '/socket.io/' + query;
+    req.url = '/api/socket.io/' + query;
     return;
   }
   if (req.url.startsWith('/kmsws')) {
@@ -57,11 +62,6 @@ const stripPrefix = (req) => {
 };
 httpServer.prependListener('request', (req, res) => stripPrefix(req));
 httpServer.prependListener('upgrade', (req, socket, head) => stripPrefix(req));
-
-const io = new Server(httpServer, {
-  cors: { origin: '*', methods: ['GET', 'POST'] },
-  // ไม่ต้องระบุ path แล้ว เพราะเราบีบให้วิ่งเข้าค่าเริ่มต้น ( /socket.io/) เสมอ
-});
 
 const prisma = new PrismaClient();
 const port = process.env.PORT || 3000;
