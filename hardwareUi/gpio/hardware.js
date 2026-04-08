@@ -1327,11 +1327,9 @@ socket.on('led:stop-blink', (data) => {
     }
 });
 
-// ── key:do-reconcile-scan — Backend สั่งให้ scan ทุกช่อง เพื่อ auto-return กุญแจที่คืนแล้ว ──
 socket.on('key:do-reconcile-scan', async () => {
-    logDebug('🔄 [Reconcile] ได้รับคำสั่ง scan ทุกช่องเพื่อเช็คการคืน...');
+    logDebug('🔄 [Reconcile] ได้รับคำสั่ง scan ทุกช่องเพื่อเช็คการคืน... (Fast Parallel Mode)');
     
-    // ถ้ากำลัง unlock หรือ polling อยู่ ให้รอ
     if (isUnlocking) {
         logDebug('⏳ [Reconcile] ระบบกำลังทำงานอยู่ ข้ามการ scan');
         socket.emit('key:reconcile', { slotStatuses: [] });
@@ -1339,8 +1337,6 @@ socket.on('key:do-reconcile-scan', async () => {
     }
 
     const slotStatuses = [];
-    
-    // สร้างรายการ slot จากบอร์ดที่เชื่อมต่อจริง
     let slotsToCheck = [];
     if (nfcMode === 'esp8266') {
         for (const [boardId] of esp8266Boards.entries()) {
@@ -1348,9 +1344,8 @@ socket.on('key:do-reconcile-scan', async () => {
             if (boardId === 2) { for (let s = 5; s <= 7; s++) slotsToCheck.push(s); }
             if (boardId === 3) { for (let s = 8; s <= 10; s++) slotsToCheck.push(s); }
         }
-        if (slotsToCheck.length === 0) slotsToCheck = [1, 2, 3, 4, 5, 6, 7];
+        if (slotsToCheck.length === 0) slotsToCheck = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
     } else if (nfcMode === 'mock') {
-        // Mock mode: ใช้ slotHasKey state ที่มีอยู่
         for (let s = 1; s <= 10; s++) {
             slotStatuses.push({ slotNumber: s, uid: slotHasKey[`last_uid_${s}`] || null });
         }
@@ -1360,31 +1355,61 @@ socket.on('key:do-reconcile-scan', async () => {
         for (let s = 1; s <= 10; s++) slotsToCheck.push(s);
     }
 
-    // หยุด polling ชั่วคราว
     const wasPolling = isPollingSlot;
     isPollingSlot = true;
 
     try {
-        for (const slot of slotsToCheck) {
-            if (pullCheckingSlots.has(slot)) {
-                // slot กำลัง pull check อยู่ → ข้าม
-                slotStatuses.push({ slotNumber: slot, uid: null });
-                continue;
+        if (nfcMode === 'esp8266') {
+            // ── Optimize: ทำงานแบบ Parallel ระหว่าง 3 บอร์ดพร้อมกัน ──
+            const boardGroups = new Map();
+            for (const slot of slotsToCheck) {
+                const bid = slotToBoardId(slot);
+                if (!boardGroups.has(bid)) boardGroups.set(bid, []);
+                boardGroups.get(bid).push(slot);
             }
-            try {
-                const uid = await readNfcAtSlot(slot);
-                slotStatuses.push({ slotNumber: slot, uid: uid || null });
-            } catch (e) {
-                slotStatuses.push({ slotNumber: slot, uid: null });
+            
+            const parallelPromises = Array.from(boardGroups.values()).map(async (groupSlots) => {
+                const results = [];
+                for (const slot of groupSlots) {
+                    if (pullCheckingSlots.has(slot)) {
+                        results.push({ slotNumber: slot, uid: null });
+                        continue;
+                    }
+                    try {
+                        const uid = await readNfcAtSlot(slot);
+                        results.push({ slotNumber: slot, uid: uid || null });
+                    } catch (e) {
+                        results.push({ slotNumber: slot, uid: null });
+                    }
+                    // รอสั้นมาก (30ms) แค่ให้ serial พักเหนื่อย แทนการรอ 200ms
+                    await new Promise(r => setTimeout(r, 30));
+                }
+                return results;
+            });
+            const groupedResults = await Promise.all(parallelPromises);
+            slotStatuses.push(...groupedResults.flat());
+        } else {
+            // โหมด Node/Python สแกนเรียงคิว แต่ลดความหน่วง
+            for (const slot of slotsToCheck) {
+                if (pullCheckingSlots.has(slot)) {
+                    slotStatuses.push({ slotNumber: slot, uid: null });
+                    continue;
+                }
+                try {
+                    const uid = await readNfcAtSlot(slot);
+                    slotStatuses.push({ slotNumber: slot, uid: uid || null });
+                } catch (e) {
+                    slotStatuses.push({ slotNumber: slot, uid: null });
+                }
+                await new Promise(r => setTimeout(r, 50));
             }
-            await new Promise(r => setTimeout(r, 200));
         }
     } finally {
         isPollingSlot = wasPolling;
     }
 
-    logDebug(`🔄 [Reconcile] Scan เสร็จ: ${slotStatuses.filter(s => s.uid).length}/${slotsToCheck.length} ช่องมีกุญแจ`);
     socket.emit('key:reconcile', { slotStatuses });
+    logDebug(`⚡ [Reconcile] Fast Scan เสร็จสมบูรณ์: ${slotStatuses.filter(s => s.uid).length}/${slotsToCheck.length}`);
 });
 
 // ─────────────────────────────────────────────
