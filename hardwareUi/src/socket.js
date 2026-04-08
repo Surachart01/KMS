@@ -8,7 +8,7 @@ const BACKEND_URL_STR = import.meta.env.VITE_BACKEND_URL || 'https://btct.ced.km
 
 // Extract hostname and prefix path so Socket.io routes through Nginx properly
 const parsedUrl = new URL(BACKEND_URL_STR);
-const urlPath = parsedUrl.pathname === '/' ? '' : parsedUrl.pathname;
+const urlPath = parsedUrl.pathname === '/' ? '' : parsedUrl.pathname.replace(/\/$/, '');
 
 export const socket = io(parsedUrl.origin, {
     path: `${urlPath}/socket.io`,
