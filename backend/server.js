@@ -50,6 +50,18 @@ app.use(cors({
 app.use(express.json());
 dotenv.config();
 
+// ================================
+// HANDLE NGINX PROXY PREFIX
+// ================================
+// ถ้าระบบรับ Request ที่นำหน้าด้วย /kmsws ให้ตัดทิ้ง เพื่อให้ Route เดิมทำงานได้ทั้ง 2 รูปแบบ
+app.use((req, res, next) => {
+  if (req.url.startsWith('/kmsws')) {
+    req.url = req.url.replace('/kmsws', '');
+    if (req.url === '') req.url = '/';
+  }
+  next();
+});
+
 // Make io accessible to routes that need it
 app.set('io', io);
 
