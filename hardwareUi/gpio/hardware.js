@@ -24,7 +24,7 @@ const HARDWARE_KEYS_URL = process.env.HARDWARE_KEYS_URL || `${BACKEND_URL}/api/h
 const HARDWARE_TOKEN = process.env.HARDWARE_TOKEN || '';
 const NFC_POLLING_INTERVAL_MS = 200; // ลดจาก 350 เหลือ 200ms เพื่อความไวสูงสุด
 const KEY_PULL_TIMEOUT_S = 10;       // รอดึงกุญแจ 10 วินาทีคงที่
-const KEY_PULL_POLL_INTERVAL_MS = 1000; // ตรวจเช็คการดึงกุญแจทุก 1 วินาที
+const KEY_PULL_POLL_INTERVAL_MS = 500; // ลดจาก 1000 เหลือ 400ms เพื่อให้รู้ตัวไวขึ้นเมื่อดึงกุญแจออก
 // กันอ่าน NFC หลุดเป็นจังหวะแล้วคิดว่าดึงกุญแจ: ต้องเห็นแท็กก่อน และต้องหายติดกันหลายครั้ง
 const KEY_PULL_REQUIRE_SEEN_TAG = true;
 const KEY_PULL_MISS_THRESHOLD = Number(process.env.KEY_PULL_MISS_THRESHOLD || 2); // หายติดกันกี่ครั้งถึงนับว่าดึงออกแล้ว
