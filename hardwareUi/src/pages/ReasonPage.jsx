@@ -106,12 +106,13 @@ export default function ReasonPage({ roomCode, onSubmit, onCancel, loading }) {
                             <p className="reason-step-label"><Clock size={16} /> ตารางการใช้ห้องวันนี้</p>
                             <div className="schedule-list">
                                 {roomSchedule.map(s => {
-                                    const formatT = (d) => new Date(d).toLocaleTimeString('th-TH', { 
-                                        hour: '2-digit', 
-                                        minute: '2-digit',
-                                        hour12: false,
-                                        timeZone: 'Asia/Bangkok'
-                                    });
+                                    const formatT = (date) => {
+                                        const d = new Date(date);
+                                        const bkkTime = new Date(d.getTime() + (7 * 60 * 60 * 1000));
+                                        const hh = String(bkkTime.getUTCHours()).padStart(2, '0');
+                                        const mm = String(bkkTime.getUTCMinutes()).padStart(2, '0');
+                                        return `${hh}.${mm}`;
+                                    };
                                     return (
                                         <div key={s.id} className="schedule-item">
                                             <div className="schedule-time">{formatT(s.startTime)} - {formatT(s.endTime)}</div>

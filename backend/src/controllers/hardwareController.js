@@ -344,17 +344,18 @@ export const borrowKey = async (req, res) => {
         console.log(`   range: ${startOfDay.toISOString()} - ${endOfDay.toISOString()}`);
         console.log(`   now: ${now.toISOString()}`);
 
-        // ดึง authorization ทั้งหมดของ user ในวันนี้เพื่อ debug
-        const allAuthsToday = await prisma.dailyAuthorization.findMany({
+        // ดึง authorization ทั้งหมดของห้องนี้ในวันนี้เพื่อตรวจสอบว่ามีใครมีเรียนไหม (Conflict Check)
+        const roomAuthsToday = await prisma.dailyAuthorization.findMany({
             where: {
-                userId: user.id,
+                roomCode: roomCode,
                 date: {
                     gte: startOfDay,
                     lte: endOfDay
                 },
             },
+            include: { subject: true }
         });
-        console.log(`   All auths today: ${JSON.stringify(allAuthsToday, null, 2)}`);
+        console.log(`   Conflict check: Found ${roomAuthsToday.length} schedules for room ${roomCode}`);
 
         // อนุญาตให้เบิกล่วงหน้าได้ EARLY_BORROW_MINUTES (30 นาที)
         const earlyBuffer = new Date(now.getTime() + EARLY_BORROW_MINUTES * 60 * 1000);
@@ -385,19 +386,21 @@ export const borrowKey = async (req, res) => {
 
         // === ขั้นตอนที่ 3.5: ตรวจสอบตารางสอนและสิทธิ์เบิกนอกเวลา ===
         
-        // คาบเรียนที่ "ครอบคลุม" เวลาปัจจุบัน (รวมล่วงหน้า 30 นาที และตลอดเวลาที่มีเรียน)
-        const relevantSchedule = allAuthsToday.find(s => {
+        // คาบเรียนที่ "ครอบคลุม" เวลาปัจจุบัน (รวมล่วงหน้า 30 นาที)
+        const relevantSchedule = roomAuthsToday.find(s => {
             const bufferStart = new Date(s.startTime.getTime() - EARLY_BORROW_MINUTES * 60 * 1000);
             return now >= bufferStart && now < s.endTime;
         });
 
-        // ฟังก์ชันช่วยจัดรูปแบบเวลาสำหรับ Alert
-        const formatTime = (date) => new Date(date).toLocaleTimeString('th-TH', { 
-            hour: '2-digit', 
-            minute: '2-digit',
-            hour12: false,
-            timeZone: 'Asia/Bangkok'
-        });
+        // ฟังก์ชันช่วยจัดรูปแบบเวลา (บังคับ Bangkok Time +07 เสมอ)
+        const formatTime = (date) => {
+            const d = new Date(date);
+            // ปรับจาก UTC เป็น +7
+            const bkkTime = new Date(d.getTime() + (7 * 60 * 60 * 1000));
+            const hh = String(bkkTime.getUTCHours()).padStart(2, '0');
+            const mm = String(bkkTime.getUTCMinutes()).padStart(2, '0');
+            return `${hh}.${mm}`;
+        };
 
         // ถ้าไม่มีสิทธิ์เบิกปกติ (authorization) และกำลังพยายามเบิกด้วยเหตุผล
         // ข้ามการตรวจสอบนี้สำหรับครู/เจ้าหน้าที่
