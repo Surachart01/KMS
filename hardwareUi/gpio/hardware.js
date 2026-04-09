@@ -188,7 +188,7 @@ async function openEsp8266Port(serialPath, SerialPort) {
             autoOpen: false,
         });
 
-        const ctx = { port, buffer: '', pending: new Map(), reqId: 0 };
+        const ctx = { port, buffer: '', pending: new Map(), reqId: 0, path: serialPath };
 
         port.on('data', (chunk) => {
             ctx.buffer += chunk.toString('utf8');
@@ -340,6 +340,10 @@ async function initAllEsp8266Boards() {
     console.log(`🔍 Found ${paths.length} serial devices: ${paths.join(', ')}`);
 
     const initPromises = paths.map(async (path) => {
+        // Skip paths already in use by any connected board
+        const alreadyOpen = Array.from(esp8266Boards.values()).some(b => b.path === path);
+        if (alreadyOpen) return;
+
         try {
             // Add a timeout to the entire port opening process
             const ctx = await new Promise((resolve) => {
@@ -1450,15 +1454,20 @@ function startNfcPolling() {
     let slotIndex = 0;
     console.log(`📋 Active NFC slots: [${activeSlots.join(', ')}]`);
 
-    // รีเฟรช active slots ทุก 30 วินาที (เผื่อบอร์ดหลุด/กลับมา)
-    setInterval(() => {
+    // รีเฟรช active slots และค้นหาบอร์ดใหม่ทุก 30 วินาที (เผื่อบอร์ดหลุด/ย้ายพอร์ต)
+    setInterval(async () => {
+        if (nfcMode === 'esp8266') {
+            await initAllEsp8266Boards(); // Re-scan ports
+        }
         const newSlots = getActiveSlots();
         if (JSON.stringify(newSlots) !== JSON.stringify(activeSlots)) {
             activeSlots = newSlots;
-            slotIndex = 0;
             console.log(`📋 Active NFC slots updated: [${activeSlots.join(', ')}]`);
         }
     }, 30000);
+
+    let lastLoopTime = Date.now();
+    let loopStuckCount = 0;
 
     const MISS_LIMIT = 5;          // Number of consecutive misses before turning red
 
@@ -1475,13 +1484,13 @@ function startNfcPolling() {
                 missCounts.set(slotNumber, 0);
 
                 if (activeFeedbackSlots.has(slotNumber)) {
-                    console.log(`✨ [Return Polling] Slot ${slotNumber} detected UID: ${uid}`);
+                    logDebug(`✨ [Return Polling] Slot ${slotNumber} detected UID: ${uid}`);
                 }
 
                 const expectedUid = expectedKeyUidBySlot[slotNumber];
                 // Log mismatch even if it proceeds later
                 if (expectedUid && uid !== expectedUid) {
-                    console.log(`⚠️ [UID Mismatch] Slot ${slotNumber}: Detected ${uid}, Backend expects ${expectedUid}`);
+                    logDebug(`⚠️ [UID Mismatch] Slot ${slotNumber}: Detected ${uid}, Backend expects ${expectedUid}`);
                     logDebug(`❌ [WrongKey] ช่อง ${slotNumber}: พบ UID ${uid} (คาดหวัง ${expectedUid}) -> UNLOCKING`);
                     startWrongKeyCheck(slotNumber, uid, expectedUid);
                     return;
@@ -1536,12 +1545,30 @@ function startNfcPolling() {
     }
 
     setInterval(async () => {
-        if (isUnlocking || isPollingSlot) {
-            if (isUnlocking && slotIndex % 10 === 0) console.log(`⏳ Polling paused (isUnlocking=true)`);
+        const now = Date.now();
+        
+        // Watchdog: ถ้า Loop ค้างนานเกินไป (เช่น 5 วินาที) ให้ Force Reset flags
+        if (isPollingSlot && (now - lastLoopTime > 5000)) {
+            console.log('⚠️ [Watchdog] Polling loop appears STUCK. Force resetting flags.');
+            isPollingSlot = false;
+        }
+        lastLoopTime = now;
+
+        // Pause NFC polling if we are currently trying to unlock a slot
+        if (isUnlocking) {
+            loopStuckCount++;
+            if (loopStuckCount > 50) { // ประมาณ 10 วินาที
+                console.log('⚠️ [Watchdog] isUnlocking stuck for 10s. Force resetting.');
+                isUnlocking = false;
+                loopStuckCount = 0;
+            }
+            if (slotIndex % 10 === 0) console.log(`⏳ Polling paused (isUnlocking=true)`);
             return;
         }
-        
-        isPollingSlot = true; // Lock the cycle
+        loopStuckCount = 0;
+
+        if (isPollingSlot) return;
+        if (activeSlots.length === 0) return;
 
         try {
             // ── Optimize: แบ่งกลุ่ม Slot ตาม Board ──
