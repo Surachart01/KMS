@@ -35,7 +35,7 @@ const RELAY_ACTIVE_STATE = (process.env.RELAY_ACTIVE_STATE || 'LOW').toUpperCase
 const FORCE_PY_NFC = (process.env.FORCE_PY_NFC || '').toLowerCase() === '1';
 const FORCE_ESP8266_NFC = (process.env.FORCE_ESP8266_NFC || '').toLowerCase() === '1';
 const PY_NFC_READ_TIMEOUT_MS = Number(process.env.PY_NFC_READ_TIMEOUT_MS || 250);
-const ESP8266_READ_TIMEOUT_MS = Number(process.env.ESP8266_READ_TIMEOUT_MS || 500);
+const ESP8266_READ_TIMEOUT_MS = Number(process.env.ESP8266_READ_TIMEOUT_MS || 800); // เพิ่มเป็น 800ms เพื่อความเสถียรลด Timeout หลอก
 
 
 // slots ที่กำลังรอดึงกุญแจออก (ห้าม NFC polling loop ทั่วไปรบกวน)
@@ -1503,10 +1503,13 @@ function startNfcPolling() {
                 // ── [OPTIMIZE] ลดความถี่ในการส่ง nfc:tag ไปยัง Backend ──
                 const now = Date.now();
                 const lastEmit = lastEmitTimeBySlot.get(slotNumber);
+                const isReturnActive = activeFeedbackSlots.has(slotNumber);
+
                 // ส่งเฉพาะเมื่อ:
-                // 1. เป็น UID ใหม่ (ไม่เหมือนครั้งล่าสุดที่ส่ง)
-                // 2. หรือ ผ่านไปแล้ว 2 วินาที (เพื่อให้หน้าจอยังรับรู้ว่ากุญแจยังอยู่)
-                if (!lastEmit || lastEmit.uid !== uid || (now - lastEmit.time > 2000)) {
+                // 1. เป็น UID ใหม่
+                // 2. หรือ ผ่านไปแล้ว 2 วินาที
+                // 3. หรือ เป็นช่องที่ "กำลังรอคืนกุญแจอยู่" (ต้องส่งถี่เพื่อให้ UI ตอบสนองทันที)
+                if (isReturnActive || !lastEmit || lastEmit.uid !== uid || (now - lastEmit.time > 2000)) {
                     socket.emit('nfc:tag', { slotNumber, uid });
                     lastEmitTimeBySlot.set(slotNumber, { uid, time: now });
                 }
