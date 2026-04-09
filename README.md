@@ -1,4 +1,4 @@
-# SKMS - Smart Key Management System
+# KMS - Key Management System
 
 ระบบเบิกคืนกุญแจอัตโนมัติพร้อม NFC และการจัดการตารางเรียน
 
@@ -49,7 +49,7 @@ npm run migrate
 
 # หมายเหตุ: migration จะรัน automatically
 # หากต้องการรัน manually:
-npx prisma migrate dev --name init_skms_system
+npx prisma migrate dev --name init_kms_system
 
 # สร้างข้อมูลเริ่มต้น (seed)
 npm run db-seed
@@ -70,7 +70,7 @@ npm run dev
 ### 2. Frontend Setup
 
 ```bash
-cd skms-frontend
+cd frontend
 
 # ติดตั้ง dependencies
 npm install
@@ -113,7 +113,7 @@ backend/
 
 ### Frontend
 ```
-skms-frontend/
+frontend/
 ├── src/
 │   ├── app/
 │   │   ├── login/         # Login page
@@ -232,7 +232,7 @@ DELETE /api/keys/:id         # ลบ (staff only)
 ### Backend (.env)
 ```bash
 # Database
-DATABASE_URL="postgresql://user:password@localhost:5432/skms"
+DATABASE_URL="postgresql://user:password@localhost:5432/kms"
 
 # JWT
 JWT_SECRET="your-secret-key-here"
@@ -271,7 +271,7 @@ NEXT_PUBLIC_API_URL=http://localhost:4556
 
 3. **Setup Frontend:**
    ```bash
-   cd skms-frontend
+   cd frontend
    npm install
    # แก้ไข .env.local
    npm run dev
@@ -335,4 +335,4 @@ npx prisma db push
 
 ## 📄 License
 
-© 2026 SKMS. All rights reserved.
+© 2026 KMS. All rights reserved.

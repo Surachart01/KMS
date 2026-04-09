@@ -50,7 +50,7 @@ export default function TeacherLayout({ children }) {
     const handleLogout = () => {
         Cookies.remove("token");
         Cookies.remove("user");
-        router.push("/login");
+        router.push("/");
     };
 
     const menuItems = [

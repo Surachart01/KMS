@@ -4,7 +4,7 @@ services:
   # ── Database ──
   postgres:
     image: postgres:15-alpine
-    container_name: SKMS-postgresdb
+    container_name: KMS-postgresdb
     restart: always
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
@@ -18,7 +18,7 @@ services:
   # ── Database Admin ──
   pgadmin:
     image: dpage/pgadmin4:latest
-    container_name: SKMS-pgadmin
+    container_name: KMS-pgadmin
     restart: always
     environment:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
@@ -33,7 +33,7 @@ services:
   # ── Redis ──
   redis:
     image: redis:alpine
-    container_name: SKMS-redis
+    container_name: KMS-redis
     restart: always
     ports:
       - "63797:6379"
@@ -46,7 +46,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: SKMS-backend
+    container_name: KMS-backend
     restart: always
     ports:
       - "4556:4556"

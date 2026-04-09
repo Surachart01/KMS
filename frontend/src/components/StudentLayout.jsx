@@ -105,7 +105,7 @@ export default function StudentLayout({ children }) {
                 menuItems={menuItems}
                 pathname={pathname}
                 handleMenuClick={handleMenuClick}
-                logo="🎓 SKMS"
+                logo="🎓 KMS"
                 logoCollapsed="🎓"
             />
 

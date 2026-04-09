@@ -35,7 +35,7 @@ export default function Sidebar({
             ) : (
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                     <span style={{ fontSize: 24 }}>🔑</span>
-                    <span>SKMS</span>
+                    <span>KMS</span>
                 </div>
             )}
         </div>

@@ -38,6 +38,8 @@ const { Title, Text } = Typography;
 export default function KeysPage() {
     const [keys, setKeys] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [selectedRowKeys, setSelectedRowKeys] = useState([]);
+    const [batchActionLoading, setBatchActionLoading] = useState(false);
 
     // Edit modal
     const [modalVisible, setModalVisible] = useState(false);
@@ -81,6 +83,87 @@ export default function KeysPage() {
             else { await keysAPI.create(values); message.success("เพิ่มสำเร็จ"); }
             setModalVisible(false); form.resetFields(); fetchKeys();
         } catch (e) { message.error(e.response?.data?.message || "ไม่สามารถบันทึกได้"); }
+    };
+
+    // ── Bulk Actions ──
+    const handleBulkDelete = async () => {
+        setBatchActionLoading(true);
+        let successCount = 0;
+        try {
+            for (const id of selectedRowKeys) {
+                await keysAPI.delete(id);
+                successCount++;
+            }
+            message.success(`ลบสำเร็จ ${successCount} รายการ`);
+            setSelectedRowKeys([]);
+            fetchKeys();
+        } catch (e) {
+            message.error("เกิดข้อผิดพลาดในการลบบางรายการ");
+            fetchKeys();
+        } finally {
+            setBatchActionLoading(false);
+        }
+    };
+
+    const handleBulkClear = async () => {
+        setBatchActionLoading(true);
+        let successCount = 0;
+        try {
+            for (const id of selectedRowKeys) {
+                await keysAPI.update(id, { nfcUid: null });
+                successCount++;
+            }
+            message.success(`เคลียร์ UID สำเร็จ ${successCount} รายการ`);
+            setSelectedRowKeys([]);
+            fetchKeys();
+        } catch (e) {
+            message.error("เกิดข้อผิดพลาดในการเคลียร์ข้อมูล");
+        } finally {
+            setBatchActionLoading(false);
+        }
+    };
+
+    const handleBulkRead = async () => {
+        const targets = keys.filter(k => selectedRowKeys.includes(k.id));
+        setBatchActionLoading(true);
+        
+        Modal.info({
+            title: 'เริ่มการอ่านรหัส NFC แบบต่อเนื่อง',
+            content: `คุณเลือกกุญแจทั้งหมด ${targets.length} ดอก ระบบจะเริ่มให้อ่านทีละดอกตามลำดับ`,
+            okText: 'เริ่มดำเนินการ',
+            onOk: async () => {
+                for (let i = 0; i < targets.length; i++) {
+                    const key = targets[i];
+                    try {
+                        const hide = message.loading({ 
+                            content: `[${i + 1}/${targets.length}] กรุณานำเหรียญสำหรับห้อง ${key.roomCode} (ช่อง ${key.slotNumber}) ไปทาบ...`, 
+                            duration: 0 
+                        });
+                        
+                        await keysAPI.readNfc(key.id);
+                        hide();
+                        message.success(`อ่านและบันทึกห้อง ${key.roomCode} สำเร็จ`);
+                    } catch (e) {
+                        message.error(`ห้อง ${key.roomCode} อ่านไม่สำเร็จ: ${e.response?.data?.message || 'Timeout'}`);
+                        // Ask if want to continue to next
+                        const cont = await new Promise(resolve => {
+                            Modal.confirm({
+                                title: 'การอ่านขัดข้อง',
+                                content: `ไม่สามารถอ่านรหัสของห้อง ${key.roomCode} ได้ คุณต้องการทำดอกถัดไปต่อหรือไม่?`,
+                                okText: 'ทำต่อ',
+                                cancelText: 'หยุดแค่นี้',
+                                onOk: () => resolve(true),
+                                onCancel: () => resolve(false)
+                            });
+                        });
+                        if (!cont) break;
+                    }
+                }
+                setBatchActionLoading(false);
+                setSelectedRowKeys([]);
+                fetchKeys();
+            }
+        });
     };
 
     // ── NFC ──
@@ -173,6 +256,11 @@ export default function KeysPage() {
         },
     ];
 
+    const rowSelection = {
+        selectedRowKeys,
+        onChange: (keys) => setSelectedRowKeys(keys),
+    };
+
     return (
         <div className="fade-in">
             <Space direction="vertical" size="large" style={{ width: "100%" }}>
@@ -180,8 +268,55 @@ export default function KeysPage() {
                     <Title level={2} style={{ margin: 0 }}><KeyOutlined /> จัดการกุญแจ</Title>
                     <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd} size="large">เพิ่มกุญแจ</Button>
                 </div>
+
+                {selectedRowKeys.length > 0 && (
+                    <Alert
+                        message={
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <Text strong>เลือกอยู่ {selectedRowKeys.length} รายการ</Text>
+                                <Space>
+                                    <Button 
+                                        icon={<WifiOutlined />} 
+                                        onClick={handleBulkRead} 
+                                        loading={batchActionLoading}
+                                    >
+                                        อ่านรหัส NFC แบบต่อเนื่อง
+                                    </Button>
+                                    <Popconfirm 
+                                        title="คืืนค่ารหัส NFC" 
+                                        description="ล้างรหัส UID ของรายการที่เลือกทั้งหมด?" 
+                                        onConfirm={handleBulkClear}
+                                    >
+                                        <Button icon={<ReloadOutlined />}>ล้างรหัส NFC</Button>
+                                    </Popconfirm>
+                                    <Popconfirm 
+                                        title="ลบข้อมูล" 
+                                        description="ยืนยันการลบกุญแจที่เลือกทั้งหมด?" 
+                                        onConfirm={handleBulkDelete}
+                                        okButtonProps={{ danger: true }}
+                                    >
+                                        <Button danger icon={<DeleteOutlined />}>ลบกุญแจ</Button>
+                                    </Popconfirm>
+                                    <Button type="link" onClick={() => setSelectedRowKeys([])}>ยกเลิกการเลือก</Button>
+                                </Space>
+                            </div>
+                        }
+                        type="info"
+                        showIcon={false}
+                        className="feature-card"
+                        style={{ background: '#e6f7ff', border: '1px solid #91d5ff' }}
+                    />
+                )}
+
                 <Card className="feature-card">
-                    <Table columns={columns} dataSource={keys} rowKey="id" loading={loading} pagination={{ defaultPageSize: 10 }} />
+                    <Table 
+                        rowSelection={rowSelection}
+                        columns={columns} 
+                        dataSource={keys} 
+                        rowKey="id" 
+                        loading={loading} 
+                        pagination={{ defaultPageSize: 10 }} 
+                    />
                 </Card>
             </Space>
 

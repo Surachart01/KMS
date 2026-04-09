@@ -2,7 +2,7 @@ version: '3.8'
 services:
   postgres:
     image: postgres:15-alpine
-    container_name: SKMS-postgresdb
+    container_name: KMS-postgresdb
     restart: always
     environment:
       POSTGRES_USER: ${POSTGRES_USER}        # ชื่อ User
@@ -14,7 +14,7 @@ services:
       - postgres_data:/var/lib/postgresql/data # เก็บข้อมูลถาวร (ปิด container ข้อมูลไม่หาย)
   pgadmin:
     image: dpage/pgadmin4:latest
-    container_name: SKMS-pgadmin
+    container_name: KMS-pgadmin
     restart: always
     environment:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}       # อีเมลสำหรับเข้าใช้งาน pgAdmin4
@@ -28,7 +28,7 @@ services:
 
   redis:
     image: redis:alpine
-    container_name: SKMS-redis
+    container_name: KMS-redis
     restart: always
     ports:
       - "63797:6379"

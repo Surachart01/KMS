@@ -11,8 +11,8 @@ const ibmPlexSansThai = IBM_Plex_Sans_Thai({
 
 
 export const metadata = {
-  title: "SKMS - Student Knowledge Management System",
-  description: "Student Knowledge Management System",
+  title: "KMS - Key Management System",
+  description: "Key Management System",
 };
 
 export default function RootLayout({ children }) {
@@ -25,7 +25,7 @@ export default function RootLayout({ children }) {
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-        <meta name="apple-mobile-web-app-title" content="SKMS" />
+        <meta name="apple-mobile-web-app-title" content="KMS" />
         <link rel="apple-touch-icon" href="/icon-192.png" />
         <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
         <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png" />
