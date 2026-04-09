@@ -78,7 +78,7 @@ const formatBkkTime = (date) => {
     const bkkTime = new Date(d.getTime() + (7 * 60 * 60 * 1000));
     const hh = String(bkkTime.getUTCHours()).padStart(2, '0');
     const mm = String(bkkTime.getUTCMinutes()).padStart(2, '0');
-    return `${hh}.${mm}`;
+    return `${hh}:${mm}`;
 };
 
 // ==================== API Endpoints ====================
@@ -469,11 +469,12 @@ export const borrowKey = async (req, res) => {
 
             if (conflicting) {
                 const startStr = formatBkkTime(conflicting.startTime);
+                const endStr = formatBkkTime(conflicting.endTime);
                 const subjectName = conflicting.subject?.name || 'ไม่ระบุวิชา';
 
                 return res.status(409).json({
                     success: false,
-                    message: `เวลาคืนทับกับคาบเรียน "${subjectName}" เริ่มเวลา ${startStr} กรุณาเลือกเวลาคืนที่เร็วกว่านี้`,
+                    message: `เวลาคืนทับกับคาบเรียน "${subjectName}" (${startStr} - ${endStr} น.) กรุณาเลือกเวลาคืนที่เร็วกว่านี้`,
                     error_code: "SCHEDULE_OVERLAP",
                     data: {
                         conflictingSchedule: {
@@ -871,9 +872,10 @@ export const swapAuthorization = async (req, res) => {
             });
             if (conflictingA) {
                 const startStr = formatBkkTime(conflictingA.startTime);
+                const endStr = formatBkkTime(conflictingA.endTime);
                 return res.status(409).json({
                     success: false,
-                    message: `ข้อมูลของคนที่ 1 (ที่จะรับห้อง ${finalRoomCodeB}): เวลาคืนทับกับคาบเรียน "${conflictingA.subject?.name || 'ไม่ระบุ'}" เวลา ${startStr} น. กรุณาเลือกเวลาคืนที่เร็วกว่านี้`,
+                    message: `ข้อมูลของคนที่ 1 (ที่จะรับห้อง ${finalRoomCodeB}): เวลาคืนทับกับคาบเรียน "${conflictingA.subject?.name || 'ไม่ระบุ'}" (${startStr} - ${endStr} น.) กรุณาเลือกเวลาคืนที่เร็วกว่านี้`,
                 });
             }
         }
@@ -893,9 +895,10 @@ export const swapAuthorization = async (req, res) => {
             });
             if (conflictingB) {
                 const startStr = formatBkkTime(conflictingB.startTime);
+                const endStr = formatBkkTime(conflictingB.endTime);
                 return res.status(409).json({
                     success: false,
-                    message: `ข้อมูลของคนที่ 2 (ที่จะรับห้อง ${finalRoomCodeA}): เวลาคืนทับกับคาบเรียน "${conflictingB.subject?.name || 'ไม่ระบุ'}" เวลา ${startStr} น. กรุณาเลือกเวลาคืนที่เร็วกว่านี้`,
+                    message: `ข้อมูลของคนที่ 2 (ที่จะรับห้อง ${finalRoomCodeA}): เวลาคืนทับกับคาบเรียน "${conflictingB.subject?.name || 'ไม่ระบุ'}" (${startStr} - ${endStr} น.) กรุณาเลือกเวลาคืนที่เร็วกว่านี้`,
                 });
             }
         }
@@ -1461,9 +1464,10 @@ export const transferAuthorization = async (req, res) => {
 
             if (conflictingB) {
                 const startStr = formatBkkTime(conflictingB.startTime);
+                const endStr = formatBkkTime(conflictingB.endTime);
                 return res.status(409).json({
                     success: false,
-                    message: `เวลาคืนทับกับคาบเรียน "${conflictingB.subject?.name || 'ไม่ระบุ'}" เวลา ${startStr} น. กรุณาเลือกเวลาคืนที่เร็วกว่านี้`,
+                    message: `เวลาคืนทับกับคาบเรียน "${conflictingB.subject?.name || 'ไม่ระบุ'}" (${startStr} - ${endStr} น.) กรุณาเลือกเวลาคืนที่เร็วกว่านี้`,
                 });
             }
         }
