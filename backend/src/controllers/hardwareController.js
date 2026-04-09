@@ -66,6 +66,21 @@ const getTodayRange = () => {
     return { startOfDay, endOfDay };
 };
 
+/**
+ * ฟังก์ชันช่วยจัดรูปแบบเวลา (บังคับ Bangkok Time +07 เสมอ)
+ * เอาไว้โชว์บน Kiosk ให้ตรงกับเวลาไทย (HH.mm)
+ * @param {Date|string} date 
+ */
+const formatBkkTime = (date) => {
+    if (!date) return "--.--";
+    const d = new Date(date);
+    // ปรับจาก UTC เป็น +7
+    const bkkTime = new Date(d.getTime() + (7 * 60 * 60 * 1000));
+    const hh = String(bkkTime.getUTCHours()).padStart(2, '0');
+    const mm = String(bkkTime.getUTCMinutes()).padStart(2, '0');
+    return `${hh}.${mm}`;
+};
+
 // ==================== API Endpoints ====================
 
 /**
@@ -392,16 +407,6 @@ export const borrowKey = async (req, res) => {
             return now >= bufferStart && now < s.endTime;
         });
 
-        // ฟังก์ชันช่วยจัดรูปแบบเวลา (บังคับ Bangkok Time +07 เสมอ)
-        const formatTime = (date) => {
-            const d = new Date(date);
-            // ปรับจาก UTC เป็น +7
-            const bkkTime = new Date(d.getTime() + (7 * 60 * 60 * 1000));
-            const hh = String(bkkTime.getUTCHours()).padStart(2, '0');
-            const mm = String(bkkTime.getUTCMinutes()).padStart(2, '0');
-            return `${hh}.${mm}`;
-        };
-
         // ถ้าไม่มีสิทธิ์เบิกปกติ (authorization) และกำลังพยายามเบิกด้วยเหตุผล
         // ข้ามการตรวจสอบนี้สำหรับครู/เจ้าหน้าที่
         if (!authorization && req.body.reason && !isPrivileged) {
@@ -412,8 +417,8 @@ export const borrowKey = async (req, res) => {
                 if (!isScheduledUser) {
                     // ผู้ใช้ปัจจุบันไม่มีเรียน แต่ "คนอื่น" มีเรียน
                     // --- เกณฑ์ใหม่: เปลี่ยนจากก Grace Period เป็น "บล็อกทั้งคาบเรียน" ---
-                    const startStr = formatTime(relevantSchedule.startTime);
-                    const endStr = formatTime(relevantSchedule.endTime);
+                    const startStr = formatBkkTime(relevantSchedule.startTime);
+                    const endStr = formatBkkTime(relevantSchedule.endTime);
                     const subjectName = relevantSchedule.subject?.name || 'คาบเรียนตามตาราง';
                     
                     // เช็คว่าเจ้าของสิทธิ์มาเบิกไปหรือยัง?
@@ -463,7 +468,7 @@ export const borrowKey = async (req, res) => {
             });
 
             if (conflicting) {
-                const startStr = new Date(conflicting.startTime).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+                const startStr = formatBkkTime(conflicting.startTime);
                 const subjectName = conflicting.subject?.name || 'ไม่ระบุวิชา';
 
                 return res.status(409).json({
@@ -865,10 +870,10 @@ export const swapAuthorization = async (req, res) => {
                 orderBy: { startTime: 'asc' },
             });
             if (conflictingA) {
-                const startStr = new Date(conflictingA.startTime).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+                const startStr = formatBkkTime(conflictingA.startTime);
                 return res.status(409).json({
                     success: false,
-                    message: `ข้อมูลของคนที่ 1 (ที่จะรับห้อง ${finalRoomCodeB}): เวลาคืนทับกับคาบเรียน "${conflictingA.subject?.name || 'ไม่ระบุ'}" สมัยเวลา ${startStr} กรุณาเลือกเวลาคืนที่เร็วกว่านี้`,
+                    message: `ข้อมูลของคนที่ 1 (ที่จะรับห้อง ${finalRoomCodeB}): เวลาคืนทับกับคาบเรียน "${conflictingA.subject?.name || 'ไม่ระบุ'}" เวลา ${startStr} น. กรุณาเลือกเวลาคืนที่เร็วกว่านี้`,
                 });
             }
         }
@@ -887,10 +892,10 @@ export const swapAuthorization = async (req, res) => {
                 orderBy: { startTime: 'asc' },
             });
             if (conflictingB) {
-                const startStr = new Date(conflictingB.startTime).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+                const startStr = formatBkkTime(conflictingB.startTime);
                 return res.status(409).json({
                     success: false,
-                    message: `ข้อมูลของคนที่ 2 (ที่จะรับห้อง ${finalRoomCodeA}): เวลาคืนทับกับคาบเรียน "${conflictingB.subject?.name || 'ไม่ระบุ'}" สมัยเวลา ${startStr} กรุณาเลือกเวลาคืนที่เร็วกว่านี้`,
+                    message: `ข้อมูลของคนที่ 2 (ที่จะรับห้อง ${finalRoomCodeA}): เวลาคืนทับกับคาบเรียน "${conflictingB.subject?.name || 'ไม่ระบุ'}" เวลา ${startStr} น. กรุณาเลือกเวลาคืนที่เร็วกว่านี้`,
                 });
             }
         }
@@ -1455,10 +1460,10 @@ export const transferAuthorization = async (req, res) => {
             });
 
             if (conflictingB) {
-                const startStr = new Date(conflictingB.startTime).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+                const startStr = formatBkkTime(conflictingB.startTime);
                 return res.status(409).json({
                     success: false,
-                    message: `เวลาคืนทับกับคาบเรียน "${conflictingB.subject?.name || 'ไม่ระบุ'}" เวลา ${startStr} กรุณาเลือกเวลาคืนที่เร็วกว่านี้`,
+                    message: `เวลาคืนทับกับคาบเรียน "${conflictingB.subject?.name || 'ไม่ระบุ'}" เวลา ${startStr} น. กรุณาเลือกเวลาคืนที่เร็วกว่านี้`,
                 });
             }
         }
