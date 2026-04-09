@@ -22,7 +22,7 @@ dotenv.config();
 const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:4556';
 const HARDWARE_KEYS_URL = process.env.HARDWARE_KEYS_URL || `${BACKEND_URL}/api/hardware/keys`;
 const HARDWARE_TOKEN = process.env.HARDWARE_TOKEN || '';
-const NFC_POLLING_INTERVAL_MS = 350; // loop NFC ทุก 350ms (เพิ่มจาก 200 เพื่อความเสถียร)
+const NFC_POLLING_INTERVAL_MS = 200; // ลดจาก 350 เหลือ 200ms เพื่อความไวสูงสุด
 const KEY_PULL_TIMEOUT_S = 10;       // รอดึงกุญแจ 10 วินาทีคงที่
 const KEY_PULL_POLL_INTERVAL_MS = 1000; // ตรวจเช็คการดึงกุญแจทุก 1 วินาที
 // กันอ่าน NFC หลุดเป็นจังหวะแล้วคิดว่าดึงกุญแจ: ต้องเห็นแท็กก่อน และต้องหายติดกันหลายครั้ง
@@ -1469,109 +1469,112 @@ function startNfcPolling() {
 
     const MISS_LIMIT = 5;          // Number of consecutive misses before turning red
 
-    setInterval(async () => {
-        // Heartbeat log every 20 iterations (approx 7 seconds)
-        if (slotIndex % 20 === 0 && !isUnlocking && !isPollingSlot) {
-            // console.log(`💓 Polling heart-beat (Active slots: ${activeSlots.length}, checking index ${slotIndex})`);
-        }
-
-        // Pause NFC polling if we are currently trying to unlock a slot
-        if (isUnlocking) {
-            if (slotIndex % 10 === 0) console.log(`⏳ Polling paused (isUnlocking=true)`);
-            return;
-        }
-        if (isPollingSlot) return;
-        if (activeSlots.length === 0) return;
-
-        const currentSlot = activeSlots[slotIndex % activeSlots.length];
-
-        // ข้าม slot ที่กำลัง key-pull check อยู่ (เพราะมี loop ของมันเอง)
-        // แต่ถ้าเป็น activeFeedbackSlots (ไฟกระพริบเฉยๆ) เราต้องสแกนเพื่อรอรับกุญแจคืน
-        if (pullCheckingSlots.has(currentSlot)) {
-            slotIndex = (slotIndex + 1) % activeSlots.length;
-            return;
-        }
+    // เก็บ Index การวนรอบแยกตามบอร์ด เพื่อความอิสระและรวดเร็
+    const boardIndices = new Map(); // boardId -> currentIdx
+    
+    // ฟังก์ชันย่อยสำหรับอ่าน Tag และจัดการสถานะ (ย้าย logic เดิมมาใส่ที่นี่)
+    async function processSlotTick(slotNumber) {
+        if (pullCheckingSlots.has(slotNumber)) return;
 
         try {
-            isPollingSlot = true;
-            const uid = await readNfcAtSlot(currentSlot);
+            const uid = await readNfcAtSlot(slotNumber);
             if (uid) {
-                // Reset miss count because we found the key
-                missCounts.set(currentSlot, 0);
+                missCounts.set(slotNumber, 0);
 
-                // Diagnostic log for active return slots
-                if (activeFeedbackSlots.has(currentSlot)) {
-                    console.log(`✨ [Return Polling] Slot ${currentSlot} detected tag: ${uid}`);
+                if (activeFeedbackSlots.has(slotNumber)) {
+                    console.log(`✨ [Return Polling] Slot ${slotNumber} detected tag: ${uid}`);
                 }
 
-                // ── [NEW/FIXED] ตรวจสอบความถูกต้องของกุญแจ ก่อรประมวลผลการคืน ──
-                const expectedUid = expectedKeyUidBySlot[currentSlot];
+                const expectedUid = expectedKeyUidBySlot[slotNumber];
                 if (expectedUid && uid !== expectedUid) {
-                    // เสียบผิดกุญแจ/ผิดช่อง!
-                    logDebug(`❌ [WrongKey] ช่อง ${currentSlot}: พบ UID ${uid} (คาดหวัง ${expectedUid}) -> UNLOCKING`);
-                    startWrongKeyCheck(currentSlot, uid, expectedUid);
-                    // หยุดการประมวลผลตรงนี้ (ไม่ emit nfc:tag ไปที่ server)
-                    isPollingSlot = false;
+                    logDebug(`❌ [WrongKey] ช่อง ${slotNumber}: พบ UID ${uid} (คาดหวัง ${expectedUid}) -> UNLOCKING`);
+                    startWrongKeyCheck(slotNumber, uid, expectedUid);
                     return;
                 }
 
-                if (slotHasKey[currentSlot] !== true) {
-                    slotHasKey[currentSlot] = true;
-                    logDebug(`📥 [Return] พบกุญแจคืนที่ช่อง ${currentSlot} (UID: ${uid})`);
+                if (slotHasKey[slotNumber] !== true) {
+                    slotHasKey[slotNumber] = true;
+                    logDebug(`📥 [Return] พบกุญแจคืนที่ช่อง ${slotNumber} (UID: ${uid})`);
                     
-                    // อัปเดตไฟเฉพาะถ้าไม่มี Feedback อื่นทำงานอยู่ (เช่น ไฟกระพริบ Success)
-                    if (!activeFeedbackSlots.has(currentSlot)) {
-                        setLedRelay(currentSlot, false); // 🟢 กุญแจอยู่
-
-                        // ── Real-time Auto-Return: เจอกุญแจเสียบกลับ → แจ้ง Backend ทันที ──
-                        // ⚠️ ข้ามถ้า slot กำลัง formal return อยู่ (activeFeedbackSlots)
-                        // เพราะ WaitForKeyReturnPage จะจัดการผ่าน returnKey API เอง
-                        logDebug(`🔄 [AutoReturn] ส่ง auto-return สำหรับช่อง ${currentSlot} (UID: ${uid})`);
-                        socket.emit('key:auto-return', { slotNumber: currentSlot, uid });
-                    } else {
-                        logDebug(`⏭️ [AutoReturn] ข้าม auto-return ช่อง ${currentSlot} — กำลัง formal return อยู่`);
+                    if (!activeFeedbackSlots.has(slotNumber)) {
+                        setLedRelay(slotNumber, false); // 🟢
+                        logDebug(`🔄 [AutoReturn] ส่ง auto-return สำหรับช่อง ${slotNumber} (UID: ${uid})`);
+                        socket.emit('key:auto-return', { slotNumber, uid });
                     }
                 }
-                if (!slotHasKey[`last_uid_${currentSlot}`] || slotHasKey[`last_uid_${currentSlot}`] !== uid) {
-                    console.log(`🏷️  NFC tag: ${uid} at slot ${currentSlot}`);
-                    slotHasKey[`last_uid_${currentSlot}`] = uid;
+                if (!slotHasKey[`last_uid_${slotNumber}`] || slotHasKey[`last_uid_${slotNumber}`] !== uid) {
+                    console.log(`🏷️  NFC tag: ${uid} at slot ${slotNumber}`);
+                    slotHasKey[`last_uid_${slotNumber}`] = uid;
                 }
-                socket.emit('nfc:tag', { slotNumber: currentSlot, uid });
+                socket.emit('nfc:tag', { slotNumber: slotNumber, uid });
             } else {
-                // Key not found, increment miss count
-                const misses = (missCounts.get(currentSlot) || 0) + 1;
-                missCounts.set(currentSlot, misses);
+                const misses = (missCounts.get(slotNumber) || 0) + 1;
+                missCounts.set(slotNumber, misses);
 
                 if (misses >= MISS_LIMIT) {
-                    if (slotHasKey[currentSlot] !== false) {
-                        slotHasKey[currentSlot] = false;
-                        slotHasKey[`last_uid_${currentSlot}`] = null;
-                        
-                        // อัปเดตไฟเฉพาะถ้าไม่มี Feedback อื่นทำงานอยู่
-                        if (!activeFeedbackSlots.has(currentSlot)) {
-                            setLedRelay(currentSlot, true); // 🔴 กุญแจไม่อยู่
+                    if (slotHasKey[slotNumber] !== false) {
+                        slotHasKey[slotNumber] = false;
+                        slotHasKey[`last_uid_${slotNumber}`] = null;
+                        if (!activeFeedbackSlots.has(slotNumber)) {
+                            setLedRelay(slotNumber, true); // 🔴
                         }
-                        logDebug(`📤 [Missing] กุญแจหายไปจาก่อง ${currentSlot} (Misses: ${misses})`);
+                        logDebug(`📤 [Missing] กุญแจหายไปจากช่อง ${slotNumber} (Misses: ${misses})`);
                     }
                 }
             }
         } catch (e) {
-            // เกิด Error หรืออ่านไม่ได้
-            logDebug(`⚠️  Read error at slot ${currentSlot}: ${e.message}`);
+            logDebug(`⚠️  Read error at slot ${slotNumber}: ${e.message}`);
+        }
+    }
+
+    setInterval(async () => {
+        if (isUnlocking || isPollingSlot) {
+            if (isUnlocking && slotIndex % 10 === 0) console.log(`⏳ Polling paused (isUnlocking=true)`);
+            return;
+        }
+        
+        isPollingSlot = true; // Lock the cycle
+
+        try {
+            // ── Optimize: แบ่งกลุ่ม Slot ตาม Board ──
+            const boards = Array.from(esp8266Boards.keys());
+            if (boards.length === 0 && nfcMode === 'esp8266') {
+                // ถ้าไม่มีบอร์ด ให้ลอง poll ตาม activeSlots แบบเดิม (fallback)
+                const slot = activeSlots[slotIndex % activeSlots.length];
+                await processSlotTick(slot);
+                slotIndex++;
+            } else {
+                // ── Parallel Polling: อ่าน 1 ช่อง จาก "ทุกบอร์ดพร้อมกัน" ──
+                const pollPromises = boards.map(async (boardId) => {
+                    const boardSlots = activeSlots.filter(s => slotToBoardId(s) === boardId);
+                    if (boardSlots.length === 0) return;
+
+                    // 1. Priority: ถ้ามีช่องในบอร์ดนี้กำลังรอคืนให้เน้นช่องนั้นก่อน
+                    const prioritySlot = boardSlots.find(s => activeFeedbackSlots.has(s));
+                    if (prioritySlot) {
+                        return await processSlotTick(prioritySlot);
+                    }
+
+                    // 2. Normal: วนรอบตามคิวของบอร์ดนั้นๆ
+                    let idx = boardIndices.get(boardId) || 0;
+                    const slot = boardSlots[idx % boardSlots.length];
+                    await processSlotTick(slot);
+                    boardIndices.set(boardId, idx + 1);
+                });
+
+                await Promise.all(pollPromises);
+                slotIndex++;
+            }
         } finally {
-            // Node mode needs CS deassert here (python mode handles CS internally)
             if (nfcMode === 'node') {
-                const cs = csPins[currentSlot];
-                try {
-                    cs?.writeSync(1);
-                } catch {
-                    // ignore
+                // Node mode fallback: deassert all CS (just in case)
+                for (const slot of activeSlots) {
+                    try { csPins[slot]?.writeSync(1); } catch {}
                 }
             }
             isPollingSlot = false;
         }
 
-        slotIndex = (slotIndex + 1) % activeSlots.length;
     }, NFC_POLLING_INTERVAL_MS);
 }
 
