@@ -65,18 +65,18 @@ export default function KeyListPage({ keys, onSelectRoom, onCancel, loading }) {
                     <button 
                         className="btn btn-secondary" 
                         onClick={scrollUp} 
-                        style={{ padding: '24px', borderRadius: '24px', touchAction: 'manipulation' }}
+                        style={{ padding: '16px', borderRadius: '16px', touchAction: 'manipulation' }}
                         aria-label="Scroll Up"
                     >
-                        <ChevronUp size={48} strokeWidth={3} />
+                        <ChevronUp size={32} strokeWidth={2.5} />
                     </button>
                     <button 
                         className="btn btn-secondary" 
                         onClick={scrollDown} 
-                        style={{ padding: '24px', borderRadius: '24px', touchAction: 'manipulation' }}
+                        style={{ padding: '16px', borderRadius: '16px', touchAction: 'manipulation' }}
                         aria-label="Scroll Down"
                     >
-                        <ChevronDown size={48} strokeWidth={3} />
+                        <ChevronDown size={32} strokeWidth={2.5} />
                     </button>
                 </div>
             </div>
