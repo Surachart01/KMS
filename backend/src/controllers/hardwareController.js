@@ -385,10 +385,18 @@ export const borrowKey = async (req, res) => {
 
         // === ขั้นตอนที่ 3.5: ตรวจสอบตารางสอนและสิทธิ์เบิกนอกเวลา ===
         
-        // คาบเรียนที่ "ครอบคลุม" เวลาปัจจุบัน (รวมล่วงหน้า 30 นาที)
+        // คาบเรียนที่ "ครอบคลุม" เวลาปัจจุบัน (รวมล่วงหน้า 30 นาที และตลอดเวลาที่มีเรียน)
         const relevantSchedule = allAuthsToday.find(s => {
             const bufferStart = new Date(s.startTime.getTime() - EARLY_BORROW_MINUTES * 60 * 1000);
             return now >= bufferStart && now < s.endTime;
+        });
+
+        // ฟังก์ชันช่วยจัดรูปแบบเวลาสำหรับ Alert
+        const formatTime = (date) => new Date(date).toLocaleTimeString('th-TH', { 
+            hour: '2-digit', 
+            minute: '2-digit',
+            hour12: false,
+            timeZone: 'Asia/Bangkok'
         });
 
         // ถ้าไม่มีสิทธิ์เบิกปกติ (authorization) และกำลังพยายามเบิกด้วยเหตุผล
@@ -400,35 +408,32 @@ export const borrowKey = async (req, res) => {
                 
                 if (!isScheduledUser) {
                     // ผู้ใช้ปัจจุบันไม่มีเรียน แต่ "คนอื่น" มีเรียน
-                    const gracePeriodMs = 30 * 60 * 1000;
-                    const isGracePeriodActive = now < new Date(relevantSchedule.startTime.getTime() + gracePeriodMs);
+                    // --- เกณฑ์ใหม่: เปลี่ยนจากก Grace Period เป็น "บล็อกทั้งคาบเรียน" ---
+                    const startStr = formatTime(relevantSchedule.startTime);
+                    const endStr = formatTime(relevantSchedule.endTime);
+                    const subjectName = relevantSchedule.subject?.name || 'คาบเรียนตามตาราง';
                     
-                    if (isGracePeriodActive) {
-                        const startStr = new Date(relevantSchedule.startTime).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
-                        const subjectName = relevantSchedule.subject?.name || 'คาบเรียนตามตาราง';
-                        
-                        // เช็คว่าเจ้าของสิทธิ์มาเบิกไปหรือยัง?
-                        const existingBooking = await prisma.booking.findFirst({
-                            where: { 
-                                key: { roomCode: roomCode },
-                                status: "BORROWED"
+                    // เช็คว่าเจ้าของสิทธิ์มาเบิกไปหรือยัง?
+                    const existingBooking = await prisma.booking.findFirst({
+                        where: { 
+                            key: { roomCode: roomCode },
+                            status: "BORROWED"
+                        }
+                    });
+
+                    if (!existingBooking) {
+                        return res.status(409).json({
+                            success: false,
+                            message: `ห้องนี้มีเรียนวิชา "${subjectName}" (${startStr} - ${endStr} น.) ระบบสงวนสิทธิ์ให้ผู้สอนและนักศึกษาตามตารางเรียนเท่านั้น`,
+                            error_code: "SCHEDULE_RESERVED",
+                            data: {
+                                conflictingSchedule: {
+                                    subjectName,
+                                    startTime: relevantSchedule.startTime,
+                                    endTime: relevantSchedule.endTime
+                                }
                             }
                         });
-
-                        if (!existingBooking) {
-                            return res.status(409).json({
-                                success: false,
-                                message: `ห้องนี้มีเรียนวิชา "${subjectName}" (${startStr}) ระบบสงวนสิทธิ์ให้ผู้สอนจนถึงเวลา ${new Date(relevantSchedule.startTime.getTime() + gracePeriodMs).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })}`,
-                                error_code: "SCHEDULE_RESERVED",
-                                data: {
-                                    conflictingSchedule: {
-                                        subjectName,
-                                        startTime: relevantSchedule.startTime,
-                                        graceUntil: new Date(relevantSchedule.startTime.getTime() + gracePeriodMs)
-                                    }
-                                }
-                            });
-                        }
                     }
                 }
             }

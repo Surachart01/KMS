@@ -105,15 +105,23 @@ export default function ReasonPage({ roomCode, onSubmit, onCancel, loading }) {
                         <div className="room-schedule-overview anim-fade-in">
                             <p className="reason-step-label"><Clock size={16} /> ตารางการใช้ห้องวันนี้</p>
                             <div className="schedule-list">
-                                {roomSchedule.map(s => (
-                                    <div key={s.id} className="schedule-item">
-                                        <div className="schedule-time">{new Date(s.startTime).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })} - {new Date(s.endTime).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })}</div>
-                                        <div className="schedule-info">
-                                            <div className="schedule-subject">{s.subjectName}</div>
-                                            <div className="schedule-teacher">{s.teacherName}</div>
+                                {roomSchedule.map(s => {
+                                    const formatT = (d) => new Date(d).toLocaleTimeString('th-TH', { 
+                                        hour: '2-digit', 
+                                        minute: '2-digit',
+                                        hour12: false,
+                                        timeZone: 'Asia/Bangkok'
+                                    });
+                                    return (
+                                        <div key={s.id} className="schedule-item">
+                                            <div className="schedule-time">{formatT(s.startTime)} - {formatT(s.endTime)}</div>
+                                            <div className="schedule-info">
+                                                <div className="schedule-subject">{s.subjectName}</div>
+                                                <div className="schedule-teacher">{s.teacherName}</div>
+                                            </div>
                                         </div>
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         </div>
                     )}
