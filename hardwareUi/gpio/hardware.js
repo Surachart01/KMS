@@ -40,6 +40,8 @@ const ESP8266_READ_TIMEOUT_MS = Number(process.env.ESP8266_READ_TIMEOUT_MS || 50
 
 // slots ที่กำลังรอดึงกุญแจออก (ห้าม NFC polling loop ทั่วไปรบกวน)
 const pullCheckingSlots = new Set();
+// เก็บเวลาที่ส่ง NFC ล่าสุด เพื่อลดภาระ Network / Reverse Proxy
+const lastEmitTimeBySlot = new Map(); // slot -> { uid, time }
 
 // ── Shared Hardware Status (for Reconnection Sync) ──
 let currentHardwareReady = false;
@@ -1506,7 +1508,17 @@ function startNfcPolling() {
                     console.log(`🏷️  NFC tag: ${uid} at slot ${slotNumber}`);
                     slotHasKey[`last_uid_${slotNumber}`] = uid;
                 }
-                socket.emit('nfc:tag', { slotNumber: slotNumber, uid });
+
+                // ── [OPTIMIZE] ลดความถี่ในการส่ง nfc:tag ไปยัง Backend ──
+                const now = Date.now();
+                const lastEmit = lastEmitTimeBySlot.get(slotNumber);
+                // ส่งเฉพาะเมื่อ:
+                // 1. เป็น UID ใหม่ (ไม่เหมือนครั้งล่าสุดที่ส่ง)
+                // 2. หรือ ผ่านไปแล้ว 2 วินาที (เพื่อให้หน้าจอยังรับรู้ว่ากุญแจยังอยู่)
+                if (!lastEmit || lastEmit.uid !== uid || (now - lastEmit.time > 2000)) {
+                    socket.emit('nfc:tag', { slotNumber, uid });
+                    lastEmitTimeBySlot.set(slotNumber, { uid, time: now });
+                }
             } else {
                 const misses = (missCounts.get(slotNumber) || 0) + 1;
                 missCounts.set(slotNumber, misses);
