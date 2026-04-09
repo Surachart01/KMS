@@ -408,20 +408,19 @@ async function esp8266Request(boardId, payload) {
     });
 }
 
-let _esp8266DebugCount = 0;
 async function readNfcAtSlotEsp8266(slotNumber) {
     const boardId = slotToBoardId(slotNumber);
     try {
         const res = await esp8266Request(boardId, { cmd: 'read', slot: slotNumber });
-        if (_esp8266DebugCount < 30) {
-            _esp8266DebugCount++;
-            console.log(`[ESP8266-NFC #${_esp8266DebugCount}] board=${boardId} slot=${slotNumber} → uid=${res.uid ?? 'null'}`);
+        const uid = res.uid || null;
+        if (uid) {
+            // Log for every unique tag detection event
+            console.log(`[ESP8266-NFC] board=${boardId} slot=${slotNumber} → uid=${uid}`);
         }
-        return res.uid || null;
+        return uid;
     } catch (e) {
-        if (_esp8266DebugCount < 30) {
-            _esp8266DebugCount++;
-            console.log(`[ESP8266-NFC #${_esp8266DebugCount}] board=${boardId} slot=${slotNumber} → ERROR: ${e.message}`);
+        if (e.message !== 'ESP8266 request timeout') {
+            console.log(`[ESP8266-ERR] slot=${slotNumber} board=${boardId} error: ${e.message}`);
         }
         return null;
     }
@@ -1471,8 +1470,16 @@ function startNfcPolling() {
     const MISS_LIMIT = 5;          // Number of consecutive misses before turning red
 
     setInterval(async () => {
+        // Heartbeat log every 20 iterations (approx 7 seconds)
+        if (slotIndex % 20 === 0 && !isUnlocking && !isPollingSlot) {
+            // console.log(`💓 Polling heart-beat (Active slots: ${activeSlots.length}, checking index ${slotIndex})`);
+        }
+
         // Pause NFC polling if we are currently trying to unlock a slot
-        if (isUnlocking) return;
+        if (isUnlocking) {
+            if (slotIndex % 10 === 0) console.log(`⏳ Polling paused (isUnlocking=true)`);
+            return;
+        }
         if (isPollingSlot) return;
         if (activeSlots.length === 0) return;
 
@@ -1491,6 +1498,11 @@ function startNfcPolling() {
             if (uid) {
                 // Reset miss count because we found the key
                 missCounts.set(currentSlot, 0);
+
+                // Diagnostic log for active return slots
+                if (activeFeedbackSlots.has(currentSlot)) {
+                    console.log(`✨ [Return Polling] Slot ${currentSlot} detected tag: ${uid}`);
+                }
 
                 // ── [NEW/FIXED] ตรวจสอบความถูกต้องของกุญแจ ก่อรประมวลผลการคืน ──
                 const expectedUid = expectedKeyUidBySlot[currentSlot];
