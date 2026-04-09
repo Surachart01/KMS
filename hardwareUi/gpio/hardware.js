@@ -1475,11 +1475,13 @@ function startNfcPolling() {
                 missCounts.set(slotNumber, 0);
 
                 if (activeFeedbackSlots.has(slotNumber)) {
-                    console.log(`✨ [Return Polling] Slot ${slotNumber} detected tag: ${uid}`);
+                    console.log(`✨ [Return Polling] Slot ${slotNumber} detected UID: ${uid}`);
                 }
 
                 const expectedUid = expectedKeyUidBySlot[slotNumber];
+                // Log mismatch even if it proceeds later
                 if (expectedUid && uid !== expectedUid) {
+                    console.log(`⚠️ [UID Mismatch] Slot ${slotNumber}: Detected ${uid}, Backend expects ${expectedUid}`);
                     logDebug(`❌ [WrongKey] ช่อง ${slotNumber}: พบ UID ${uid} (คาดหวัง ${expectedUid}) -> UNLOCKING`);
                     startWrongKeyCheck(slotNumber, uid, expectedUid);
                     return;
@@ -1547,8 +1549,11 @@ function startNfcPolling() {
             // โดย boardId 1-3 คือบอร์ดมาตรฐาน
             const standardBoards = [1, 2, 3];
             
-            // Parallel Polling: อ่าน 1 ช่อง จาก "ทุกกลุ่มบอร์ดพร้อมกัน"
-            const pollPromises = standardBoards.map(async (boardId) => {
+            // Parallel Polling: อ่าน 1 ช่อง จาก "ทุกกลุ่มบอร์ดพร้อมกัน" โดยมีการหน่วงเวลาเล็กน้อย
+            const pollPromises = standardBoards.map(async (boardId, i) => {
+                // Stagger poll requests by 50ms to prevent power spikes on the RPi
+                await new Promise(r => setTimeout(r, i * 50));
+                
                 const boardSlots = activeSlots.filter(s => slotToBoardId(s) === boardId);
                 if (boardSlots.length === 0) return;
 
