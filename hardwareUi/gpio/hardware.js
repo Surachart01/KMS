@@ -1443,16 +1443,7 @@ function startNfcPolling() {
 
     // สร้างรายการ slot ที่มีบอร์ดจริงเชื่อมต่ออยู่ (ไม่ poll slot ที่บอร์ดไม่มี)
     function getActiveSlots() {
-        if (nfcMode === 'esp8266') {
-            const slots = [];
-            for (const [boardId, ctx] of esp8266Boards.entries()) {
-                if (boardId === 1) { for (let s = 1; s <= 4; s++) slots.push(s); }
-                if (boardId === 2) { for (let s = 5; s <= 7; s++) slots.push(s); }
-                if (boardId === 3) { for (let s = 8; s <= 10; s++) slots.push(s); }
-            }
-            return slots.length > 0 ? slots : [1, 2, 3, 4, 5, 6, 7]; // fallback
-        }
-        return Object.keys(SLOT_CS_MAP).map(Number);
+        return [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
     }
 
     let activeSlots = getActiveSlots();
@@ -1549,34 +1540,30 @@ function startNfcPolling() {
 
         try {
             // ── Optimize: แบ่งกลุ่ม Slot ตาม Board ──
-            const boards = Array.from(esp8266Boards.keys());
-            if (boards.length === 0 && nfcMode === 'esp8266') {
-                // ถ้าไม่มีบอร์ด ให้ลอง poll ตาม activeSlots แบบเดิม (fallback)
-                const slot = activeSlots[slotIndex % activeSlots.length];
+            // แม้บอร์ดจะไม่อยู่ใน esp8266Boards (offline) เราก็จะพยายามวนอ่านอยู่ดี
+            // โดย boardId 1-3 คือบอร์ดมาตรฐาน
+            const standardBoards = [1, 2, 3];
+            
+            // Parallel Polling: อ่าน 1 ช่อง จาก "ทุกกลุ่มบอร์ดพร้อมกัน"
+            const pollPromises = standardBoards.map(async (boardId) => {
+                const boardSlots = activeSlots.filter(s => slotToBoardId(s) === boardId);
+                if (boardSlots.length === 0) return;
+
+                // 1. Priority: ถ้ามีช่องในบอร์ดนี้กำลังรอคืนให้เน้นช่องนั้นก่อน
+                const prioritySlot = boardSlots.find(s => activeFeedbackSlots.has(s));
+                if (prioritySlot) {
+                    return await processSlotTick(prioritySlot);
+                }
+
+                // 2. Normal: วนรอบตามคิวของบอร์ดนั้นๆ
+                let idx = boardIndices.get(boardId) || 0;
+                const slot = boardSlots[idx % boardSlots.length];
                 await processSlotTick(slot);
-                slotIndex++;
-            } else {
-                // ── Parallel Polling: อ่าน 1 ช่อง จาก "ทุกบอร์ดพร้อมกัน" ──
-                const pollPromises = boards.map(async (boardId) => {
-                    const boardSlots = activeSlots.filter(s => slotToBoardId(s) === boardId);
-                    if (boardSlots.length === 0) return;
+                boardIndices.set(boardId, idx + 1);
+            });
 
-                    // 1. Priority: ถ้ามีช่องในบอร์ดนี้กำลังรอคืนให้เน้นช่องนั้นก่อน
-                    const prioritySlot = boardSlots.find(s => activeFeedbackSlots.has(s));
-                    if (prioritySlot) {
-                        return await processSlotTick(prioritySlot);
-                    }
-
-                    // 2. Normal: วนรอบตามคิวของบอร์ดนั้นๆ
-                    let idx = boardIndices.get(boardId) || 0;
-                    const slot = boardSlots[idx % boardSlots.length];
-                    await processSlotTick(slot);
-                    boardIndices.set(boardId, idx + 1);
-                });
-
-                await Promise.all(pollPromises);
-                slotIndex++;
-            }
+            await Promise.all(pollPromises);
+            slotIndex++;
         } finally {
             if (nfcMode === 'node') {
                 // Node mode fallback: deassert all CS (just in case)
