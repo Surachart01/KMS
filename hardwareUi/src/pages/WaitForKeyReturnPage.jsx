@@ -113,16 +113,6 @@ export default function WaitForKeyReturnPage({ booking, onKeyDetected, onCancel 
                     </button>
                 </div>
             </div>
-
-            {/* Simulated hardware detection for testing */}
-            <div className="test-scan-buttons" style={{ marginTop: '20px', opacity: 0.2 }}>
-                <button 
-                    className="btn btn-test small" 
-                    onClick={() => socket.emit('nfc:tag', { slotNumber: booking.slotNumber, uid: 'TEST' })}
-                >
-                    🧪 จำลองการเสียบกุญแจ
-                </button>
-            </div>
         </div>
     );
 }

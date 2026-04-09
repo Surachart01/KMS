@@ -53,16 +53,6 @@ export default function ScanWaitingPage({ mode, transferStep, swapStep, moveStep
                 <button className="btn btn-secondary btn-lg" onClick={onCancel}>
                     <ArrowLeft size={20} /> กลับไปหน้าหลัก
                 </button>
-                {onTestScan && (
-                    <>
-                        <button className="btn btn-primary" onClick={() => onTestScan('6702041510164')}>
-                            Test: 67...164
-                        </button>
-                        <button className="btn btn-primary" style={{ background: '#ec4899', borderColor: '#ec4899' }} onClick={() => onTestScan('6702041510181')}>
-                            Test: 67...181
-                        </button>
-                    </>
-                )}
             </div>
         </div>
     );

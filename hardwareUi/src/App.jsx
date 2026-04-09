@@ -573,44 +573,7 @@ export default function App() {
         }
     };
 
-    const handleTestScan = async (studentId) => {
-        const data = { userId: studentId };
-        console.log('😄 [TEST] scan:received:', data, 'mode:', mode);
-        setLastScanDebug(studentId);
-        
-        if (!data?.userId) return;
-        setScannedUser(data);
 
-        if (mode === 'return') {
-            setLoading(true);
-            try {
-                const res = await identifyUser(data.userId);
-                if (res?.success) {
-                    if (res.data?.activeBooking) {
-                        setReturningKey(res.data.activeBooking);
-                        setPage('confirmIdentity');
-                    } else {
-                        const userName = res.data.user ? `${res.data.user.firstName} ${res.data.user.lastName}` : 'ไม่ระบุชื่อ';
-                        setErrorPopup(`${userName}: ไม่พบรายการกุญแจที่คุณเบิกค้างไว้ในระบบ (ไม่สามารถคืนได้)`);
-                    }
-                } else {
-                    setErrorPopup(res?.message || 'ไม่พบข้อมูลผู้ใช้ในระบบ');
-                }
-            } catch (err) {
-                setErrorPopup('เกิดข้อผิดพลาดในการเชื่อมต่อ: ' + err.message);
-            } finally {
-                setLoading(false);
-            }
-        } else if (mode === 'transfer') {
-            handleTransferScan(data);
-        } else if (mode === 'swap') {
-            handleSwapScan(data);
-        } else if (mode === 'move') {
-            handleMoveScan(data);
-        } else {
-            setPage('confirmIdentity');
-        }
-    };
     const closePopup = () => setErrorPopup(null);
 
     return (
@@ -646,7 +609,6 @@ export default function App() {
                         moveStep={moveStep}
                         roomCode={selectedRoom}
                         onCancel={goHome}
-                        onTestScan={handleTestScan}
                     />
                 )}
 
