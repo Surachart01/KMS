@@ -632,36 +632,16 @@ body {
     background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.9) 100%);
     backdrop-filter: blur(20px);
     border-radius: 24px;
-    padding: 20px 24px;
-    width: 95%;
-    max-width: 600px;
+    padding: 16px 20px;
+    width: 98%;
+    max-width: 900px;
     height: 90%;
     display: flex;
     flex-direction: column;
     border: 1px solid var(--border);
     animation: popupIn 0.3s ease-out;
 }
-.reason-header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 8px;
-}
-.reason-header svg { width: 24px; height: 24px; }
-.reason-title { 
-    font-size: 1.5rem; 
-    font-weight: 700; 
-    color: white; 
-}
 
-.reason-content-scroll {
-    flex: 1;
-    overflow-y: auto;
-    padding-right: 8px;
-    margin: 8px 0;
-}
-.reason-content-scroll::-webkit-scrollbar { width: 4px; }
-.reason-content-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
 
 /* ── Room Schedule Overview ── */
 .room-schedule-overview {
@@ -830,7 +810,172 @@ body {
     font-weight: 700;
 }
 
-/* ── Touch Time Picker ── */
+/* ── Reason Page 2-Panel Layout ── */
+.reason-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.reason-title { font-size: 1.3rem; font-weight: 700; color: white; }
+
+.reason-body {
+    flex: 1;
+    display: flex;
+    gap: 0;
+    overflow: hidden;
+    min-height: 0;
+}
+.reason-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 8px 12px;
+    min-height: 0;
+}
+.reason-panel--left {
+    border-right: 1px solid rgba(255,255,255,0.06);
+    padding-right: 16px;
+}
+.reason-panel--right { padding-left: 16px; }
+
+/* Nav buttons for reason list */
+.reason-nav-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 38px;
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.05);
+    color: white;
+    cursor: pointer;
+    transition: var(--transition);
+    flex-shrink: 0;
+}
+.reason-nav-btn:active:not(:disabled) { background: var(--primary); transform: scale(0.97); }
+.reason-nav-btn:disabled { opacity: 0.2; cursor: not-allowed; }
+
+/* Reason row list */
+.reason-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin: 6px 0;
+    flex: 1;
+}
+.reason-row-btn {
+    width: 100%;
+    padding: 0 16px;
+    height: 44px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.09);
+    color: white;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    text-align: left;
+    transition: var(--transition);
+    flex-shrink: 0;
+}
+.reason-row-btn:active { transform: scale(0.98); }
+.reason-row-btn.active {
+    background: var(--primary);
+    border-color: var(--primary-light);
+    box-shadow: 0 0 12px var(--primary-glow);
+    font-weight: 700;
+}
+
+/* Scroll dots */
+.reason-scroll-indicator {
+    display: flex; gap: 4px; justify-content: center; margin-top: 6px; flex-shrink: 0;
+}
+.scroll-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: rgba(255,255,255,0.15); transition: background 0.2s;
+}
+.scroll-dot.active { background: var(--primary-light); }
+
+/* Other presets grid */
+.reason-other-presets { animation: slideDown 0.25s ease-out; flex-shrink: 0; }
+.reason-other-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-top: 4px; }
+.reason-other-btn {
+    padding: 7px 10px; border-radius: 8px; background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1); color: white; font-size: 0.85rem;
+    cursor: pointer; transition: var(--transition); text-align: center;
+}
+.reason-other-btn:active { transform: scale(0.96); }
+.reason-other-btn.active { background: var(--primary); border-color: var(--primary-light); box-shadow: 0 0 8px var(--primary-glow); }
+
+/* Time picker block */
+.time-picker-block {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    background: rgba(0,0,0,0.25);
+    border-radius: 14px;
+    padding: 10px 8px;
+    border: 1px solid rgba(255,255,255,0.05);
+    margin: 8px 0;
+    flex-shrink: 0;
+}
+.time-col { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.time-nav-btn {
+    display: flex; align-items: center; justify-content: center;
+    width: 52px; height: 34px; border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.07); color: white;
+    cursor: pointer; transition: var(--transition);
+}
+.time-nav-btn:active { background: var(--primary); transform: scale(0.93); }
+.time-digit {
+    font-size: 2.2rem; font-weight: 800; color: white; font-family: monospace;
+    min-width: 56px; text-align: center; line-height: 1; padding: 4px 0;
+}
+.time-unit { font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+.time-colon { font-size: 2rem; font-weight: 700; color: rgba(255,255,255,0.25); margin-bottom: 18px; }
+
+/* Time presets */
+.time-preset-row { display: flex; gap: 6px; flex-shrink: 0; margin-bottom: 10px; }
+.preset-chip {
+    flex: 1; padding: 8px 0; border-radius: 8px;
+    background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.2);
+    color: #10b981; font-size: 0.85rem; font-weight: 700; cursor: pointer; transition: var(--transition);
+}
+.preset-chip:active { background: #10b981; color: white; }
+
+/* Time preview */
+.time-preview-box {
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    background: rgba(16,185,129,0.07); border: 1px solid rgba(16,185,129,0.15);
+    border-radius: 10px; padding: 8px 14px; flex-shrink: 0;
+}
+.time-preview-label { font-size: 0.65rem; color: rgba(255,255,255,0.35); text-transform: uppercase; letter-spacing: 0.06em; }
+.time-preview-value { font-size: 1.5rem; font-weight: 800; color: var(--primary-light); font-family: monospace; }
+
+/* Schedule mini */
+.schedule-mini { margin-top: 10px; flex-shrink: 0; }
+.schedule-item-mini {
+    display: flex; gap: 8px; align-items: center; padding: 5px 8px;
+    background: rgba(255,255,255,0.03); border-radius: 8px;
+    border-left: 2px solid var(--primary); margin-bottom: 4px;
+}
+.schedule-time-mini { font-size: 0.75rem; color: var(--primary-light); font-family: monospace; white-space: nowrap; }
+.schedule-subj-mini { font-size: 0.8rem; color: rgba(255,255,255,0.7); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Actions */
+.reason-actions { 
+    display: flex; gap: 10px; margin-top: 10px;
+    padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.05); flex-shrink: 0;
+}
+.reason-actions .btn { flex: 1; height: 44px; padding: 0; border-radius: 10px; font-size: 1rem; }
+
+/* ── Touch Time Picker (legacy, keep for compatibility) ── */
 .touch-time-picker {
     display: flex;
     align-items: center;

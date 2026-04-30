@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { CheckCircle, XCircle, Clock, FileText, ChevronUp, ChevronDown } from 'lucide-react';
 
 const FALLBACK_REASONS = ['สอนชดเชย', 'กิจกรรมพิเศษ', 'ซ่อมบำรุง', 'ประชุม', 'ทดสอบระบบ', 'อื่นๆ'];
@@ -7,17 +7,27 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4556';
 
 const ITEMS_PER_PAGE = 4;
 
+/** คำนวณเวลาเริ่มต้น: ปัดนาทีขึ้นเป็น :00 หรือ :30 แล้วบวก 2 ชั่วโมง */
+function getDefaultTime() {
+    const now = new Date();
+    const m = now.getMinutes() < 30 ? 30 : 0;
+    const h = now.getMinutes() < 30 ? now.getHours() : now.getHours() + 1;
+    // บวก 2 ชั่วโมง
+    const totalH = (h + 2) % 24;
+    return { hours: totalH, minutes: m };
+}
+
 export default function ReasonPage({ roomCode, onSubmit, onCancel, loading }) {
     const [reasons, setReasons] = useState(FALLBACK_REASONS);
-    const [loadingReasons, setLoadingReasons] = useState(true);
     const [selected, setSelected] = useState('');
     const [selectedOther, setSelectedOther] = useState('');
     const [reasonScrollIndex, setReasonScrollIndex] = useState(0);
-    
-    // Time state (default to 2 hours from now)
-    const [hours, setHours] = useState(new Date().getHours() + 2);
-    const [minutes, setMinutes] = useState(0);
     const [roomSchedule, setRoomSchedule] = useState([]);
+
+    // Time state — เริ่มต้นถูกต้องตั้งแต่ต้น
+    const defaultTime = getDefaultTime();
+    const [hours, setHours] = useState(defaultTime.hours);
+    const [minutes, setMinutes] = useState(defaultTime.minutes);
 
     useEffect(() => {
         const fetchReasons = async () => {
@@ -40,9 +50,6 @@ export default function ReasonPage({ roomCode, onSubmit, onCancel, loading }) {
 
         fetchReasons();
         fetchSchedule();
-        
-        // Normalize default hours
-        if (hours >= 24) setHours(hours - 24);
     }, [roomCode]);
 
     const isOther = selected === 'อื่นๆ';
@@ -51,22 +58,14 @@ export default function ReasonPage({ roomCode, onSubmit, onCancel, loading }) {
     const adjustTime = (h, m) => {
         let newH = hours + h;
         let newM = minutes + m;
-        
-        if (newM >= 60) { newM = 0; newH += 1; }
-        if (newM < 0) { newM = 30; newH -= 1; }
-        if (newH >= 24) newH = 0;
-        if (newH < 0) newH = 23;
-        
-        const now = new Date();
-        const currentH = now.getHours();
-        const currentM = now.getMinutes();
 
-        // ป้องกันไม่ให้เลือกเวลาย้อนหลังกลับไปในอดีต (ของวันปัจจุบัน)
-        // ReasonPage อนุญาตให้ยืมข้ามวันได้ (เช็คใน getReturnByTime) 
-        // แต่เพื่อความ Make Sense เราจะขวางไม่ให้เลื่อนลงไปเวลาในอดีตถ้ายังเป็นวันนี้อยู่
-        if (newH < currentH || (newH === currentH && newM < currentM)) {
-            return;
-        }
+        if (newM >= 60) { newM = 0; newH += 1; }
+        if (newM < 0)   { newM = 30; newH -= 1; }
+        if (newH >= 24) newH = 0;
+        if (newH < 0)   newH = 23;
+
+        const now = new Date();
+        if (newH < now.getHours() || (newH === now.getHours() && newM < now.getMinutes())) return;
 
         setHours(newH);
         setMinutes(newM);
@@ -74,9 +73,10 @@ export default function ReasonPage({ roomCode, onSubmit, onCancel, loading }) {
 
     const setPresetDuration = (durationH) => {
         const now = new Date();
-        now.setHours(now.getHours() + durationH);
-        setHours(now.getHours());
-        setMinutes(now.getMinutes() > 30 ? 30 : 0);
+        const baseM = now.getMinutes() < 30 ? 30 : 0;
+        const baseH = now.getMinutes() < 30 ? now.getHours() : now.getHours() + 1;
+        setHours((baseH + durationH) % 24);
+        setMinutes(baseM);
     };
 
     const getReturnByTime = () => {
@@ -89,147 +89,165 @@ export default function ReasonPage({ roomCode, onSubmit, onCancel, loading }) {
     const timeString = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
 
     const handleSubmit = () => {
-        if (selected) {
-            onSubmit(finalReason, getReturnByTime());
-        }
+        if (selected) onSubmit(finalReason, getReturnByTime());
     };
+
+    const canScrollUp   = reasonScrollIndex > 0;
+    const canScrollDown = reasonScrollIndex + ITEMS_PER_PAGE < reasons.length;
 
     return (
         <div className="page reason-page">
             <div className="reason-card glass">
+
+                {/* ── Header ── */}
                 <div className="reason-header">
-                    <FileText size={32} className="text-gradient" />
+                    <FileText size={24} className="text-gradient" />
                     <h2 className="reason-title">ระบุเหตุผลการเบิกกุญแจ</h2>
                 </div>
-                
-                <div className="reason-content-scroll">
-                    {/* Schedule Overview */}
-                    {roomSchedule.length > 0 && (
-                        <div className="room-schedule-overview anim-fade-in">
-                            <p className="reason-step-label"><Clock size={16} /> ตารางการใช้ห้องวันนี้</p>
-                            <div className="schedule-list">
-                                {roomSchedule.map(s => {
-                                    const formatT = (date) => {
-                                        const d = new Date(date);
-                                        const bkkTime = new Date(d.getTime() + (7 * 60 * 60 * 1000));
-                                        const hh = String(bkkTime.getUTCHours()).padStart(2, '0');
-                                        const mm = String(bkkTime.getUTCMinutes()).padStart(2, '0');
-                                        return `${hh}.${mm}`;
-                                    };
-                                    return (
-                                        <div key={s.id} className="schedule-item">
-                                            <div className="schedule-time">{formatT(s.startTime)} - {formatT(s.endTime)}</div>
-                                            <div className="schedule-info">
-                                                <div className="schedule-subject">{s.subjectName}</div>
-                                                <div className="schedule-teacher">{s.teacherName}</div>
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        </div>
-                    )}
 
-                    {/* Step 1 */}
-                    <p className="reason-step-label">1. เลือกเหตุผลการใช้งาน</p>
-                    <div className="reason-scroll-container">
-                        {/* Scroll Up Button */}
+                {/* ── Body: 2 panels ── */}
+                <div className="reason-body">
+
+                    {/* ═══ LEFT PANEL — เลือกเหตุผล ═══ */}
+                    <div className="reason-panel reason-panel--left">
+                        <p className="reason-step-label">1. เลือกเหตุผล</p>
+
+                        {/* Scroll Up */}
                         <button
-                            className={`reason-scroll-btn reason-scroll-btn--up ${reasonScrollIndex === 0 ? 'disabled' : ''}`}
+                            className="reason-nav-btn"
                             onClick={() => setReasonScrollIndex(i => Math.max(0, i - 1))}
-                            disabled={reasonScrollIndex === 0}
+                            disabled={!canScrollUp}
                         >
-                            <ChevronUp size={22} />
+                            <ChevronUp size={20} />
                         </button>
 
-                        {/* Visible reason chips */}
-                        <div className="reason-options-list">
+                        {/* Reason list */}
+                        <div className="reason-list">
                             {reasons
                                 .slice(reasonScrollIndex, reasonScrollIndex + ITEMS_PER_PAGE)
                                 .map((r) => (
                                     <button
                                         key={r}
-                                        className={`reason-chip-row ${selected === r ? 'active' : ''}`}
-                                        onClick={() => setSelected(r)}
+                                        className={`reason-row-btn ${selected === r ? 'active' : ''}`}
+                                        onClick={() => { setSelected(r); setSelectedOther(''); }}
                                     >
                                         {r}
                                     </button>
                                 ))}
                         </div>
 
-                        {/* Scroll Down Button */}
+                        {/* Scroll Down */}
                         <button
-                            className={`reason-scroll-btn reason-scroll-btn--down ${reasonScrollIndex + ITEMS_PER_PAGE >= reasons.length ? 'disabled' : ''}`}
+                            className="reason-nav-btn"
                             onClick={() => setReasonScrollIndex(i => Math.min(reasons.length - ITEMS_PER_PAGE, i + 1))}
-                            disabled={reasonScrollIndex + ITEMS_PER_PAGE >= reasons.length}
+                            disabled={!canScrollDown}
                         >
-                            <ChevronDown size={22} />
+                            <ChevronDown size={20} />
                         </button>
+
+                        {/* Scroll indicator */}
+                        <div className="reason-scroll-indicator">
+                            {reasons.map((_, idx) => (
+                                <span
+                                    key={idx}
+                                    className={`scroll-dot ${idx >= reasonScrollIndex && idx < reasonScrollIndex + ITEMS_PER_PAGE ? 'active' : ''}`}
+                                />
+                            ))}
+                        </div>
+
+                        {/* Other presets */}
+                        {isOther && (
+                            <div className="reason-other-presets anim-fade-in">
+                                <p className="reason-step-label" style={{marginTop: '8px'}}>เหตุผลอื่นๆ</p>
+                                <div className="reason-other-grid">
+                                    {OTHER_PRESETS.map((p) => (
+                                        <button
+                                            key={p}
+                                            className={`reason-other-btn ${selectedOther === p ? 'active' : ''}`}
+                                            onClick={() => setSelectedOther(p)}
+                                        >
+                                            {p}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </div>
 
-                    {isOther && (
-                        <div className="reason-other-presets anim-fade-in">
-                            <p className="reason-step-label">เหตุผลอื่นๆ (กดเลือกได้เลย)</p>
-                            <div className="reason-options">
-                                {OTHER_PRESETS.map((p) => (
-                                    <button
-                                        key={p}
-                                        className={`reason-chip small ${selectedOther === p ? 'active' : ''}`}
-                                        onClick={() => setSelectedOther(p)}
-                                    >
-                                        {p}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                    )}
+                    {/* ── Divider ── */}
+                    <div className="reason-divider" />
 
-                    {/* Step 2 */}
-                    {selected && (
-                        <div className="reason-time-section anim-fade-in">
-                            <p className="reason-step-label">
-                                <Clock size={16} /> 2. กำหนดเวลาที่จะคืนกุญแจ (ใช้นิ้วเลือกระเวลาได้เลย)
-                            </p>
-                            
-                            <div className="touch-time-picker">
-                                <div className="time-column">
-                                    <button className="time-btn" onClick={() => adjustTime(1, 0)}><ChevronUp /></button>
-                                    <div className="time-value">{hours.toString().padStart(2, '0')}</div>
-                                    <button className="time-btn" onClick={() => adjustTime(-1, 0)}><ChevronDown /></button>
-                                    <span className="time-label">ชั่วโมง</span>
-                                </div>
-                                <div className="time-separator">:</div>
-                                <div className="time-column">
-                                    <button className="time-btn" onClick={() => adjustTime(0, 30)}><ChevronUp /></button>
-                                    <div className="time-value">{minutes.toString().padStart(2, '0')}</div>
-                                    <button className="time-btn" onClick={() => adjustTime(0, -30)}><ChevronDown /></button>
-                                    <span className="time-label">นาที</span>
-                                </div>
+                    {/* ═══ RIGHT PANEL — ตั้งเวลาคืน ═══ */}
+                    <div className="reason-panel reason-panel--right">
+                        <p className="reason-step-label"><Clock size={14} /> 2. กำหนดเวลาคืน</p>
 
-                                <div className="time-presets">
-                                    <button className="preset-btn" onClick={() => setPresetDuration(1)}>+1 ชม.</button>
-                                    <button className="preset-btn" onClick={() => setPresetDuration(2)}>+2 ชม.</button>
-                                    <button className="preset-btn" onClick={() => setPresetDuration(4)}>+4 ชม.</button>
-                                </div>
+                        {/* Time picker */}
+                        <div className="time-picker-block">
+                            {/* Hours */}
+                            <div className="time-col">
+                                <button className="time-nav-btn" onClick={() => adjustTime(1, 0)}><ChevronUp size={20} /></button>
+                                <div className="time-digit">{hours.toString().padStart(2, '0')}</div>
+                                <button className="time-nav-btn" onClick={() => adjustTime(-1, 0)}><ChevronDown size={20} /></button>
+                                <span className="time-unit">ชั่วโมง</span>
                             </div>
 
-                            <p className="reason-return-preview">
-                                ⏰ ยืนยันเวลาคืนกุญแจ: <strong>{timeString} น.</strong>
-                            </p>
+                            <div className="time-colon">:</div>
+
+                            {/* Minutes */}
+                            <div className="time-col">
+                                <button className="time-nav-btn" onClick={() => adjustTime(0, 30)}><ChevronUp size={20} /></button>
+                                <div className="time-digit">{minutes.toString().padStart(2, '0')}</div>
+                                <button className="time-nav-btn" onClick={() => adjustTime(0, -30)}><ChevronDown size={20} /></button>
+                                <span className="time-unit">นาที</span>
+                            </div>
                         </div>
-                    )}
+
+                        {/* Presets */}
+                        <div className="time-preset-row">
+                            <button className="preset-chip" onClick={() => setPresetDuration(1)}>+1 ชม.</button>
+                            <button className="preset-chip" onClick={() => setPresetDuration(2)}>+2 ชม.</button>
+                            <button className="preset-chip" onClick={() => setPresetDuration(4)}>+4 ชม.</button>
+                        </div>
+
+                        {/* Preview */}
+                        <div className="time-preview-box">
+                            <span className="time-preview-label">คืนกุญแจ</span>
+                            <span className="time-preview-value">{timeString} น.</span>
+                        </div>
+
+                        {/* Schedule (ถ้ามี) */}
+                        {roomSchedule.length > 0 && (
+                            <div className="schedule-mini">
+                                <p className="reason-step-label" style={{marginBottom:'4px'}}><Clock size={12}/> ตารางห้องวันนี้</p>
+                                {roomSchedule.slice(0, 2).map(s => {
+                                    const fmt = (date) => {
+                                        const d = new Date(date);
+                                        const bkk = new Date(d.getTime() + 7 * 3600000);
+                                        return `${String(bkk.getUTCHours()).padStart(2,'0')}.${String(bkk.getUTCMinutes()).padStart(2,'0')}`;
+                                    };
+                                    return (
+                                        <div key={s.id} className="schedule-item-mini">
+                                            <span className="schedule-time-mini">{fmt(s.startTime)}–{fmt(s.endTime)}</span>
+                                            <span className="schedule-subj-mini">{s.subjectName}</span>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </div>
                 </div>
 
+                {/* ── Actions ── */}
                 <div className="reason-actions">
                     <button
                         className="btn btn-primary btn-lg"
                         onClick={handleSubmit}
-                        disabled={loading || !selected}
+                        disabled={loading || !selected || (isOther && !selectedOther)}
                     >
-                        {loading ? 'กำลังส่งข้อมูล...' : <><CheckCircle size={20} /> ยืนยัน</>}
+                        {loading ? 'กำลังส่งข้อมูล...' : <><CheckCircle size={18} /> ยืนยัน</>}
                     </button>
                     <button className="btn btn-secondary btn-lg" onClick={onCancel} disabled={loading}>
-                        <XCircle size={20} /> ยกเลิก
+                        <XCircle size={18} /> ยกเลิก
                     </button>
                 </div>
             </div>
