@@ -147,15 +147,6 @@ export default function ReasonPage({ roomCode, onSubmit, onCancel, loading }) {
                                 <ChevronDown size={22} />
                             </button>
 
-                            {/* Page indicator dots */}
-                            <div className="reason-scroll-indicator">
-                                {Array.from({ length: Math.ceil(reasons.length / ITEMS_PER_PAGE) }).map((_, pageIdx) => (
-                                    <span
-                                        key={pageIdx}
-                                        className={`scroll-dot ${Math.floor(reasonScrollIndex / ITEMS_PER_PAGE) === pageIdx ? 'active' : ''}`}
-                                    />
-                                ))}
-                            </div>
                         </div>
 
                         {/* Other presets — แสดงด้านล่าง scroll area */}
