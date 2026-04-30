@@ -112,53 +112,56 @@ export default function ReasonPage({ roomCode, onSubmit, onCancel, loading }) {
                     <div className="reason-panel reason-panel--left">
                         <p className="reason-step-label">1. เลือกเหตุผล</p>
 
-                        {/* Scroll Up */}
-                        <button
-                            className="reason-nav-btn"
-                            onClick={() => setReasonScrollIndex(i => Math.max(0, i - 1))}
-                            disabled={!canScrollUp}
-                        >
-                            <ChevronUp size={20} />
-                        </button>
+                        {/* ── Scroll area (fixed, no overflow) ── */}
+                        <div className="reason-scroll-area">
+                            {/* Scroll Up */}
+                            <button
+                                className="reason-nav-btn"
+                                onClick={() => setReasonScrollIndex(i => Math.max(0, i - 1))}
+                                disabled={!canScrollUp}
+                            >
+                                <ChevronUp size={22} />
+                            </button>
 
-                        {/* Reason list */}
-                        <div className="reason-list">
-                            {reasons
-                                .slice(reasonScrollIndex, reasonScrollIndex + ITEMS_PER_PAGE)
-                                .map((r) => (
-                                    <button
-                                        key={r}
-                                        className={`reason-row-btn ${selected === r ? 'active' : ''}`}
-                                        onClick={() => { setSelected(r); setSelectedOther(''); }}
-                                    >
-                                        {r}
-                                    </button>
+                            {/* Reason list — fixed 4 items */}
+                            <div className="reason-list">
+                                {reasons
+                                    .slice(reasonScrollIndex, reasonScrollIndex + ITEMS_PER_PAGE)
+                                    .map((r) => (
+                                        <button
+                                            key={r}
+                                            className={`reason-row-btn ${selected === r ? 'active' : ''}`}
+                                            onClick={() => { setSelected(r); setSelectedOther(''); }}
+                                        >
+                                            {r}
+                                        </button>
+                                    ))}
+                            </div>
+
+                            {/* Scroll Down */}
+                            <button
+                                className="reason-nav-btn"
+                                onClick={() => setReasonScrollIndex(i => Math.min(reasons.length - ITEMS_PER_PAGE, i + 1))}
+                                disabled={!canScrollDown}
+                            >
+                                <ChevronDown size={22} />
+                            </button>
+
+                            {/* Page indicator dots */}
+                            <div className="reason-scroll-indicator">
+                                {Array.from({ length: Math.ceil(reasons.length / ITEMS_PER_PAGE) }).map((_, pageIdx) => (
+                                    <span
+                                        key={pageIdx}
+                                        className={`scroll-dot ${Math.floor(reasonScrollIndex / ITEMS_PER_PAGE) === pageIdx ? 'active' : ''}`}
+                                    />
                                 ))}
+                            </div>
                         </div>
 
-                        {/* Scroll Down */}
-                        <button
-                            className="reason-nav-btn"
-                            onClick={() => setReasonScrollIndex(i => Math.min(reasons.length - ITEMS_PER_PAGE, i + 1))}
-                            disabled={!canScrollDown}
-                        >
-                            <ChevronDown size={20} />
-                        </button>
-
-                        {/* Scroll indicator */}
-                        <div className="reason-scroll-indicator">
-                            {reasons.map((_, idx) => (
-                                <span
-                                    key={idx}
-                                    className={`scroll-dot ${idx >= reasonScrollIndex && idx < reasonScrollIndex + ITEMS_PER_PAGE ? 'active' : ''}`}
-                                />
-                            ))}
-                        </div>
-
-                        {/* Other presets */}
+                        {/* Other presets — แสดงด้านล่าง scroll area */}
                         {isOther && (
                             <div className="reason-other-presets anim-fade-in">
-                                <p className="reason-step-label" style={{marginTop: '8px'}}>เหตุผลอื่นๆ</p>
+                                <p className="reason-step-label" style={{margin: '8px 0 4px'}}>เหตุผลอื่นๆ</p>
                                 <div className="reason-other-grid">
                                     {OTHER_PRESETS.map((p) => (
                                         <button

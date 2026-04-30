@@ -838,8 +838,17 @@ body {
 .reason-panel--left {
     border-right: 1px solid rgba(255,255,255,0.06);
     padding-right: 16px;
+    overflow: hidden;
 }
-.reason-panel--right { padding-left: 16px; }
+.reason-panel--right { padding-left: 16px; overflow: hidden; }
+
+/* Scroll area — ห่อปุ่ม nav + รายการ ทำให้ไม่ขยายเกิน */
+.reason-scroll-area {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex-shrink: 0;
+}
 
 /* Nav buttons for reason list */
 .reason-nav-btn {
@@ -864,8 +873,7 @@ body {
     display: flex;
     flex-direction: column;
     gap: 6px;
-    margin: 6px 0;
-    flex: 1;
+    flex-shrink: 0;
 }
 .reason-row-btn {
     width: 100%;
