@@ -838,16 +838,16 @@ body {
 .reason-panel--left {
     border-right: 1px solid rgba(255,255,255,0.06);
     padding-right: 16px;
-    overflow: hidden;
 }
-.reason-panel--right { padding-left: 16px; overflow: hidden; }
+.reason-panel--right { padding-left: 16px; }
 
-/* Scroll area — ห่อปุ่ม nav + รายการ ทำให้ไม่ขยายเกิน */
+/* Scroll area — เต็ม panel ด้วย flex:1 และดันปุ่ม down ลงด้านล่างสุดเสมอ */
 .reason-scroll-area {
     display: flex;
     flex-direction: column;
+    flex: 1;
+    min-height: 0;
     gap: 6px;
-    flex-shrink: 0;
 }
 
 /* Nav buttons for reason list */
@@ -868,12 +868,13 @@ body {
 .reason-nav-btn:active:not(:disabled) { background: var(--primary); transform: scale(0.97); }
 .reason-nav-btn:disabled { opacity: 0.2; cursor: not-allowed; }
 
-/* Reason row list */
+/* Reason row list — flex:1 เพื่อดันปุ่มลงไปด้านล่าง */
 .reason-list {
     display: flex;
     flex-direction: column;
-    gap: 6px;
-    flex-shrink: 0;
+    gap: 8px;
+    flex: 1;
+    justify-content: center;
 }
 .reason-row-btn {
     width: 100%;
