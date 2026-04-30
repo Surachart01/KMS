@@ -64,8 +64,11 @@ export default function ReasonPage({ roomCode, onSubmit, onCancel, loading }) {
         if (newH >= 24) newH = 0;
         if (newH < 0)   newH = 23;
 
+        // เปรียบเทียบแบบ total minutes ป้องกัน edge case วินาที
         const now = new Date();
-        if (newH < now.getHours() || (newH === now.getHours() && newM < now.getMinutes())) return;
+        const nowTotalM = now.getHours() * 60 + now.getMinutes();
+        const newTotalM  = newH * 60 + newM;
+        if (newTotalM <= nowTotalM) return;
 
         setHours(newH);
         setMinutes(newM);
@@ -80,9 +83,15 @@ export default function ReasonPage({ roomCode, onSubmit, onCancel, loading }) {
     };
 
     const getReturnByTime = () => {
-        const d = new Date();
+        const now = new Date();
+        const d   = new Date();
         d.setHours(hours, minutes, 0, 0);
-        if (d <= new Date()) d.setDate(d.getDate() + 1);
+
+        // เปรียบเทียบ total minutes เพื่อไม่ให้ตกวันจาก seconds
+        const nowTotalM = now.getHours() * 60 + now.getMinutes();
+        const selTotalM = hours * 60 + minutes;
+        if (selTotalM <= nowTotalM) d.setDate(d.getDate() + 1);
+
         return d.toISOString();
     };
 
