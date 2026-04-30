@@ -513,7 +513,18 @@ export const borrowKey = async (req, res) => {
         if (req.body.returnByTime) {
             // Frontend ส่งเวลาคืนมาแล้ว (เบิกนอกตาราง + เลือกเวลา)
             dueAt = new Date(req.body.returnByTime);
+
+            // ── Sanity check: dueAt ต้องอยู่ในอนาคต และไม่เกิน 24 ชั่วโมง ──
+            const diffMs = dueAt.getTime() - now.getTime();
+            const diffH  = diffMs / (1000 * 60 * 60);
+            if (diffH <= 0 || diffH > 24) {
+                // Frontend ส่งเวลาผิด → fallback เป็น now + 4 ชั่วโมง
+                console.warn(`   ⚠️ returnByTime ไม่ถูกต้อง (diffH=${diffH.toFixed(2)}h) → fallback +4h`);
+                dueAt = new Date(now.getTime() + 4 * 60 * 60 * 1000);
+            }
+
             console.log(`   ⏰ ใช้ returnByTime จาก frontend: ${dueAt.toISOString()}`);
+
         } else if (bookingReason) {
             // เบิกด้วยเหตุผล → ดึง durationMinutes จาก DB
             try {

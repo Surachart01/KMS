@@ -10,11 +10,11 @@ const ITEMS_PER_PAGE = 4;
 /** คำนวณเวลาเริ่มต้น: ปัดนาทีขึ้นเป็น :00 หรือ :30 แล้วบวก 2 ชั่วโมง */
 function getDefaultTime() {
     const now = new Date();
-    const m = now.getMinutes() < 30 ? 30 : 0;
-    const h = now.getMinutes() < 30 ? now.getHours() : now.getHours() + 1;
+    // ปัดนาทีขึ้นไปครึ่งชั่วโมงถัดไป
+    const roundedMs = Math.ceil(now.getTime() / (30 * 60 * 1000)) * (30 * 60 * 1000);
     // บวก 2 ชั่วโมง
-    const totalH = (h + 2) % 24;
-    return { hours: totalH, minutes: m };
+    const target = new Date(roundedMs + 2 * 60 * 60 * 1000);
+    return { hours: target.getHours(), minutes: target.getMinutes() };
 }
 
 export default function ReasonPage({ roomCode, onSubmit, onCancel, loading }) {
@@ -75,24 +75,33 @@ export default function ReasonPage({ roomCode, onSubmit, onCancel, loading }) {
     };
 
     const setPresetDuration = (durationH) => {
+        // ใช้ timestamp เพื่อป้องกัน midnight wrap
         const now = new Date();
-        const baseM = now.getMinutes() < 30 ? 30 : 0;
-        const baseH = now.getMinutes() < 30 ? now.getHours() : now.getHours() + 1;
-        setHours((baseH + durationH) % 24);
-        setMinutes(baseM);
+        const roundedMs = Math.ceil(now.getTime() / (30 * 60 * 1000)) * (30 * 60 * 1000);
+        const target = new Date(roundedMs + durationH * 60 * 60 * 1000);
+        setHours(target.getHours());
+        setMinutes(target.getMinutes());
     };
 
     const getReturnByTime = () => {
         const now = new Date();
-        const d   = new Date();
-        d.setHours(hours, minutes, 0, 0);
+        // สร้าง target datetime สำหรับวันนี้ตามเวลาที่เลือก
+        const target = new Date(now);
+        target.setHours(hours, minutes, 0, 0);
 
-        // เปรียบเทียบ total minutes เพื่อไม่ให้ตกวันจาก seconds
-        const nowTotalM = now.getHours() * 60 + now.getMinutes();
-        const selTotalM = hours * 60 + minutes;
-        if (selTotalM <= nowTotalM) d.setDate(d.getDate() + 1);
+        // ถ้าเวลาที่เลือก (total minutes) น้อยกว่าหรือเท่ากับตอนนี้ → ข้ามวัน
+        const nowTotalM  = now.getHours() * 60 + now.getMinutes();
+        const selTotalM  = hours * 60 + minutes;
+        if (selTotalM <= nowTotalM) target.setDate(target.getDate() + 1);
 
-        return d.toISOString();
+        // Sanity check: ต้องอยู่ในอนาคต ห่างจากตอนนี้ไม่เกิน 24 ชั่วโมง
+        const diffH = (target.getTime() - now.getTime()) / (1000 * 60 * 60);
+        if (diffH <= 0 || diffH > 24) {
+            // fallback: ตอนนี้ + 2 ชั่วโมง
+            return new Date(now.getTime() + 2 * 60 * 60 * 1000).toISOString();
+        }
+
+        return target.toISOString();
     };
 
     const timeString = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
