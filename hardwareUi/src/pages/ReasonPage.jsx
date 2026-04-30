@@ -1,15 +1,18 @@
-import { useState, useEffect } from 'react';
-import { CheckCircle, XCircle, Clock, FileText, ChevronUp, ChevronDown, Plus } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { CheckCircle, XCircle, Clock, FileText, ChevronUp, ChevronDown } from 'lucide-react';
 
 const FALLBACK_REASONS = ['สอนชดเชย', 'กิจกรรมพิเศษ', 'ซ่อมบำรุง', 'ประชุม', 'ทดสอบระบบ', 'อื่นๆ'];
 const OTHER_PRESETS = ['เข้าเวร', 'ชุมนุมนักศึกษา', 'เตรียมงานคณะ', 'กรณีพิเศษอื่นๆ'];
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4556';
+
+const ITEMS_PER_PAGE = 4;
 
 export default function ReasonPage({ roomCode, onSubmit, onCancel, loading }) {
     const [reasons, setReasons] = useState(FALLBACK_REASONS);
     const [loadingReasons, setLoadingReasons] = useState(true);
     const [selected, setSelected] = useState('');
     const [selectedOther, setSelectedOther] = useState('');
+    const [reasonScrollIndex, setReasonScrollIndex] = useState(0);
     
     // Time state (default to 2 hours from now)
     const [hours, setHours] = useState(new Date().getHours() + 2);
@@ -129,16 +132,39 @@ export default function ReasonPage({ roomCode, onSubmit, onCancel, loading }) {
 
                     {/* Step 1 */}
                     <p className="reason-step-label">1. เลือกเหตุผลการใช้งาน</p>
-                    <div className="reason-options">
-                        {reasons.map((r) => (
-                            <button
-                                key={r}
-                                className={`reason-chip ${selected === r ? 'active' : ''}`}
-                                onClick={() => setSelected(r)}
-                            >
-                                {r}
-                            </button>
-                        ))}
+                    <div className="reason-scroll-container">
+                        {/* Scroll Up Button */}
+                        <button
+                            className={`reason-scroll-btn reason-scroll-btn--up ${reasonScrollIndex === 0 ? 'disabled' : ''}`}
+                            onClick={() => setReasonScrollIndex(i => Math.max(0, i - 1))}
+                            disabled={reasonScrollIndex === 0}
+                        >
+                            <ChevronUp size={22} />
+                        </button>
+
+                        {/* Visible reason chips */}
+                        <div className="reason-options-list">
+                            {reasons
+                                .slice(reasonScrollIndex, reasonScrollIndex + ITEMS_PER_PAGE)
+                                .map((r) => (
+                                    <button
+                                        key={r}
+                                        className={`reason-chip-row ${selected === r ? 'active' : ''}`}
+                                        onClick={() => setSelected(r)}
+                                    >
+                                        {r}
+                                    </button>
+                                ))}
+                        </div>
+
+                        {/* Scroll Down Button */}
+                        <button
+                            className={`reason-scroll-btn reason-scroll-btn--down ${reasonScrollIndex + ITEMS_PER_PAGE >= reasons.length ? 'disabled' : ''}`}
+                            onClick={() => setReasonScrollIndex(i => Math.min(reasons.length - ITEMS_PER_PAGE, i + 1))}
+                            disabled={reasonScrollIndex + ITEMS_PER_PAGE >= reasons.length}
+                        >
+                            <ChevronDown size={22} />
+                        </button>
                     </div>
 
                     {isOther && (

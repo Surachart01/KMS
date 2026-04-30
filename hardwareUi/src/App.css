@@ -771,6 +771,65 @@ body {
 .reason-actions .btn { flex: 1; height: 42px; padding: 0; border-radius: 8px; font-size: 1rem; }
 .reason-other-presets { margin-top: 0px; animation: slideDown 0.3s ease-out; }
 
+/* ── Reason Scroll Container (Kiosk Up/Down Buttons) ── */
+.reason-scroll-container {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 6px;
+}
+
+.reason-scroll-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 38px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.06);
+    color: white;
+    cursor: pointer;
+    transition: var(--transition);
+    flex-shrink: 0;
+}
+.reason-scroll-btn:active:not(:disabled) {
+    background: var(--primary);
+    transform: scale(0.97);
+}
+.reason-scroll-btn.disabled,
+.reason-scroll-btn:disabled {
+    opacity: 0.25;
+    cursor: not-allowed;
+}
+
+.reason-options-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.reason-chip-row {
+    width: 100%;
+    padding: 12px 18px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: white;
+    font-size: 1.05rem;
+    font-weight: 500;
+    cursor: pointer;
+    text-align: left;
+    transition: var(--transition);
+}
+.reason-chip-row:active { transform: scale(0.98); }
+.reason-chip-row.active {
+    background: var(--primary);
+    border-color: var(--primary-light);
+    box-shadow: 0 0 10px var(--primary-glow);
+    font-weight: 700;
+}
+
 /* ── Touch Time Picker ── */
 .touch-time-picker {
     display: flex;

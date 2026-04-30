@@ -4,28 +4,37 @@
 
 ```mermaid
 erDiagram
-    USER ||--o{ BOOKING : borrows
-    USER ||--o{ SYSTEM_LOG : "has logs"
-    USER ||--o{ SUBJECT_TEACHER : teaches
-    USER }o--o{ SCHEDULE : enrolled_in
-    USER ||--o{ PENALTY_LOG : penalized
-    USER ||--o{ DAILY_AUTHORIZATION : authorized
-    USER }o--|| SECTION : belongs_to
+    %% -------------------------------------------------------------
+    %% จัดกลุ่มความสัมพันธ์ใหม่ให้เรียงยอดจากบนลงล่าง ลดการทับซ้อนของเส้น
+    %% -------------------------------------------------------------
+    
+    %% 1. ข้อมูลพื้นฐาน (Master Data)
+    MAJOR ||--o{ SECTION : "contains"
+    SECTION ||--o{ USER : "belongs_to"
+    
+    %% 2. จัดการตารางเรียนและรายวิชา
+    SUBJECT ||--o{ SCHEDULE : "occurs_in"
+    KEY ||--o{ SCHEDULE : "used_for"
+    USER }o--o{ SCHEDULE : "enrolled_in"
 
-    MAJOR ||--o{ SECTION : contains
-
-    SUBJECT ||--o{ SUBJECT_TEACHER : is_taught_in
-    SUBJECT ||--o{ SCHEDULE : occurs_in
-    SUBJECT ||--o{ BOOKING : linked_to
-    SUBJECT ||--o{ DAILY_AUTHORIZATION : valid_for
-
-    KEY ||--o{ BOOKING : "is borrowed in"
-    KEY ||--o{ SCHEDULE : "used for"
-
+    %% 3. การให้สิทธิ์ประจำวัน (Daily Auth)
     SCHEDULE ||--o{ DAILY_AUTHORIZATION : "generates"
+    SUBJECT ||--o{ DAILY_AUTHORIZATION : "valid_for"
+    USER ||--o{ DAILY_AUTHORIZATION : "authorized"
 
+    %% 4. ระบบเบิกคืนกุญแจหลัก (Core Booking)
+    USER ||--o{ BOOKING : "borrows"
+    KEY ||--o{ BOOKING : "is_borrowed_in"
+    SUBJECT ||--o{ BOOKING : "linked_to"
+    
+    %% 5. ระบบติดตามและบทลงโทษ (Logs & Penalty)
     BOOKING ||--o{ PENALTY_LOG : "triggers"
+    USER ||--o{ PENALTY_LOG : "penalized"
+    USER ||--o{ SYSTEM_LOG : "has_logs"
 
+    %% -------------------------------------------------------------
+    %% ข้อมูลตาราง (Entities) 
+    %% -------------------------------------------------------------
     USER {
         string id PK
         string studentCode UK
@@ -48,18 +57,19 @@ erDiagram
         boolean isActive
     }
 
-    BOOKING {
+    SUBJECT {
         string id PK
-        string userId FK
-        string keyId FK
+        string code UK
+        string name
+    }
+
+    SCHEDULE {
+        string id PK
         string subjectId FK
-        datetime borrowAt
-        datetime dueAt
-        datetime returnAt
-        enum status
-        string reason
-        int lateMinutes
-        int penaltyScore
+        string roomCode FK
+        int dayOfWeek
+        datetime startTime
+        datetime endTime
     }
 
     DAILY_AUTHORIZATION {
@@ -74,19 +84,18 @@ erDiagram
         string subjectId FK
     }
 
-    SCHEDULE {
+    BOOKING {
         string id PK
+        string userId FK
+        string keyId FK
         string subjectId FK
-        string roomCode FK
-        int dayOfWeek
-        datetime startTime
-        datetime endTime
-    }
-
-    SUBJECT {
-        string id PK
-        string code UK
-        string name
+        datetime borrowAt
+        datetime dueAt
+        datetime returnAt
+        enum status
+        string reason
+        int lateMinutes
+        int penaltyScore
     }
 
     PENALTY_LOG {
@@ -132,6 +141,8 @@ erDiagram
         int intervalMinutes
         int restoreDays
     }
+
+
 ```
 
 ## ความสัมพันธ์สำคัญ
