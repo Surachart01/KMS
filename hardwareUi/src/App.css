@@ -872,14 +872,17 @@ body {
 .reason-list {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
     flex: 1;
-    justify-content: center;
+    min-height: 0;
+    overflow: hidden;
 }
 .reason-row-btn {
     width: 100%;
+    flex: 1;              /* แบ่งพื้นที่เท่าๆ กัน ไม่ overflow ทับปุ่ม */
+    min-height: 36px;
+    max-height: 64px;
     padding: 0 16px;
-    height: 44px;
     border-radius: 10px;
     background: rgba(255,255,255,0.06);
     border: 1px solid rgba(255,255,255,0.09);
@@ -889,7 +892,6 @@ body {
     cursor: pointer;
     text-align: left;
     transition: var(--transition);
-    flex-shrink: 0;
 }
 .reason-row-btn:active { transform: scale(0.98); }
 .reason-row-btn.active {
